@@ -2918,6 +2918,7 @@ select:focus-visible {
    
    The Games design will be upgraded separately.
    ========================================================= */
+
 /* ==========================
    UNIT → LESSON DROPDOWN
 ========================== */
@@ -2927,29 +2928,92 @@ select:focus-visible {
 }
 
 .unit-btn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 /* Second dropdown */
 .lesson-dropdown {
     display: none;
     position: absolute;
-    left: 100%;
+
+    /* Opens directly to the RIGHT of the Unit menu */
+    left: calc(100% + 8px);
     top: 0;
-    min-width: 150px;
-    background-color: white;
-    z-index: 9999;
+
+    min-width: 165px;
+
+    flex-direction: column;
+    padding: 8px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(18, 38, 47, 0.98),
+            rgba(8, 27, 35, 0.98)
+        );
+
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+
+    box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.42),
+        0 0 20px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    z-index: 4000;
 }
 
 /* Show lesson menu */
 .unit-dropdown.active .lesson-dropdown {
-    display: block;
+    display: flex;
 }
 
 /* Lesson buttons */
 .lesson-dropdown a {
-    display: block;
-    padding: 10px 15px;
-    white-space: nowrap;
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    min-height: 38px;
+    box-sizing: border-box;
+
+    padding: 0 14px;
+
+    color: rgba(255, 255, 255, 0.82);
+
     text-decoration: none;
+
+    font-size: 13px;
+    font-weight: 500;
+
+    border-radius: 9px;
+
+    white-space: nowrap;
+
+    transition:
+        background-color 0.18s ease,
+        color 0.18s ease,
+        padding-left 0.18s ease,
+        transform 0.18s ease;
+}
+
+.lesson-dropdown a:hover {
+    padding-left: 18px;
+
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(72, 224, 130, 0.14),
+            rgba(72, 224, 130, 0.04)
+        );
+
+    transform: translateX(2px);
 }
