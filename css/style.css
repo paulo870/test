@@ -1,881 +1,2920 @@
-html, body {
+/* =========================================================
+   POLIGLOTA INTERACTIVE BOOK
+   HIGH-TECH PROFESSIONAL UI
+   PART 1
+   ========================================================= */
+
+
+/* =========================================================
+   GLOBAL
+   ========================================================= */
+
+html,
+body {
+    width: 100%;
     height: 100%;
     margin: 0;
-    font-family: Arial, sans-serif;
+
+    font-family:
+        Inter,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
     overflow: hidden;
+
+    color: #ffffff;
+
+    background-color: #08151d;
 }
 
+
+/* =========================================================
+   BODY / APPLICATION BACKGROUND
+   ========================================================= */
+
 body {
-    /* Background image */
-    background-image: url('../images/background.jpg'); /* adjust path */
+    position: relative;
+
+    background-image:
+        linear-gradient(
+            135deg,
+            rgba(5, 20, 28, 0.72),
+            rgba(8, 34, 45, 0.55)
+        ),
+        url('../images/background.jpg');
+
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
 }
 
-/* CONTROL BAR */
+
+/*
+   Subtle high-tech grid overlay
+*/
+
+body::before {
+    content: "";
+
+    position: fixed;
+    inset: 0;
+
+    pointer-events: none;
+
+    background-image:
+        linear-gradient(
+            rgba(255, 255, 255, 0.018) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.018) 1px,
+            transparent 1px
+        );
+
+    background-size: 42px 42px;
+
+    mask-image:
+        linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.8),
+            transparent
+        );
+
+    -webkit-mask-image:
+        linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.8),
+            transparent
+        );
+
+    z-index: -1;
+}
+
+
+/* =========================================================
+   CONTROL BAR
+   ========================================================= */
+
 .control-bar {
     position: fixed;
+
     top: 0;
     left: 0;
+
     width: 90px;
     height: 100vh;
-    background-color: #1e607a;
+
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-start;
+
     padding-top: 15px;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(22, 91, 116, 0.97),
+            rgba(13, 57, 73, 0.98)
+        );
+
+    border-right: 1px solid rgba(255, 255, 255, 0.10);
+
+    box-shadow:
+        8px 0 30px rgba(0, 0, 0, 0.22),
+        inset -1px 0 rgba(255, 255, 255, 0.04);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
     z-index: 1000;
+
+    overflow: visible;
 }
+
+
+/*
+   Thin illuminated edge
+*/
+
+.control-bar::after {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    right: -1px;
+
+    width: 1px;
+    height: 100%;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(72, 224, 130, 0.55),
+            transparent 35%,
+            transparent 65%,
+            rgba(72, 224, 130, 0.25)
+        );
+
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   CONTROL ICONS
+   ========================================================= */
 
 .control-icon {
     width: 50px;
     height: 50px;
+
     margin: 12px 0;
+
+    padding: 7px;
+
+    box-sizing: border-box;
+
+    object-fit: contain;
+
+    border-radius: 13px;
+
     cursor: pointer;
-    transition: transform 0.2s ease;
+
+    transition:
+        transform 0.22s ease,
+        background-color 0.22s ease,
+        box-shadow 0.22s ease,
+        filter 0.22s ease;
 }
+
 
 .control-icon:hover {
-    transform: scale(1.1);
+    transform: translateY(-2px) scale(1.04);
+
+    background-color:
+        rgba(255, 255, 255, 0.09);
+
+    box-shadow:
+        0 8px 22px rgba(0, 0, 0, 0.20),
+        0 0 14px rgba(72, 224, 130, 0.08);
+
+    filter: brightness(1.08);
 }
 
-/* DROPDOWNS */
+
+.control-icon:active {
+    transform: scale(0.94);
+
+    box-shadow:
+        0 3px 8px rgba(0, 0, 0, 0.20);
+}
+
+
+/* =========================================================
+   CONTROL ITEMS
+   ========================================================= */
+
+.control-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    width: 100%;
+}
+
+
+/* =========================================================
+   CONTROL LABELS
+   ========================================================= */
+
+.control-label {
+    color: rgba(255, 255, 255, 0.86);
+
+    font-size: 10px;
+    font-weight: 500;
+
+    letter-spacing: 0.3px;
+
+    margin-top: -6px;
+    margin-bottom: 8px;
+
+    text-align: center;
+
+    user-select: none;
+}
+
+
+/* =========================================================
+   DROPDOWNS
+   ========================================================= */
+
 .dropdown {
     position: relative;
+
+    display: flex;
+    justify-content: center;
 }
+
+
+/*
+   Dropdown panel
+*/
 
 .dropdown-content {
-    display: none;
     position: absolute;
-    left: 90px;
-    top: 0;
-    background-color: #1e607a;
-    min-width: 120px;
+
+    left: 84px;
+    top: 2px;
+
+    min-width: 165px;
+
+    display: none;
     flex-direction: column;
-    z-index: 1000;
+
+    padding: 8px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(18, 38, 47, 0.98),
+            rgba(8, 27, 35, 0.98)
+        );
+
+    border: 1px solid rgba(255, 255, 255, 0.09);
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.42),
+        0 0 20px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    z-index: 3000;
+
+    overflow: hidden;
+
+    animation:
+        dropdownIn 0.18s ease-out;
 }
 
-.dropdown-content a {
-    color: white;
-    padding: 8px 10px;
-    text-decoration: none;
-    display: block;
-    font-size: 14px;
+
+/*
+   Dropdown opening animation
+*/
+
+@keyframes dropdownIn {
+    from {
+        opacity: 0;
+        transform: translateX(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-.dropdown-content a:hover {
-    background-color: #48e082;
-}
+
+/*
+   JavaScript uses .show
+*/
 
 .dropdown.show .dropdown-content {
     display: flex;
 }
 
+
+/* =========================================================
+   DROPDOWN LINKS
+   ========================================================= */
+
+.dropdown-content a {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    min-height: 38px;
+
+    box-sizing: border-box;
+
+    padding: 0 14px;
+
+    color: rgba(255, 255, 255, 0.82);
+
+    text-decoration: none;
+
+    font-size: 13px;
+    font-weight: 500;
+
+    letter-spacing: 0.15px;
+
+    border-radius: 9px;
+
+    transition:
+        background-color 0.18s ease,
+        color 0.18s ease,
+        padding-left 0.18s ease,
+        transform 0.18s ease;
+}
+
+
+.dropdown-content a::before {
+    content: "";
+
+    width: 4px;
+    height: 4px;
+
+    margin-right: 9px;
+
+    border-radius: 50%;
+
+    background-color:
+        rgba(72, 224, 130, 0.45);
+
+    transition:
+        background-color 0.18s ease,
+        box-shadow 0.18s ease;
+}
+
+
+.dropdown-content a:hover {
+    padding-left: 18px;
+
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(72, 224, 130, 0.14),
+            rgba(72, 224, 130, 0.04)
+        );
+
+    transform: translateX(2px);
+}
+
+
+.dropdown-content a:hover::before {
+    background-color: #48e082;
+
+    box-shadow:
+        0 0 8px rgba(72, 224, 130, 0.7);
+}
+
+
+/* =========================================================
+   SLIDE CONTAINER
+   ========================================================= */
+
 .slide-container {
     position: absolute;
+
     left: 90px;
     top: 0;
+
     width: calc(100% - 90px);
     height: 100vh;
+
     overflow: auto;
-    
-    background-image: url('../images/background.jpg'); /* use correct path */
+
+    background-image:
+        linear-gradient(
+            rgba(5, 18, 24, 0.10),
+            rgba(5, 18, 24, 0.10)
+        ),
+        url('../images/background.jpg');
+
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+
+    scrollbar-width: thin;
+    scrollbar-color:
+        rgba(72, 224, 130, 0.35)
+        rgba(0, 0, 0, 0.15);
 }
 
-/* SLIDE WRAPPER */
-.slide-wrapper {
-    display: flex;
-    position: relative;
-    justify-content: center;
-    align-items: center;
-    min-height: 100%;
-    min-width: 100%;
-}
 
-/* SLIDE IMAGE */
-#slide-image {
-    display: block;
-    transform-origin: top left;
-}
+/* =========================================================
+   SLIDE SCROLLBAR
+   ========================================================= */
 
-/* NAVIGATION BUTTONS */
-#prev-btn,
-#next-btn {
-    position: fixed;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 30px;
-    background-color: rgba(0,0,0,0.5);
-    color: white;
-    border: none;
-    cursor: pointer;
-    padding: 10px;
-    z-index: 1001;
-}
-
-#prev-btn { left: 110px; }
-#next-btn { right: 20px; }
-
-#prev-btn:hover,
-#next-btn:hover {
-    background-color: rgba(0,0,0,0.8);
-}
-/* ==========================
-   AUDIO LIST POSITION & PLAYER
-   ========================== */
-
-/* Audio buttons container */
-#audio-list-container {
-    position: fixed;
-    top: 50px;              /* distance from the top of the page */
-    left: 120px;            /* to the right of the control panel */
-    display: none;          /* hidden by default */
-    flex-direction: column; 
-    gap: 8px;               /* space between buttons */
-    background-color: rgba(0,0,0,0.7); /* semi-transparent background */
-    padding: 10px;
-    border-radius: 8px;
-    z-index: 2000;          /* on top of everything */
-}
-
-/* Audio buttons */
-#audio-list-container button {
-    padding: 6px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    color: white;
-    background-color: #1e607a;
-    border: none;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-}
-#audio-list-container button:hover {
-    background-color: #1e607a;
-}
-
-/* Audio player */
-#slide-audio {
-    position: fixed;
-    bottom: 50px;           /* distance from bottom */
-    left: 120px;            /* align with audio buttons */
-    z-index: 2000;          /* above everything */
-}
-#hide-audio-btn {
-    background-color: #1e607a;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-#hide-audio-btn:hover {
-    background-color: #1e607a;
-}
-/* ==========================
-   VIDEO LIST POSITION & PLAYER
-   ========================== */
-
-/* Video buttons container */
-
- #video-list-container {
-
-    position: fixed;
-
-    top: 80px;
-    left: 120px;
-
-    display: none;
-
-    flex-direction: column;
-
-    gap: 10px;
-
-    background: rgba(15,15,15,0.95);
-
-    padding: 16px;
-
-    border-radius: 12px;
-
-    z-index: 4000;
-
-    min-width: 220px;
-
-    box-shadow:
-        0 0 20px rgba(0,0,0,0.4);
-
-    backdrop-filter: blur(6px);
-}
-
-/* Video buttons */
-#video-list-container button {
-
-    padding: 12px 16px;
-
-    font-size: 15px;
-
-    cursor: pointer;
-
-    color: white;
-
-    background: #1e607a;
-
-    border: none;
-
-    border-radius: 8px;
-
-    text-align: left;
-
-    transition:
-        transform 0.2s ease,
-        background 0.2s ease;
-}
-
-#video-list-container button:hover {
-
-    background: #48e082;
-
-    transform: translateX(4px);
-}
-
-/* Video player */
-#slide-video {
-    max-width: 80%;           /* max width */
-    max-height: 70%;          /* max height */
-    position: fixed;
-    top: 50%;                 /* center vertically */
-    left: 50%;                /* center horizontally */
-    transform: translate(-50%, -50%);
-    z-index: 2000;            /* above everything */
-}
-
-/* Hide video button */
-#hide-video-btn {
-    background-color: #1e607a;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-#hide-video-btn:hover {
-    background-color: #1e607a;
-}
-/* ==========================
-   EDIT TRAY SYSTEM
-========================== */
-
-#edit-tray {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: none; /* hidden by default */
-    gap: 15px;
-    background-color: rgba(0,0,0,0.85);
-    padding: 12px 20px;
-    border-radius: 12px;
-    z-index: 5000; /* ABOVE EVERYTHING */
-    box-shadow: 0 0 15px rgba(0,0,0,0.5);
-}
-
-.edit-tool-btn {
-    font-size: 40px;
-    padding: 8px 12px;
-    cursor: pointer;
-    border: none;
-    border-radius: 8px;
-    background-color: #1e607a;
-    color: white;
-    transition: transform 0.2s ease, background-color 0.2s ease;
-}
-
-.edit-tool-btn:hover {
-    background-color: #1e607a;
-    transform: scale(1.1);
-}
-/* WHITEBOARD */
-#whiteboard {
-    position: fixed;
-    top: 3%;
-    left: 130px; /* leaves space for control panel */
-    width: calc(95% - 90px);
-    height: 80vh;
-    background-color: white;
-    border: 10px solid #a0a0a0; /* metal edge color */
-    border-radius: 6px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.3);
-    display: none; /* hidden by default */
-    z-index: 3000; /* above slides but below edit tray (5000) */
-}
-/* ==========================
-   PENCIL SIZE MENU
-========================== */
-
-#pencil-size-menu {
-    position: absolute;
-    bottom: 70px; /* appears above tray */
-    left: 0;
-    display: none;
-    flex-direction: column;
-    gap: 10px;
-    background-color: rgba(0,0,0,0.9);
-    padding: 10px;
-    border-radius: 10px;
-}
-
-.size-option {
-    background-color: rgb(182, 55, 55);
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-/* Small */
-.size-option[data-size="2"] {
+.slide-container::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
-/* Medium */
-.size-option[data-size="5"] {
-    width: 14px;
-    height: 14px;
-}
 
-/* Large */
-.size-option[data-size="10"] {
-    width: 22px;
-    height: 22px;
-}
-
-.size-option:hover {
-    transform: scale(1.2);
-}
-#whiteboard-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-    cursor: crosshair; /* shows a pencil cursor */
-}
-/* ==========================
-   SLIDE EDIT CANVAS
-========================== */
-
-.edit-tool-btn {
-
-    font-size: 40px;
-
-    padding: 10px 14px;
-
-    cursor: pointer;
-
-    border: none;
-
-    border-radius: 12px;
-
-    background-color: #1e607a;
-
-    color: white;
-
-    transition:
-        transform 0.18s ease,
-        box-shadow 0.18s ease,
-        background-color 0.18s ease;
-
-    /* 3D EFFECT */
-    box-shadow:
-        0 8px 0 #12485d,
-        0 12px 18px rgba(0,0,0,0.35);
-}
-
-/* HOVER */
-
-.edit-tool-btn:hover {
-
-    transform:
-        translateY(-3px)
-        scale(1.05);
-}
-
-/* CLICK EFFECT */
-
-.edit-tool-btn:active {
-
-    transform:
-        translateY(5px);
-
-    box-shadow:
-        0 2px 0 #12485d,
-        0 5px 10px rgba(0,0,0,0.25);
-}
-
-/* CLICK EFFECT */
-
-.edit-tool-btn:active {
-
-    transform:
-        translateY(5px);
-
-    box-shadow:
-        0 2px 0 #12485d,
-        0 5px 10px rgba(0,0,0,0.25);
-}
-/* Text box styling */
-.text-box {
-    position: absolute;
-    min-width: 50px;
-    min-height: 20px;
-    padding: 4px;
-    border: 1px solid #666;
-    outline: none;
-    font-size: 20px;
-    color: black;
-    z-index: 1000;
-    background: #fff;
-}
-
-/* Toolbar above text box */
-.text-box-toolbar {
-    position: absolute;
-    display: flex;
-    gap: 5px;
-    padding: 3px 5px;
-    background: #f0f0f0;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-    z-index: 1100;
-}
-.text-box-toolbar button {
-    cursor: pointer;
-    border: 1px solid #aaa;
-    background: #fff;
-    padding: 2px 5px;
-    border-radius: 3px;
-}
-.text-box-toolbar input[type="color"] {
-    padding: 0;
-    width: 24px;
-    height: 24px;
-    border: none;
-    background: none;
-    cursor: pointer;
-}
-.text-box {
-    position: absolute;
-    background: #fff;
-    border: 1px solid #888;
-    padding: 2px 4px;
-    min-width: 80px;
-    min-height: 24px;
-    z-index: 1000;
-}
-#clear-tool img{
-    width:24px;
-    height:24px;
-}
-.active-tool {
-
-    background-color: #48e082;
-
-    box-shadow:
-        0 4px 0 #1d7f4a,
-        0 8px 14px rgba(0,0,0,0.35);
-}
-.slide-container {
-    position: relative;
-}
-
-#slide-image {
-    position: relative;
-    z-index: 1;
-}
-
-#edit-canvas {
-    position: absolute;
-    z-index: 2;
-}
-
-.slide-textbox {
-    position: absolute;
-    z-index: 999999;
-    pointer-events: auto;
-}
-.control-bar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 90px;
-    height: 100vh;
-    background-color: #1e607a;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 15px;
-    z-index: 1000;
-
-    /* IMPORTANT ADD THIS */
-    justify-content: flex-start;
-}
-
-/* pushes logo to the bottom */
-.control-logo {
-    margin-top: auto;
-    margin-bottom: -50px;
-    width: 250px;
-    height: 250px;
-}
-
-.control-logo img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-.control-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.control-label {
-    color: white;
-    font-size: 11px;
-    margin-top: -6px;
-    margin-bottom: 8px;
-    text-align: center;
-}
-/* ==========================
-   PRESENTATION LIST
-========================== */
-
-#presentation-list-container {
-    position: fixed;
-    top: 60px;
-    left: 220px;
-    display: none;
-    flex-direction: column;
-    gap: 8px;
-    background-color: rgba(0,0,0,0.85);
-    padding: 12px;
-    border-radius: 8px;
-    z-index: 3000;
-    max-height: 70vh;
-    overflow-y: auto;
-}
-
-#presentation-list-container button {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    background-color: #1e607a;
-    color: white;
-    font-size: 14px;
-}
-
-#presentation-list-container button:hover {
-    background-color: #48e082;
-}
-/* ==========================
-   PRESENTATION UNIT LIST
-========================== */
-
-#presentations-unit-container {
-    position: fixed;
-    top: 60px;
-    left: 120px;
-    display: none;
-    flex-direction: column;
-    gap: 8px;
-    background-color: rgba(0,0,0,0.85);
-    padding: 10px;
-    border-radius: 8px;
-    z-index: 3000;
-}
-
-#presentations-unit-container button {
-    padding: 6px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    color: white;
-    background-color: #1e607a;
-    border: none;
-    border-radius: 4px;
+.slide-container::-webkit-scrollbar-track {
+    background:
+        rgba(0, 0, 0, 0.12);
 }
 
 
-/* ==========================
-   PRESENTATION LIST
-========================== */
-
-#presentation-list-container {
-    position: fixed;
-    top: 60px;
-    left: 120px;
-    display: none;
-    flex-direction: column;
-    gap: 8px;
-    background-color: rgba(0,0,0,0.85);
-    padding: 10px;
-    border-radius: 8px;
-    z-index: 3000;
-}
-
-#presentation-list-container button {
-    padding: 6px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    color: white;
-    background-color: #1e607a;
-    border: none;
-    border-radius: 4px;
-}
-
-#presentation-list-container button:hover {
-    background-color: #48e082;
-}
-/* ==========================
-   PRESENTATION VIEWER
-========================== */
-
-#presentation-viewer {
-
-    position: fixed;
-    top: 50%;
-    left: 50%;
-
-    transform: translate(-50%, -50%);
-
-    width: 90%;
-    height: 90%;
-
-    background: black;
-
-    display: none;
-
-    z-index: 4000;
+.slide-container::-webkit-scrollbar-thumb {
+    background:
+        rgba(30, 96, 122, 0.75);
 
     border-radius: 10px;
 
-    overflow: hidden;
+    border:
+        2px solid transparent;
 
-    box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    background-clip: padding-box;
 }
 
-/* iframe */
 
-#presentation-frame {
+.slide-container::-webkit-scrollbar-thumb:hover {
+    background:
+        rgba(72, 224, 130, 0.65);
 
-    width: 100%;
-    height: 100%;
-
-    border: none;
-
-    background: white;
+    background-clip: padding-box;
 }
 
-/* close button */
 
-#hide-presentation-btn {
+/* =========================================================
+   SLIDE WRAPPER
+   ========================================================= */
 
-    position: fixed;
-
-    top: 20px;
-    right: 20px;
-
-    z-index: 4500;
-
-    display: none;
-
-    padding: 10px 16px;
-
-    background: #1e607a;
-
-    color: white;
-
-    border: none;
-
-    border-radius: 6px;
-
-    cursor: pointer;
-
-    font-size: 14px;
-}
-
-#hide-presentation-btn:hover {
-
-    background: #48e082;
-}
-/* ==========================
-   GAMES HUB
-========================== */
-
-#games-hub {
-
-    position: fixed;
-
-    top: 50%;
-    left: 50%;
-
-    transform: translate(-50%, -50%);
-
-    display: none;
-
-    grid-template-columns: repeat(2, 240px);
-
-    gap: 30px;
-
-    z-index: 5000;
-}
-
-/* ==========================
-   GAME CARDS
-========================== */
-
-.game-card {
-
-    width: 220px;
-    height: 220px;
+.slide-wrapper {
+    position: relative;
 
     display: flex;
 
     justify-content: center;
     align-items: center;
 
-    text-align: center;
+    min-width: 100%;
+    min-height: 100%;
 
-    padding: 15px;
+    box-sizing: border-box;
+}
 
-    font-size: 26px;
-    font-weight: bold;
 
-    color: white;
+/* =========================================================
+   SLIDE IMAGE
+   ========================================================= */
+
+#slide-image {
+    position: relative;
+
+    display: block;
+
+    transform-origin: top left;
+
+    z-index: 1;
+
+    border-radius: 2px;
+
+    box-shadow:
+        0 18px 50px rgba(0, 0, 0, 0.30);
+}
+
+
+/* =========================================================
+   NAVIGATION BUTTONS
+   ========================================================= */
+
+#prev-btn,
+#next-btn {
+    position: fixed;
+
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    width: 46px;
+    height: 72px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    font-size: 30px;
+    line-height: 1;
+
+    color: rgba(255, 255, 255, 0.88);
+
+    background:
+        rgba(10, 24, 31, 0.72);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.08);
+
+    border-radius: 12px;
+
+    cursor: pointer;
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.25);
+
+    z-index: 1001;
+
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+#prev-btn {
+    left: 108px;
+}
+
+
+#next-btn {
+    right: 20px;
+}
+
+
+#prev-btn:hover,
+#next-btn:hover {
+    color: #ffffff;
+
+    background:
+        rgba(30, 96, 122, 0.92);
+
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.30),
+        0 0 18px rgba(72, 224, 130, 0.10);
+}
+
+
+#prev-btn:hover {
+    transform:
+        translateY(-50%)
+        translateX(-2px);
+}
+
+
+#next-btn:hover {
+    transform:
+        translateY(-50%)
+        translateX(2px);
+}
+
+
+#prev-btn:active,
+#next-btn:active {
+    transform:
+        translateY(-50%)
+        scale(0.94);
+}
+
+
+/* =========================================================
+   TOUCH / ANDROID SUPPORT
+   ========================================================= */
+
+.control-icon,
+.dropdown-content a,
+#prev-btn,
+#next-btn {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+/* =========================================================
+   AUDIO SYSTEM
+   ========================================================= */
+
+
+/* =========================================================
+   AUDIO LIST PANEL
+   ========================================================= */
+
+#audio-list-container {
+    position: fixed;
+
+    top: 58px;
+    left: 112px;
+
+    display: none;
+    flex-direction: column;
+
+    min-width: 190px;
+    max-width: 280px;
+
+    gap: 7px;
+
+    padding: 10px;
 
     background:
         linear-gradient(
             145deg,
-            #2a7d9e,
-            #1e607a
+            rgba(17, 39, 49, 0.97),
+            rgba(8, 25, 33, 0.97)
         );
 
-    border-radius: 22px;
+    border:
+        1px solid rgba(255, 255, 255, 0.09);
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.42),
+        0 0 25px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    z-index: 4000;
+
+    overflow: hidden;
+
+    animation:
+        mediaPanelIn 0.2s ease-out;
+}
+
+
+/* =========================================================
+   MEDIA PANEL ANIMATION
+   ========================================================= */
+
+@keyframes mediaPanelIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(-7px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+
+/* =========================================================
+   AUDIO BUTTONS
+   ========================================================= */
+
+#audio-list-container button {
+    position: relative;
+
+    width: 100%;
+
+    min-height: 38px;
+
+    padding: 8px 12px;
+
+    box-sizing: border-box;
+
+    font-family: inherit;
+
+    font-size: 13px;
+    font-weight: 500;
+
+    text-align: left;
+
+    color:
+        rgba(255, 255, 255, 0.86);
+
+    background:
+        rgba(255, 255, 255, 0.045);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.06);
+
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease,
+        color 0.18s ease;
+}
+
+
+#audio-list-container button:hover {
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(72, 224, 130, 0.14),
+            rgba(72, 224, 130, 0.04)
+        );
+
+    border-color:
+        rgba(72, 224, 130, 0.20);
+
+    transform: translateX(3px);
+}
+
+
+#audio-list-container button:active {
+    transform: scale(0.98);
+}
+
+
+/* =========================================================
+   AUDIO PLAYER
+   ========================================================= */
+
+#slide-audio {
+    position: fixed;
+
+    left: 112px;
+    bottom: 30px;
+
+    width: min(430px, calc(100vw - 140px));
+
+    z-index: 4000;
+
+    padding: 7px;
+
+    box-sizing: border-box;
+
+    border-radius: 14px;
+
+    background:
+        rgba(8, 24, 31, 0.92);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.08);
+
+    box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.38);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+
+/*
+   Native audio player styling
+*/
+
+#slide-audio {
+    accent-color: #48e082;
+}
+
+
+/* =========================================================
+   HIDE AUDIO BUTTON
+   ========================================================= */
+
+#hide-audio-btn {
+    min-height: 34px;
+
+    padding: 7px 12px;
+
+    margin-top: 6px;
+
+    font-family: inherit;
+
+    font-size: 12px;
+    font-weight: 500;
+
+    color:
+        rgba(255, 255, 255, 0.85);
+
+    background:
+        rgba(255, 255, 255, 0.055);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.07);
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.18s ease,
+        color 0.18s ease,
+        border-color 0.18s ease;
+}
+
+
+#hide-audio-btn:hover {
+    color: #ffffff;
+
+    background:
+        rgba(72, 224, 130, 0.12);
+
+    border-color:
+        rgba(72, 224, 130, 0.22);
+}
+
+
+/* =========================================================
+   AUDIO OPEN STATE
+   ========================================================= */
+
+#audio-btn {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 13px;
+
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+#audio-btn:hover {
+    background:
+        rgba(255, 255, 255, 0.07);
+}
+
+
+/*
+   Optional active state.
+   Safe even if JavaScript does not currently use it.
+*/
+
+#audio-btn.active {
+    background:
+        rgba(72, 224, 130, 0.10);
+
+    box-shadow:
+        inset 0 0 0 1px rgba(72, 224, 130, 0.18),
+        0 0 18px rgba(72, 224, 130, 0.08);
+}
+
+
+#audio-btn.active::after {
+    content: "";
+
+    position: absolute;
+
+    right: 5px;
+    top: 5px;
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: #48e082;
+
+    box-shadow:
+        0 0 9px rgba(72, 224, 130, 0.8);
+}
+
+
+/* =========================================================
+   VIDEO SYSTEM
+   ========================================================= */
+
+
+/* =========================================================
+   VIDEO LIST PANEL
+   ========================================================= */
+
+#video-list-container {
+    position: fixed;
+
+    top: 58px;
+    left: 112px;
+
+    display: none;
+    flex-direction: column;
+
+    min-width: 220px;
+    max-width: 300px;
+
+    gap: 7px;
+
+    padding: 10px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(17, 39, 49, 0.98),
+            rgba(8, 25, 33, 0.98)
+        );
+
+    border:
+        1px solid rgba(255, 255, 255, 0.09);
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    z-index: 4000;
+
+    overflow: hidden;
+
+    animation:
+        mediaPanelIn 0.2s ease-out;
+}
+
+
+/* =========================================================
+   VIDEO BUTTONS
+   ========================================================= */
+
+#video-list-container button {
+    width: 100%;
+
+    min-height: 40px;
+
+    padding: 9px 13px;
+
+    box-sizing: border-box;
+
+    font-family: inherit;
+
+    font-size: 13px;
+    font-weight: 500;
+
+    text-align: left;
+
+    color:
+        rgba(255, 255, 255, 0.86);
+
+    background:
+        rgba(255, 255, 255, 0.045);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.06);
+
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.18s ease,
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        color 0.18s ease;
+}
+
+
+#video-list-container button:hover {
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(72, 224, 130, 0.14),
+            rgba(72, 224, 130, 0.04)
+        );
+
+    border-color:
+        rgba(72, 224, 130, 0.20);
+
+    transform:
+        translateX(3px);
+}
+
+
+#video-list-container button:active {
+    transform: scale(0.98);
+}
+
+
+/* =========================================================
+   VIDEO PLAYER
+   ========================================================= */
+
+#slide-video {
+    position: fixed;
+
+    top: 50%;
+    left: 50%;
+
+    max-width: 80%;
+    max-height: 70%;
+
+    transform:
+        translate(-50%, -50%);
+
+    padding: 4px;
+
+    box-sizing: border-box;
+
+    background:
+        #071219;
+
+    border:
+        1px solid rgba(255, 255, 255, 0.10);
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.60),
+        0 0 30px rgba(0, 0, 0, 0.25);
+
+    z-index: 4000;
+}
+
+
+/* =========================================================
+   HIDE VIDEO BUTTON
+   ========================================================= */
+
+#hide-video-btn {
+    min-height: 34px;
+
+    padding: 7px 12px;
+
+    font-family: inherit;
+
+    font-size: 12px;
+    font-weight: 500;
+
+    color:
+        rgba(255, 255, 255, 0.86);
+
+    background:
+        rgba(8, 25, 33, 0.92);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.08);
+
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        color 0.18s ease;
+}
+
+
+#hide-video-btn:hover {
+    color: #ffffff;
+
+    background:
+        rgba(72, 224, 130, 0.12);
+
+    border-color:
+        rgba(72, 224, 130, 0.22);
+}
+
+
+/* =========================================================
+   VIDEO BACKDROP
+   ========================================================= */
+
+#slide-video::backdrop {
+    background:
+        rgba(2, 9, 13, 0.82);
+}
+
+
+/* =========================================================
+   MEDIA RESPONSIVENESS
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    #audio-list-container,
+    #video-list-container {
+        left: 100px;
+
+        max-width:
+            calc(100vw - 120px);
+    }
+
+    #slide-audio {
+        left: 100px;
+
+        width:
+            calc(100vw - 120px);
+
+        bottom: 18px;
+    }
+
+    #slide-video {
+        max-width: 90%;
+        max-height: 70%;
+    }
+}
+/* =========================================================
+   EDIT TRAY SYSTEM
+   ========================================================= */
+
+#edit-tray {
+    position: fixed;
+
+    left: 50%;
+    bottom: 18px;
+
+    transform: translateX(-50%);
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    gap: 7px;
+
+    padding: 9px 11px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(17, 39, 49, 0.96),
+            rgba(7, 23, 31, 0.96)
+        );
+
+    border:
+        1px solid rgba(255, 255, 255, 0.10);
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.45),
+        0 0 25px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    z-index: 5000;
+
+    animation:
+        editTrayIn 0.22s ease-out;
+}
+
+
+/* =========================================================
+   EDIT TRAY ANIMATION
+   ========================================================= */
+
+@keyframes editTrayIn {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translateX(-50%)
+            translateY(8px)
+            scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateX(-50%)
+            translateY(0)
+            scale(1);
+    }
+}
+
+
+/* =========================================================
+   EDIT TOOL BUTTONS
+   ========================================================= */
+
+.edit-tool-btn {
+    position: relative;
+
+    width: 46px;
+    height: 46px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    box-sizing: border-box;
+
+    font-family: inherit;
+
+    font-size: 23px;
+    line-height: 1;
+
+    color: rgba(255, 255, 255, 0.90);
+
+    background:
+        rgba(255, 255, 255, 0.045);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.07);
+
+    border-radius: 11px;
 
     cursor: pointer;
 
     user-select: none;
 
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        background 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
 
-    /* 3D EFFECT */
-    box-shadow:
-        0 10px 0 #12485d,
-        0 14px 24px rgba(0,0,0,0.35);
+    transition:
+        transform 0.18s ease,
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        color 0.18s ease;
 }
 
-/* HOVER */
 
-.game-card:hover {
+/* =========================================================
+   TOOL HOVER
+   ========================================================= */
+
+.edit-tool-btn:hover {
+    color: #ffffff;
+
+    background:
+        rgba(255, 255, 255, 0.085);
+
+    border-color:
+        rgba(255, 255, 255, 0.13);
 
     transform:
-        translateY(-5px)
-        scale(1.04);
+        translateY(-2px);
+
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+
+/* =========================================================
+   TOOL ACTIVE
+   ========================================================= */
+
+.edit-tool-btn.active,
+.active-tool {
+    color: #ffffff;
 
     background:
         linear-gradient(
             145deg,
-            #48e082,
-            #1e607a
+            rgba(72, 224, 130, 0.22),
+            rgba(72, 224, 130, 0.08)
         );
-}
 
-/* CLICK EFFECT */
-
-.game-card:active {
-
-    transform:
-        translateY(5px);
+    border-color:
+        rgba(72, 224, 130, 0.32);
 
     box-shadow:
-        0 3px 0 #12485d,
-        0 6px 12px rgba(0,0,0,0.25);
+        0 0 0 1px rgba(72, 224, 130, 0.08),
+        0 0 18px rgba(72, 224, 130, 0.12);
 }
-/* ==========================
-   GAME VIEWER
-========================== */
 
-#game-viewer {
 
+/* =========================================================
+   TOOL ACTIVE INDICATOR
+   ========================================================= */
+
+.edit-tool-btn.active::after,
+.active-tool::after {
+    content: "";
+
+    position: absolute;
+
+    left: 50%;
+    bottom: 4px;
+
+    width: 5px;
+    height: 5px;
+
+    transform: translateX(-50%);
+
+    border-radius: 50%;
+
+    background:
+        #48e082;
+
+    box-shadow:
+        0 0 8px rgba(72, 224, 130, 0.75);
+}
+
+
+/* =========================================================
+   TOOL CLICK
+   ========================================================= */
+
+.edit-tool-btn:active {
+    transform:
+        translateY(1px)
+        scale(0.95);
+
+    box-shadow:
+        0 3px 8px rgba(0, 0, 0, 0.20);
+}
+
+
+/* =========================================================
+   CLEAR TOOL
+   ========================================================= */
+
+#clear-tool:hover {
+    color: #ffffff;
+
+    background:
+        rgba(220, 70, 70, 0.12);
+
+    border-color:
+        rgba(255, 100, 100, 0.20);
+}
+
+
+#clear-tool img {
+    width: 23px;
+    height: 23px;
+
+    object-fit: contain;
+}
+
+
+/* =========================================================
+   WHITEBOARD
+   ========================================================= */
+
+#whiteboard {
+    position: fixed;
+
+    top: 3%;
+    left: 130px;
+
+    width: calc(95% - 90px);
+    height: 80vh;
+
+    box-sizing: border-box;
+
+    display: none;
+
+    background:
+        #ffffff;
+
+    border:
+        1px solid rgba(255, 255, 255, 0.20);
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.48),
+        0 0 0 6px rgba(8, 24, 31, 0.70);
+
+    overflow: hidden;
+
+    z-index: 3000;
+}
+
+
+/*
+   Professional whiteboard frame
+*/
+
+#whiteboard::before {
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    border:
+        1px solid rgba(0, 0, 0, 0.10);
+
+    border-radius: inherit;
+
+    z-index: 5;
+}
+
+
+/* =========================================================
+   WHITEBOARD CANVAS
+   ========================================================= */
+
+#whiteboard-canvas {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    cursor: crosshair;
+
+    background:
+        #ffffff;
+
+    touch-action: none;
+}
+
+
+/* =========================================================
+   PENCIL SIZE MENU
+   ========================================================= */
+
+#pencil-size-menu {
+    position: absolute;
+
+    left: 50%;
+    bottom: 70px;
+
+    transform: translateX(-50%);
+
+    display: none;
+    flex-direction: row;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 10px;
+
+    padding: 9px 11px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(17, 39, 49, 0.97),
+            rgba(7, 23, 31, 0.97)
+        );
+
+    border:
+        1px solid rgba(255, 255, 255, 0.09);
+
+    border-radius: 13px;
+
+    box-shadow:
+        0 16px 40px rgba(0, 0, 0, 0.40),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    z-index: 5100;
+
+    animation:
+        sizeMenuIn 0.18s ease-out;
+}
+
+
+/* =========================================================
+   SIZE MENU ANIMATION
+   ========================================================= */
+
+@keyframes sizeMenuIn {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translateX(-50%)
+            translateY(6px)
+            scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateX(-50%)
+            translateY(0)
+            scale(1);
+    }
+}
+
+
+/* =========================================================
+   SIZE OPTIONS
+   ========================================================= */
+
+.size-option {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+
+    box-sizing: border-box;
+
+    color: #ffffff;
+
+    background:
+        rgba(255, 255, 255, 0.045);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.07);
+
+    border-radius: 10px;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.18s ease,
+        background-color 0.18s ease,
+        border-color 0.18s ease;
+}
+
+
+/* =========================================================
+   SIZE DOTS
+   ========================================================= */
+
+.size-option::after {
+    content: "";
+
+    display: block;
+
+    border-radius: 50%;
+
+    background:
+        #ffffff;
+
+    box-shadow:
+        0 0 5px rgba(255, 255, 255, 0.25);
+}
+
+
+.size-option[data-size="2"]::after {
+    width: 5px;
+    height: 5px;
+}
+
+
+.size-option[data-size="5"]::after {
+    width: 10px;
+    height: 10px;
+}
+
+
+.size-option[data-size="10"]::after {
+    width: 17px;
+    height: 17px;
+}
+
+
+/* =========================================================
+   SIZE OPTION HOVER
+   ========================================================= */
+
+.size-option:hover {
+    transform:
+        translateY(-2px);
+
+    background:
+        rgba(255, 255, 255, 0.09);
+
+    border-color:
+        rgba(72, 224, 130, 0.25);
+}
+
+
+/* =========================================================
+   SIZE OPTION ACTIVE
+   ========================================================= */
+
+.size-option.active {
+    background:
+        rgba(72, 224, 130, 0.12);
+
+    border-color:
+        rgba(72, 224, 130, 0.35);
+
+    box-shadow:
+        0 0 14px rgba(72, 224, 130, 0.10);
+}
+
+
+/* =========================================================
+   SLIDE EDIT CANVAS
+   ========================================================= */
+
+#edit-canvas {
+    position: absolute;
+
+    z-index: 2;
+
+    pointer-events: auto;
+}
+
+
+/* =========================================================
+   SLIDE TEXT BOX
+   ========================================================= */
+
+.slide-textbox {
+    position: absolute;
+
+    z-index: 999999;
+
+    pointer-events: auto;
+}
+
+
+/* =========================================================
+   TEXT BOX
+   ========================================================= */
+
+.text-box {
+    position: absolute;
+
+    min-width: 80px;
+    min-height: 24px;
+
+    padding: 4px 6px;
+
+    box-sizing: border-box;
+
+    font-family: inherit;
+
+    font-size: 20px;
+
+    color: #111111;
+
+    background:
+        rgba(255, 255, 255, 0.97);
+
+    border:
+        1px solid rgba(30, 96, 122, 0.45);
+
+    border-radius: 5px;
+
+    outline: none;
+
+    box-shadow:
+        0 5px 15px rgba(0, 0, 0, 0.12);
+
+    z-index: 1000;
+
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+
+.text-box:focus {
+    border-color:
+        #48e082;
+
+    box-shadow:
+        0 0 0 2px rgba(72, 224, 130, 0.15),
+        0 5px 18px rgba(0, 0, 0, 0.15);
+}
+
+
+/* =========================================================
+   TEXT BOX TOOLBAR
+   ========================================================= */
+
+.text-box-toolbar {
+    position: absolute;
+
+    display: flex;
+    align-items: center;
+
+    gap: 4px;
+
+    padding: 5px 6px;
+
+    background:
+        rgba(13, 31, 40, 0.96);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.09);
+
+    border-radius: 9px;
+
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.30);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    font-size: 13px;
+
+    z-index: 1100;
+}
+
+
+/* =========================================================
+   TEXT TOOLBAR BUTTONS
+   ========================================================= */
+
+.text-box-toolbar button {
+    min-width: 28px;
+    height: 28px;
+
+    padding: 2px 6px;
+
+    box-sizing: border-box;
+
+    font-family: inherit;
+
+    color:
+        rgba(255, 255, 255, 0.88);
+
+    background:
+        rgba(255, 255, 255, 0.05);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.07);
+
+    border-radius: 6px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.16s ease,
+        border-color 0.16s ease,
+        color 0.16s ease;
+}
+
+
+.text-box-toolbar button:hover {
+    color: #ffffff;
+
+    background:
+        rgba(72, 224, 130, 0.12);
+
+    border-color:
+        rgba(72, 224, 130, 0.22);
+}
+
+
+/* =========================================================
+   TEXT COLOR PICKER
+   ========================================================= */
+
+.text-box-toolbar input[type="color"] {
+    width: 27px;
+    height: 27px;
+
+    padding: 2px;
+
+    box-sizing: border-box;
+
+    border:
+        1px solid rgba(255, 255, 255, 0.10);
+
+    border-radius: 6px;
+
+    background:
+        rgba(255, 255, 255, 0.04);
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   TEXT TOOLBAR INPUTS
+   ========================================================= */
+
+.text-box-toolbar input,
+.text-box-toolbar select {
+    font-family: inherit;
+
+    color:
+        rgba(255, 255, 255, 0.88);
+
+    background:
+        rgba(255, 255, 255, 0.05);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.07);
+
+    border-radius: 6px;
+
+    outline: none;
+}
+
+
+/* =========================================================
+   EDIT TOOL RESPONSIVENESS
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    #edit-tray {
+        left: calc(50% + 40px);
+
+        bottom: 12px;
+
+        max-width:
+            calc(100vw - 105px);
+
+        overflow-x: auto;
+
+        justify-content: flex-start;
+
+        scrollbar-width: none;
+    }
+
+
+    #edit-tray::-webkit-scrollbar {
+        display: none;
+    }
+
+
+    .edit-tool-btn {
+        flex:
+            0 0 42px;
+
+        width: 42px;
+        height: 42px;
+
+        font-size: 20px;
+    }
+
+
+    #pencil-size-menu {
+        left: calc(50% + 40px);
+
+        bottom: 62px;
+
+        transform:
+            translateX(-50%);
+    }
+
+
+    #whiteboard {
+        left: 100px;
+
+        width:
+            calc(100% - 110px);
+
+        height: 82vh;
+    }
+}
+/* =========================================================
+   PRESENTATION SYSTEM
+   ========================================================= */
+
+
+/* =========================================================
+   PRESENTATION LIST
+   ========================================================= */
+
+#presentation-list-container {
+    position: fixed;
+
+    top: 58px;
+    left: 112px;
+
+    display: none;
+    flex-direction: column;
+
+    min-width: 210px;
+    max-width: 300px;
+
+    gap: 7px;
+
+    padding: 10px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(17, 39, 49, 0.98),
+            rgba(8, 25, 33, 0.98)
+        );
+
+    border:
+        1px solid rgba(255, 255, 255, 0.09);
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.45),
+        0 0 25px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    z-index: 4000;
+
+    max-height: 70vh;
+
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color:
+        rgba(72, 224, 130, 0.35)
+        transparent;
+
+    animation:
+        mediaPanelIn 0.2s ease-out;
+}
+
+
+/* =========================================================
+   PRESENTATION LIST SCROLLBAR
+   ========================================================= */
+
+#presentation-list-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+
+#presentation-list-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+
+#presentation-list-container::-webkit-scrollbar-thumb {
+    background:
+        rgba(30, 96, 122, 0.70);
+
+    border-radius: 10px;
+}
+
+
+#presentation-list-container::-webkit-scrollbar-thumb:hover {
+    background:
+        rgba(72, 224, 130, 0.60);
+}
+
+
+/* =========================================================
+   PRESENTATION BUTTONS
+   ========================================================= */
+
+#presentation-list-container button {
+    position: relative;
+
+    width: 100%;
+
+    min-height: 40px;
+
+    padding: 9px 13px;
+
+    box-sizing: border-box;
+
+    font-family: inherit;
+
+    font-size: 13px;
+    font-weight: 500;
+
+    text-align: left;
+
+    color:
+        rgba(255, 255, 255, 0.86);
+
+    background:
+        rgba(255, 255, 255, 0.045);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.06);
+
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease,
+        color 0.18s ease;
+}
+
+
+#presentation-list-container button:hover {
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(72, 224, 130, 0.14),
+            rgba(72, 224, 130, 0.04)
+        );
+
+    border-color:
+        rgba(72, 224, 130, 0.22);
+
+    transform:
+        translateX(3px);
+}
+
+
+#presentation-list-container button:active {
+    transform:
+        scale(0.98);
+}
+
+
+/* =========================================================
+   PRESENTATION UNIT LIST
+   ========================================================= */
+
+#presentations-unit-container {
+    position: fixed;
+
+    top: 58px;
+    left: 112px;
+
+    display: none;
+    flex-direction: column;
+
+    min-width: 165px;
+
+    gap: 7px;
+
+    padding: 10px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(17, 39, 49, 0.98),
+            rgba(8, 25, 33, 0.98)
+        );
+
+    border:
+        1px solid rgba(255, 255, 255, 0.09);
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    z-index: 4000;
+
+    animation:
+        mediaPanelIn 0.2s ease-out;
+}
+
+
+/* =========================================================
+   PRESENTATION UNIT BUTTONS
+   ========================================================= */
+
+#presentations-unit-container button {
+    width: 100%;
+
+    min-height: 38px;
+
+    padding: 8px 12px;
+
+    box-sizing: border-box;
+
+    font-family: inherit;
+
+    font-size: 13px;
+    font-weight: 500;
+
+    text-align: left;
+
+    color:
+        rgba(255, 255, 255, 0.84);
+
+    background:
+        rgba(255, 255, 255, 0.045);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.06);
+
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease,
+        color 0.18s ease;
+}
+
+
+#presentations-unit-container button:hover {
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(72, 224, 130, 0.14),
+            rgba(72, 224, 130, 0.04)
+        );
+
+    border-color:
+        rgba(72, 224, 130, 0.22);
+
+    transform:
+        translateX(3px);
+}
+
+
+#presentations-unit-container button:active {
+    transform:
+        scale(0.98);
+}
+
+
+/* =========================================================
+   PRESENTATION VIEWER
+   ========================================================= */
+
+#presentation-viewer {
     position: fixed;
 
     top: 50%;
     left: 50%;
 
-    transform: translate(-50%, -50%);
+    transform:
+        translate(-50%, -50%);
 
-    width: 92%;
-    height: 92%;
-
-    background: black;
+    width: 90%;
+    height: 90%;
 
     display: none;
 
-    z-index: 6000;
+    background:
+        #071219;
 
-    border-radius: 14px;
+    border:
+        1px solid rgba(255, 255, 255, 0.10);
+
+    border-radius: 18px;
 
     overflow: hidden;
 
     box-shadow:
-        0 0 25px rgba(0,0,0,0.7);
+        0 30px 90px rgba(0, 0, 0, 0.62),
+        0 0 35px rgba(0, 0, 0, 0.25);
+
+    z-index: 5000;
+
+    animation:
+        viewerIn 0.22s ease-out;
 }
 
-/* iframe */
 
-#game-frame {
+/* =========================================================
+   VIEWER ANIMATION
+   ========================================================= */
 
+@keyframes viewerIn {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translate(-50%, -50%)
+            scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translate(-50%, -50%)
+            scale(1);
+    }
+}
+
+
+/* =========================================================
+   PRESENTATION FRAME
+   ========================================================= */
+
+#presentation-frame {
     width: 100%;
     height: 100%;
 
+    display: block;
+
     border: none;
 
-    background: white;
+    background:
+        #ffffff;
 }
 
-/* close button */
 
-#hide-game-btn {
+/* =========================================================
+   PRESENTATION CLOSE BUTTON
+   ========================================================= */
 
+#hide-presentation-btn {
     position: fixed;
 
     top: 20px;
     right: 20px;
 
-    z-index: 7000;
-
     display: none;
 
-    padding: 10px 16px;
+    min-width: 42px;
+    min-height: 38px;
 
-    background: #1e607a;
+    padding: 8px 13px;
 
-    color: white;
+    box-sizing: border-box;
 
-    border: none;
+    font-family: inherit;
 
-    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+
+    color:
+        rgba(255, 255, 255, 0.90);
+
+    background:
+        rgba(8, 25, 33, 0.92);
+
+    border:
+        1px solid rgba(255, 255, 255, 0.10);
+
+    border-radius: 9px;
 
     cursor: pointer;
 
-    font-size: 15px;
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.30);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    z-index: 5500;
+
+    transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.18s ease,
+        color 0.18s ease;
 }
 
-#hide-game-btn:hover {
 
-    background: #48e082;
+#hide-presentation-btn:hover {
+    color: #ffffff;
+
+    background:
+        rgba(72, 224, 130, 0.13);
+
+    border-color:
+        rgba(72, 224, 130, 0.25);
+
+    transform:
+        translateY(-1px);
 }
+
+
+#hide-presentation-btn:active {
+    transform:
+        scale(0.95);
+}
+
+
+/* =========================================================
+   PRESENTATION RESPONSIVENESS
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    #presentation-list-container,
+    #presentations-unit-container {
+        left: 100px;
+
+        max-width:
+            calc(100vw - 120px);
+    }
+
+
+    #presentation-viewer {
+        left: calc(50% + 40px);
+
+        width:
+            calc(100% - 110px);
+
+        height: 88%;
+    }
+
+
+    #hide-presentation-btn {
+        top: 12px;
+        right: 12px;
+    }
+}
+/* =========================================================
+   FINAL RESPONSIVE / FINISHING LAYER
+   ========================================================= */
+
+
+/* =========================================================
+   LARGE SCREENS
+   ========================================================= */
+
+@media (min-width: 1400px) {
+
+    .control-bar {
+        width: 94px;
+    }
+
+    .slide-container {
+        left: 94px;
+        width: calc(100% - 94px);
+    }
+
+    #prev-btn {
+        left: 112px;
+    }
+
+    #audio-list-container,
+    #video-list-container,
+    #presentation-list-container,
+    #presentations-unit-container {
+        left: 118px;
+    }
+}
+
+
+/* =========================================================
+   MEDIUM SCREENS
+   ========================================================= */
+
+@media (max-width: 1100px) {
+
+    .control-bar {
+        width: 78px;
+    }
+
+    .slide-container {
+        left: 78px;
+        width: calc(100% - 78px);
+    }
+
+    .control-icon {
+        width: 44px;
+        height: 44px;
+
+        margin: 9px 0;
+    }
+
+    .control-label {
+        font-size: 9px;
+    }
+
+    #prev-btn {
+        left: 94px;
+    }
+
+    #audio-list-container,
+    #video-list-container,
+    #presentation-list-container,
+    #presentations-unit-container {
+        left: 98px;
+    }
+
+    #whiteboard {
+        left: 105px;
+        width: calc(95% - 75px);
+    }
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 850px) {
+
+    .control-bar {
+        width: 70px;
+
+        padding-top: 10px;
+    }
+
+    .slide-container {
+        left: 70px;
+        width: calc(100% - 70px);
+    }
+
+    .control-icon {
+        width: 42px;
+        height: 42px;
+
+        margin: 8px 0;
+    }
+
+    .dropdown-content {
+        left: 66px;
+
+        min-width: 150px;
+    }
+
+    #prev-btn {
+        left: 84px;
+
+        width: 40px;
+        height: 60px;
+    }
+
+    #next-btn {
+        right: 12px;
+
+        width: 40px;
+        height: 60px;
+    }
+
+    #audio-list-container,
+    #video-list-container,
+    #presentation-list-container,
+    #presentations-unit-container {
+        left: 86px;
+    }
+
+    #whiteboard {
+        left: 88px;
+        width: calc(100% - 100px);
+    }
+}
+
+
+/* =========================================================
+   PHONE / ANDROID
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    body {
+        overflow: hidden;
+    }
+
+
+    /* -----------------------------------------------------
+       CONTROL BAR
+       ----------------------------------------------------- */
+
+    .control-bar {
+        width: 62px;
+
+        padding-top: 7px;
+
+        box-shadow:
+            5px 0 20px rgba(0, 0, 0, 0.25);
+    }
+
+
+    .slide-container {
+        left: 62px;
+
+        width:
+            calc(100% - 62px);
+    }
+
+
+    .control-icon {
+        width: 38px;
+        height: 38px;
+
+        margin: 6px 0;
+
+        padding: 5px;
+
+        border-radius: 10px;
+    }
+
+
+    .control-label {
+        display: none;
+    }
+
+
+    /* -----------------------------------------------------
+       DROPDOWN
+       ----------------------------------------------------- */
+
+    .dropdown-content {
+        left: 58px;
+
+        min-width: 145px;
+
+        max-height: 70vh;
+
+        overflow-y: auto;
+    }
+
+
+    .dropdown-content a {
+        min-height: 40px;
+
+        font-size: 12px;
+    }
+
+
+    /* -----------------------------------------------------
+       NAVIGATION
+       ----------------------------------------------------- */
+
+    #prev-btn,
+    #next-btn {
+        width: 36px;
+        height: 54px;
+
+        font-size: 24px;
+
+        border-radius: 10px;
+    }
+
+
+    #prev-btn {
+        left: 72px;
+    }
+
+
+    #next-btn {
+        right: 8px;
+    }
+
+
+    /* -----------------------------------------------------
+       AUDIO
+       ----------------------------------------------------- */
+
+    #audio-list-container,
+    #video-list-container,
+    #presentation-list-container,
+    #presentations-unit-container {
+        left: 72px;
+
+        max-width:
+            calc(100vw - 82px);
+    }
+
+
+    #slide-audio {
+        left: 70px;
+
+        width:
+            calc(100vw - 80px);
+
+        bottom: 12px;
+    }
+
+
+    /* -----------------------------------------------------
+       VIDEO
+       ----------------------------------------------------- */
+
+    #slide-video {
+        left: calc(50% + 31px);
+
+        max-width:
+            calc(100vw - 82px);
+
+        max-height: 65vh;
+    }
+
+
+    /* -----------------------------------------------------
+       PRESENTATION VIEWER
+       ----------------------------------------------------- */
+
+    #presentation-viewer {
+        left: calc(50% + 31px);
+
+        width:
+            calc(100vw - 78px);
+
+        height: 85vh;
+
+        border-radius: 12px;
+    }
+
+
+    #hide-presentation-btn {
+        top: 8px;
+        right: 8px;
+
+        min-width: 38px;
+        min-height: 34px;
+
+        padding: 6px 10px;
+    }
+
+
+    /* -----------------------------------------------------
+       WHITEBOARD
+       ----------------------------------------------------- */
+
+    #whiteboard {
+        left: 70px;
+
+        top: 2%;
+
+        width:
+            calc(100% - 78px);
+
+        height: 82vh;
+
+        border-radius: 10px;
+    }
+
+
+    /* -----------------------------------------------------
+       EDIT TRAY
+       ----------------------------------------------------- */
+
+    #edit-tray {
+        left: calc(50% + 31px);
+
+        bottom: 8px;
+
+        max-width:
+            calc(100vw - 76px);
+
+        padding: 7px 8px;
+
+        border-radius: 12px;
+    }
+
+
+    .edit-tool-btn {
+        width: 40px;
+        height: 40px;
+
+        flex:
+            0 0 40px;
+
+        font-size: 19px;
+    }
+
+
+    #pencil-size-menu {
+        left: calc(50% + 31px);
+
+        bottom: 59px;
+    }
+
+
+    /* -----------------------------------------------------
+       TEXT BOX
+       ----------------------------------------------------- */
+
+    .text-box {
+        font-size: 17px;
+
+        min-width: 65px;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+    .control-bar {
+        width: 56px;
+    }
+
+    .slide-container {
+        left: 56px;
+        width: calc(100% - 56px);
+    }
+
+    .control-icon {
+        width: 34px;
+        height: 34px;
+
+        margin: 5px 0;
+    }
+
+    .dropdown-content {
+        left: 52px;
+
+        min-width: 135px;
+    }
+
+    #prev-btn {
+        left: 64px;
+    }
+
+    #next-btn {
+        right: 5px;
+    }
+
+    #audio-list-container,
+    #video-list-container,
+    #presentation-list-container,
+    #presentations-unit-container {
+        left: 64px;
+    }
+
+    #slide-audio {
+        left: 62px;
+
+        width:
+            calc(100vw - 70px);
+    }
+
+    #whiteboard {
+        left: 62px;
+
+        width:
+            calc(100% - 70px);
+    }
+
+    #edit-tray {
+        left: calc(50% + 28px);
+
+        max-width:
+            calc(100vw - 68px);
+    }
+
+    #pencil-size-menu {
+        left: calc(50% + 28px);
+    }
+}
+
+
+/* =========================================================
+   TOUCH DEVICES
+   ========================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+
+    .control-icon:hover {
+        transform: none;
+
+        background-color:
+            transparent;
+
+        box-shadow: none;
+    }
+
+
+    .edit-tool-btn:hover {
+        transform: none;
+
+        box-shadow: none;
+    }
+
+
+    .dropdown-content a:hover {
+        transform: none;
+
+        padding-left: 14px;
+    }
+
+
+    #prev-btn:hover,
+    #next-btn:hover {
+        transform:
+            translateY(-50%);
+    }
+
+
+    /*
+       Larger touch targets
+    */
+
+    .edit-tool-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+
+    .dropdown-content a {
+        min-height: 42px;
+    }
+
+
+    .size-option {
+        width: 42px;
+        height: 42px;
+    }
+}
+
+
+/* =========================================================
+   TOUCH SCROLLING
+   ========================================================= */
+
+.dropdown-content,
+#audio-list-container,
+#video-list-container,
+#presentation-list-container,
+#presentations-unit-container {
+    -webkit-overflow-scrolling: touch;
+}
+
+
+/* =========================================================
+   SELECTION
+   ========================================================= */
+
+::selection {
+    background:
+        rgba(72, 224, 130, 0.28);
+
+    color: #ffffff;
+}
+
+
+/* =========================================================
+   FOCUS ACCESSIBILITY
+   ========================================================= */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline:
+        2px solid rgba(72, 224, 130, 0.75);
+
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   GLOBAL BOX SIZING
+   ========================================================= */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+
+/* =========================================================
+   GAMES
+   =========================================================
+   
+   IMPORTANT:
+   KEEP YOUR EXISTING GAMES CSS BELOW THIS POINT UNCHANGED.
+   
+   Do NOT replace or modify:
+   
+   #games-hub
+   .game-card
+   #game-viewer
+   #game-frame
+   
+   The Games design will be upgraded separately.
+   ========================================================= */
