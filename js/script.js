@@ -5,7 +5,7 @@ const prevBtn = document.getElementById("prev-btn");
 const nextBtn = document.getElementById("next-btn");
 document.addEventListener("DOMContentLoaded", () => {
     });
-const studentDropdownLinks = document.querySelectorAll("#students-book-dropdown a");
+const studentDropdownLinks = document.querySelectorAll("#students-book-dropdown > .dropdown-content > a");
 const activityDropdownLinks = document.querySelectorAll("#activity-book-dropdown a");
 const dropdownBtns = document.querySelectorAll(".dropdown-btn");
 
@@ -50,8 +50,23 @@ dropdownBtns.forEach(btn => {
     });
 });
 
-window.addEventListener("click", () => {
-    document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('show'));
+window.addEventListener("click", (e) => {
+
+    if (
+        e.target.closest(".dropdown") ||
+        e.target.closest(".lesson-dropdown")
+    ) {
+        return;
+    }
+
+    document.querySelectorAll(".dropdown").forEach(d => {
+        d.classList.remove("show");
+    });
+
+    document.querySelectorAll(".lesson-dropdown").forEach(menu => {
+        menu.classList.remove("show");
+    });
+
 });
 
 // ==========================
@@ -176,18 +191,88 @@ function loadActivityUnit(unitNumber) {
 // ==========================
 // DROPDOWN EVENTS
 // ==========================
+
 studentDropdownLinks.forEach(link => {
+
     link.addEventListener("click", (e) => {
+
         e.preventDefault();
+        e.stopPropagation();
+
         const unit = link.getAttribute("data-unit");
-        loadStudentUnit(unit);
-        // Save state
-        saveCurrentState(
-            "student",
-            unit,
-            parseInt(currentImages[currentIndex].match(/page(\d+)/)[1])
-        );
+
+        // Find the lesson submenu belonging to this unit
+        const lessonMenu = link.parentElement.querySelector(".lesson-dropdown");
+
+        if (!lessonMenu) {
+            console.log("No lesson dropdown found for Unit " + unit);
+            return;
+        }
+
+        // Close other lesson menus
+        document.querySelectorAll(".lesson-dropdown").forEach(menu => {
+            if (menu !== lessonMenu) {
+                menu.classList.remove("show");
+            }
+        });
+
+        // Toggle this unit's lesson menu
+        lessonMenu.classList.toggle("show");
+
     });
+
+});
+// ==========================
+// LESSON MENU
+// ==========================
+
+const lessonDropdownLinks = document.querySelectorAll(".lesson-dropdown a");
+
+lessonDropdownLinks.forEach(link => {
+
+    link.addEventListener("click", (e) => {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const unit = link.getAttribute("data-unit");
+        const lesson = link.getAttribute("data-lesson");
+
+        console.log("Opening Unit:", unit, "Lesson:", lesson);
+
+        // Load the unit
+        loadStudentUnit(unit);
+
+        // Get the pages for this lesson
+        const lessonPages = getLessonPages(unit, lesson);
+
+        if (lessonPages.length > 0) {
+
+            currentImages = lessonPages.map(page =>
+                `images/student-book-pages/unit_${unit}/page${page}.jpg`
+            );
+
+            currentIndex = 0;
+
+            loadImage(currentImages[currentIndex]);
+
+            prevBtn.style.display = "block";
+            nextBtn.style.display = "block";
+
+            saveCurrentState(
+                "student",
+                unit,
+                lessonPages[0]
+            );
+        }
+
+        // Close lesson menu after selecting lesson
+        document.querySelectorAll(".lesson-dropdown").forEach(menu => {
+            menu.classList.remove("show");
+        });
+
+    });
+
 });
 
 activityDropdownLinks.forEach(link => {
