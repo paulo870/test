@@ -2947,33 +2947,195 @@ select:focus-visible {
 
 .unit-item {
     position: relative;
+    width: 100%;
 }
 
-/* The lesson menu is hidden */
+
+/* =========================================
+   LESSON DROPDOWN
+   ========================================= */
+
 .lesson-dropdown {
     display: none;
+
     position: absolute;
+
+    /* 
+       Open to the RIGHT of the Unit menu.
+       84px = same horizontal spacing used
+       between the control bar and main dropdown.
+    */
+    left: calc(100% + 84px);
+
     top: 0;
-    left: 100%;
-    min-width: 150px;
-    background: white;
-    z-index: 1000;
+
+    min-width: 165px;
+
+    padding: 8px;
+
+    flex-direction: column;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(18, 38, 47, 0.98),
+            rgba(8, 27, 35, 0.98)
+        );
+
+    border:
+        1px solid rgba(255, 255, 255, 0.09);
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.42),
+        0 0 20px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    z-index: 5000;
 }
 
-/* Show Lesson menu when hovering over Unit */
+
+/* =========================================
+   SHOW LESSONS WHEN HOVERING UNIT
+   ========================================= */
+
 .unit-item:hover > .lesson-dropdown {
-    display: block;
+    display: flex;
 }
 
-/* Lesson links */
+
+/* =========================================
+   LESSON LINKS
+   ========================================= */
+
 .lesson-dropdown a {
-    display: block;
-    padding: 10px 15px;
-    white-space: nowrap;
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    min-height: 38px;
+
+    box-sizing: border-box;
+
+    padding: 0 14px;
+
+    color: rgba(255, 255, 255, 0.82);
+
     text-decoration: none;
+
+    font-size: 13px;
+    font-weight: 500;
+
+    letter-spacing: 0.15px;
+
+    border-radius: 9px;
+
+    transition:
+        background-color 0.18s ease,
+        color 0.18s ease,
+        padding-left 0.18s ease,
+        transform 0.18s ease;
 }
+
+
+/* Small green dot */
+
+.lesson-dropdown a::before {
+    content: "";
+
+    width: 4px;
+    height: 4px;
+
+    margin-right: 9px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background-color:
+        rgba(72, 224, 130, 0.45);
+
+    transition:
+        background-color 0.18s ease,
+        box-shadow 0.18s ease;
+}
+
 
 /* Lesson hover */
+
 .lesson-dropdown a:hover {
-    background-color: #f0f0f0;
+    padding-left: 18px;
+
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(72, 224, 130, 0.14),
+            rgba(72, 224, 130, 0.04)
+        );
+
+    transform: translateX(2px);
+}
+
+
+.lesson-dropdown a:hover::before {
+    background-color: #48e082;
+
+    box-shadow:
+        0 0 8px rgba(72, 224, 130, 0.7);
+}
+
+
+/* =========================================
+   IMPORTANT:
+   ALLOW SECOND MENU TO ESCAPE MAIN MENU
+   ========================================= */
+
+#students-book-dropdown {
+    overflow: visible;
+}
+
+
+/* Also make sure the Unit items themselves
+   don't clip their lesson menu */
+
+#students-book-dropdown .unit-item {
+    overflow: visible;
+}
+
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 850px) {
+
+    #students-book-dropdown .lesson-dropdown {
+        left: calc(100% + 66px);
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    #students-book-dropdown .lesson-dropdown {
+        left: calc(100% + 58px);
+    }
+
+}
+
+
+@media (max-width: 420px) {
+
+    #students-book-dropdown .lesson-dropdown {
+        left: calc(100% + 52px);
+    }
+
 }
