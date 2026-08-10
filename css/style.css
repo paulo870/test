@@ -2907,11 +2907,11 @@ select:focus-visible {
    ========================================================= */
 
 .control-bar img {
-    width: 80px !important;
-    height: 80px !important;
+    width: 100px !important;
+    height: 100px !important;
 
-    max-width: 40px !important;
-    max-height: 40px !important;
+    max-width: 100px !important;
+    max-height: 100px !important;
 
     object-fit: contain !important;
 
