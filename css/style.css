@@ -2903,26 +2903,26 @@ select:focus-visible {
 
 
 /* =========================================================
-   LOGO — KEEP COMPACT
-   ========================================================= */
+   LOGO — COMPACT CONTROL BAR
+========================================================= */
 
 .control-bar .logo,
 .control-bar img.logo {
-    width: 46px !important;
-    height: auto !important;
+    width: 40px !important;
+    height: 40px !important;
 
-    max-width: 46px !important;
-    max-height: 46px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
 
     object-fit: contain;
 
-    margin: 8px auto 14px !important;
-
+    margin: 0 !important;
     padding: 0 !important;
 
     transform: none !important;
-
     box-shadow: none !important;
+
+    display: block;
 }
 /* =========================================
    STUDENT BOOK - UNIT / LESSON DROPDOWN
