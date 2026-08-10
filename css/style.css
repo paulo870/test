@@ -1,3 +1,9 @@
+/* =========================================================
+   POLIGLOTA INTERACTIVE BOOK
+   HIGH-TECH PROFESSIONAL UI
+   PART 1
+   ========================================================= */
+
 
 /* =========================================================
    GLOBAL
@@ -2913,3 +2919,25 @@ select:focus-visible {
    The Games design will be upgraded separately.
    ========================================================= */
 
+/* =========================================================
+   LOGO — KEEP COMPACT
+   ========================================================= */
+
+.control-bar .logo,
+.control-bar img.logo {
+    width: 46px !important;
+    height: auto !important;
+
+    max-width: 46px !important;
+    max-height: 46px !important;
+
+    object-fit: contain;
+
+    margin: 8px auto 14px !important;
+
+    padding: 0 !important;
+
+    transform: none !important;
+
+    box-shadow: none !important;
+}
