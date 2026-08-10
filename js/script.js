@@ -53,21 +53,27 @@ dropdownBtns.forEach(btn => {
 // ==========================
 // UNIT → LESSON DROPDOWN
 // ==========================
+
 document.querySelectorAll('.unit-btn').forEach(button => {
+
     button.addEventListener('click', function(e) {
+
         e.preventDefault();
         e.stopPropagation();
 
-        const unit = this.parentElement;
+        const unitDropdown = this.closest('.unit-dropdown');
 
-        document.querySelectorAll('.unit-dropdown').forEach(otherUnit => {
-            if (otherUnit !== unit) {
-                otherUnit.classList.remove('active');
+        // Close all other unit menus
+        document.querySelectorAll('.unit-dropdown').forEach(unit => {
+            if (unit !== unitDropdown) {
+                unit.classList.remove('active');
             }
         });
 
-        unit.classList.toggle('active');
+        // Open/close this unit's lesson menu
+        unitDropdown.classList.toggle('active');
     });
+
 });
 
 window.addEventListener("click", () => {
