@@ -2918,3 +2918,29 @@ select:focus-visible {
    
    The Games design will be upgraded separately.
    ========================================================= */
+/* Unit → Lesson dropdown */
+
+.unit-dropdown {
+    position: relative;
+}
+
+.lesson-dropdown {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    min-width: 150px;
+    background: white;
+    z-index: 1000;
+}
+
+.unit-dropdown.active .lesson-dropdown {
+    display: block;
+}
+
+.lesson-dropdown a {
+    display: block;
+    padding: 10px 15px;
+    text-decoration: none;
+    white-space: nowrap;
+}
