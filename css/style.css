@@ -2965,7 +2965,7 @@ select:focus-visible {
        84px = same horizontal spacing used
        between the control bar and main dropdown.
     */
-    left: calc(100% + 84px);
+    left: calc(100% + 40px);
 
     top: 0;
 
