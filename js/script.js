@@ -50,7 +50,6 @@ dropdownBtns.forEach(btn => {
     });
 });
 
-
 window.addEventListener("click", () => {
     document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('show'));
 });
@@ -86,7 +85,7 @@ function loadImage(src) {
 function loadHome() {
     currentImages = [];
     currentIndex = 0;
-    loadImage("images/homepage.jpeg");
+    loadImage("images/homepage.jpg");
     prevBtn.style.display = "none";
     nextBtn.style.display = "none";
 }
@@ -103,7 +102,7 @@ function loadStudentUnit(unitNumber) {
 
     let pageNumbers = [];
     switch(unitNumber) {
-        case "1": pageNumbers = [6,7,8,9,10,11]; break;
+        case "1": pageNumbers = [9,10,11,12,13,14,15,16,17,18]; break;
         case "2": pageNumbers = [12,13,14,15,16,17]; break;
         case "3": pageNumbers = [18,19,20,21,22,23,24,25]; break;
         case "4": pageNumbers = [26,27,28,29,30,31]; break;
@@ -119,7 +118,7 @@ function loadStudentUnit(unitNumber) {
     }
 
     pageNumbers.forEach(num => {
-        currentImages.push(basePath + "page" + num + ".JPG");
+        currentImages.push(basePath + "page" + num + ".jpg");
     });
 
     loadImage(currentImages[currentIndex]);
@@ -336,7 +335,7 @@ audioBtn.addEventListener("click", function(e) {
 
     // Define audio tracks for all units (Student Book)
     const studentBookAudioTracks = {
-        1: {7:["page7_Track_1.1"],8:["page8_Track_1.2"],9:["page9_Track_1.3","page9_Track_1.4"]},
+        1: {10:["page10_Track_1.1","page10_Track_1.2","page10_Track_1.3"],11:["page11_Track_1.4","page11_Track_1.5"],12:["page12_Track_1.6","page12_Track_1.7"],13:["page13_Track_1.8","page13_Track_1.9","page13_Track_1.10"],14:["page14_Track_1.11","page14_Track_1.12"],15:["page15_Track_1.13"],16:["page16_Track_1.14"],17:["page17_Track_1.15","page17_Track_1.16"]},
         2: {13:["page13_Track_2.1"],14:["page14_Track_2.2"],15:["page15_Track_2.3","page15_Track_2.4"]},
         3: {20:["page20_Track_3.1","page20_Track_3.2"],21:["page21_Track_3.3"]},
         4: {26:["page26_Track_4.1"],28:["page28_Track_4.2"],29:["page29_Track_4.3","page29_Track_4.4"],30:["page30_Track_4.5"]},
