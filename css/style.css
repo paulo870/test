@@ -2941,3 +2941,39 @@ select:focus-visible {
 
     box-shadow: none !important;
 }
+/* =========================================
+   STUDENT BOOK - UNIT / LESSON DROPDOWN
+   ========================================= */
+
+.unit-item {
+    position: relative;
+}
+
+/* The lesson menu is hidden */
+.lesson-dropdown {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 100%;
+    min-width: 150px;
+    background: white;
+    z-index: 1000;
+}
+
+/* Show Lesson menu when hovering over Unit */
+.unit-item:hover > .lesson-dropdown {
+    display: block;
+}
+
+/* Lesson links */
+.lesson-dropdown a {
+    display: block;
+    padding: 10px 15px;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+/* Lesson hover */
+.lesson-dropdown a:hover {
+    background-color: #f0f0f0;
+}
