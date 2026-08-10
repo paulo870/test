@@ -2952,7 +2952,7 @@ select:focus-visible {
 
 
 /* =========================================
-   LESSON DROPDOWN
+   LESSON DROPDOWN POSITION
    ========================================= */
 
 .lesson-dropdown {
@@ -2960,13 +2960,9 @@ select:focus-visible {
 
     position: absolute;
 
-    /* 
-       Open to the RIGHT of the Unit menu.
-       84px = same horizontal spacing used
-       between the control bar and main dropdown.
-    */
-    left: calc(100% + 40px);
+    left: calc(100% + 20px);
 
+    /* Default position */
     top: 0;
 
     min-width: 165px;
@@ -2982,8 +2978,7 @@ select:focus-visible {
             rgba(8, 27, 35, 0.98)
         );
 
-    border:
-        1px solid rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.09);
 
     border-radius: 14px;
 
@@ -2996,6 +2991,33 @@ select:focus-visible {
     -webkit-backdrop-filter: blur(20px);
 
     z-index: 5000;
+}
+
+
+/* =========================================
+   LOWER UNITS
+   ========================================= */
+
+/* Units 9–10 */
+.unit-item:nth-child(9) .lesson-dropdown,
+.unit-item:nth-child(10) .lesson-dropdown {
+    top: -80px;
+}
+
+
+/* Units 11–12 */
+.unit-item:nth-child(11) .lesson-dropdown,
+.unit-item:nth-child(12) .lesson-dropdown {
+    top: -150px;
+}
+
+
+/* =========================================
+   SHOW LESSON MENU
+   ========================================= */
+
+.unit-item:hover > .lesson-dropdown {
+    display: flex;
 }
 
 
