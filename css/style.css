@@ -2903,26 +2903,25 @@ select:focus-visible {
 
 
 /* =========================================================
-   LOGO — COMPACT CONTROL BAR
-========================================================= */
+   POLIGLOTA LOGO — FINAL CONTROL BAR FIX
+   ========================================================= */
 
-.control-bar .logo,
-.control-bar img.logo {
+.control-bar img {
     width: 40px !important;
     height: 40px !important;
 
     max-width: 40px !important;
     max-height: 40px !important;
 
-    object-fit: contain;
+    object-fit: contain !important;
 
-    margin: 0 !important;
+    margin: 0 auto 12px auto !important;
     padding: 0 !important;
+
+    display: block !important;
 
     transform: none !important;
     box-shadow: none !important;
-
-    display: block;
 }
 /* =========================================
    STUDENT BOOK - UNIT / LESSON DROPDOWN
