@@ -5,6 +5,7 @@ const prevBtn = document.getElementById("prev-btn");
 const nextBtn = document.getElementById("next-btn");
 document.addEventListener("DOMContentLoaded", () => {
     });
+
 const studentDropdownLinks = document.querySelectorAll("#students-book-dropdown a");
 const activityDropdownLinks = document.querySelectorAll("#activity-book-dropdown a");
 const dropdownBtns = document.querySelectorAll(".dropdown-btn");
@@ -47,6 +48,25 @@ dropdownBtns.forEach(btn => {
             if(d !== parentDropdown) d.classList.remove('show');
         });
         parentDropdown.classList.toggle('show');
+    });
+});
+// ==========================
+// UNIT → LESSON DROPDOWN
+// ==========================
+document.querySelectorAll('.unit-btn').forEach(button => {
+    button.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const unit = this.parentElement;
+
+        document.querySelectorAll('.unit-dropdown').forEach(otherUnit => {
+            if (otherUnit !== unit) {
+                otherUnit.classList.remove('active');
+            }
+        });
+
+        unit.classList.toggle('active');
     });
 });
 
