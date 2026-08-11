@@ -223,9 +223,37 @@ studentDropdownLinks.forEach(link => {
 
 });
 // ==========================
-// LESSON MENU
+// GET LESSON PAGES
 // ==========================
 
+function getLessonPages(unit, lesson) {
+
+    const lessonMap = {
+
+        1: {
+            1: [6, 7],
+            2: [8, 9],
+            3: [14, 15],
+            4: [16, 17],
+            5: [18]
+        },
+
+        2: {
+            1: [12, 13],
+            2: [14],
+            3: [15],
+            4: [16],
+            5: [17]
+        }
+
+        // Continue for Units 3–12
+    };
+
+    return lessonMap[unit]?.[lesson] || [];
+}
+// ==========================
+// LESSON MENU
+// ==========================
 const lessonDropdownLinks = document.querySelectorAll(".lesson-dropdown a");
 
 lessonDropdownLinks.forEach(link => {
@@ -240,33 +268,56 @@ lessonDropdownLinks.forEach(link => {
 
         console.log("Opening Unit:", unit, "Lesson:", lesson);
 
-        // Load the unit
-        loadStudentUnit(unit);
+        // ==========================
+        // NEW LESSON FOLDER PATH
+        // ==========================
 
-        // Get the pages for this lesson
+        const lessonPath =
+            `images/student-book-pages/unit_${unit}/lesson_${lesson}/`;
+
+        /*
+         * IMPORTANT:
+         * JavaScript cannot automatically discover the files
+         * inside a folder on Vercel/server hosting.
+         *
+         * Therefore, we define which pages belong to each lesson.
+         */
+
         const lessonPages = getLessonPages(unit, lesson);
 
-        if (lessonPages.length > 0) {
-
-            currentImages = lessonPages.map(page =>
-                `images/student-book-pages/unit_${unit}/page${page}.jpg`
+        if (lessonPages.length === 0) {
+            console.warn(
+                `No pages found for Unit ${unit}, Lesson ${lesson}`
             );
-
-            currentIndex = 0;
-
-            loadImage(currentImages[currentIndex]);
-
-            prevBtn.style.display = "block";
-            nextBtn.style.display = "block";
-
-            saveCurrentState(
-                "student",
-                unit,
-                lessonPages[0]
-            );
+            return;
         }
 
-        // Close lesson menu after selecting lesson
+        // Build the NEW paths
+        currentImages = lessonPages.map(page =>
+            `${lessonPath}page${page}.jpg`
+        );
+
+        // Start at the FIRST page of the lesson
+        currentIndex = 0;
+
+        loadImage(currentImages[currentIndex]);
+
+        prevBtn.style.display = "block";
+        nextBtn.style.display = "block";
+
+        // Save current state
+        saveCurrentState(
+            "student",
+            unit,
+            lessonPages[0]
+        );
+
+        console.log(
+            "Opening:",
+            currentImages[currentIndex]
+        );
+
+        // Close lesson menus
         document.querySelectorAll(".lesson-dropdown").forEach(menu => {
             menu.classList.remove("show");
         });
@@ -274,6 +325,7 @@ lessonDropdownLinks.forEach(link => {
     });
 
 });
+
 
 activityDropdownLinks.forEach(link => {
     link.addEventListener("click", (e) => {
