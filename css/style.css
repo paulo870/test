@@ -167,6 +167,24 @@ body::before {
    CONTROL ICONS
    ========================================================= */
 
+.control-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    width: 90px;
+    height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+
+    padding-top: 15px;
+
+    /* KEEP ALL OF YOUR EXISTING BACKGROUND / BORDER / SHADOW CODE */
+}
+
 .control-icon {
     width: 50px;
     height: 50px;
@@ -174,42 +192,31 @@ body::before {
     margin: 12px 0;
 
     padding: 7px;
-
     box-sizing: border-box;
 
     object-fit: contain;
-
     border-radius: 13px;
 
     cursor: pointer;
-
-    transition:
-        transform 0.22s ease,
-        background-color 0.22s ease,
-        box-shadow 0.22s ease,
-        filter 0.22s ease;
 }
 
-
-.control-icon:hover {
-    transform: translateY(-2px) scale(1.04);
-
-    background-color:
-        rgba(255, 255, 255, 0.09);
-
-    box-shadow:
-        0 8px 22px rgba(0, 0, 0, 0.20),
-        0 0 14px rgba(72, 224, 130, 0.08);
-
-    filter: brightness(1.08);
+.control-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
+.control-label {
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
 
-.control-icon:active {
-    transform: scale(0.94);
+    margin-top: -6px;
+    margin-bottom: 8px;
 
-    box-shadow:
-        0 3px 8px rgba(0, 0, 0, 0.20);
+    text-align: center;
+    user-select: none;
 }
 
 
