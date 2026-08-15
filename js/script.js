@@ -1156,7 +1156,15 @@ function getPos(e, canvas) {
 // ==========================
 
 function startDrawing(e, canvas) {
-if (!currentTool) return;
+
+    if (!currentTool) return;
+
+    // Don't draw with a second finger
+    if (e.pointerType === "touch" && e.isPrimary === false) {
+        return;
+    }
+
+    const { x, y } = getPos(e, canvas);
     const { x, y } = getPos(e, canvas);
 
     if (currentTool === "eraser") {
@@ -1233,35 +1241,110 @@ function stopDrawing() {
 
 // ==========================
 // EDIT CANVAS EVENTS
+// MOUSE + ANDROID TOUCH
 // ==========================
 
-editCanvas.addEventListener("mousedown", (e) => {
+editCanvas.addEventListener("pointerdown", (e) => {
+
+    // Ignore multi-touch
+    if (e.pointerType === "touch" && e.isPrimary === false) {
+        return;
+    }
+
+    e.preventDefault();
+
+    editCanvas.setPointerCapture(e.pointerId);
+
     startDrawing(e, editCanvas);
+
 });
 
-editCanvas.addEventListener("mousemove", (e) => {
+editCanvas.addEventListener("pointermove", (e) => {
+
+    if (e.pointerType === "touch" && e.isPrimary === false) {
+        return;
+    }
+
+    e.preventDefault();
+
     moveDrawing(e, editCanvas);
+
 });
 
-editCanvas.addEventListener("mouseup", stopDrawing);
+editCanvas.addEventListener("pointerup", (e) => {
 
-editCanvas.addEventListener("mouseleave", stopDrawing);
+    e.preventDefault();
+
+    stopDrawing();
+
+    if (editCanvas.hasPointerCapture(e.pointerId)) {
+        editCanvas.releasePointerCapture(e.pointerId);
+    }
+
+});
+
+editCanvas.addEventListener("pointercancel", (e) => {
+
+    stopDrawing();
+
+    if (editCanvas.hasPointerCapture(e.pointerId)) {
+        editCanvas.releasePointerCapture(e.pointerId);
+    }
+
+});
 
 // ==========================
 // WHITEBOARD EVENTS
+// MOUSE + ANDROID TOUCH
 // ==========================
 
-whiteboardCanvas.addEventListener("mousedown", (e) => {
+whiteboardCanvas.addEventListener("pointerdown", (e) => {
+
+    if (e.pointerType === "touch" && e.isPrimary === false) {
+        return;
+    }
+
+    e.preventDefault();
+
+    whiteboardCanvas.setPointerCapture(e.pointerId);
+
     startDrawing(e, whiteboardCanvas);
+
 });
 
-whiteboardCanvas.addEventListener("mousemove", (e) => {
+whiteboardCanvas.addEventListener("pointermove", (e) => {
+
+    if (e.pointerType === "touch" && e.isPrimary === false) {
+        return;
+    }
+
+    e.preventDefault();
+
     moveDrawing(e, whiteboardCanvas);
+
 });
 
-whiteboardCanvas.addEventListener("mouseup", stopDrawing);
+whiteboardCanvas.addEventListener("pointerup", (e) => {
 
-whiteboardCanvas.addEventListener("mouseleave", stopDrawing);
+    e.preventDefault();
+
+    stopDrawing();
+
+    if (whiteboardCanvas.hasPointerCapture(e.pointerId)) {
+        whiteboardCanvas.releasePointerCapture(e.pointerId);
+    }
+
+});
+
+whiteboardCanvas.addEventListener("pointercancel", (e) => {
+
+    stopDrawing();
+
+    if (whiteboardCanvas.hasPointerCapture(e.pointerId)) {
+        whiteboardCanvas.releasePointerCapture(e.pointerId);
+    }
+
+});
 
 // ==========================
 // ERASER SYSTEM
