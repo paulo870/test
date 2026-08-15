@@ -131,7 +131,7 @@ body::before {
 
     z-index: 1000;
 
-    overflow: hidden;
+    overflow: visible;
 }
 
 
