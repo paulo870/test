@@ -1241,110 +1241,36 @@ function stopDrawing() {
 
 // ==========================
 // EDIT CANVAS EVENTS
-// MOUSE + ANDROID TOUCH
 // ==========================
 
-editCanvas.addEventListener("pointerdown", (e) => {
-
-    // Ignore multi-touch
-    if (e.pointerType === "touch" && e.isPrimary === false) {
-        return;
-    }
-
-    e.preventDefault();
-
-    editCanvas.setPointerCapture(e.pointerId);
-
+editCanvas.addEventListener("mousedown", (e) => {
     startDrawing(e, editCanvas);
-
 });
 
-editCanvas.addEventListener("pointermove", (e) => {
-
-    if (e.pointerType === "touch" && e.isPrimary === false) {
-        return;
-    }
-
-    e.preventDefault();
-
+editCanvas.addEventListener("mousemove", (e) => {
     moveDrawing(e, editCanvas);
-
 });
 
-editCanvas.addEventListener("pointerup", (e) => {
+editCanvas.addEventListener("mouseup", stopDrawing);
 
-    e.preventDefault();
-
-    stopDrawing();
-
-    if (editCanvas.hasPointerCapture(e.pointerId)) {
-        editCanvas.releasePointerCapture(e.pointerId);
-    }
-
-});
-
-editCanvas.addEventListener("pointercancel", (e) => {
-
-    stopDrawing();
-
-    if (editCanvas.hasPointerCapture(e.pointerId)) {
-        editCanvas.releasePointerCapture(e.pointerId);
-    }
-
-});
+editCanvas.addEventListener("mouseleave", stopDrawing);
 
 // ==========================
 // WHITEBOARD EVENTS
-// MOUSE + ANDROID TOUCH
 // ==========================
 
-whiteboardCanvas.addEventListener("pointerdown", (e) => {
-
-    if (e.pointerType === "touch" && e.isPrimary === false) {
-        return;
-    }
-
-    e.preventDefault();
-
-    whiteboardCanvas.setPointerCapture(e.pointerId);
-
+whiteboardCanvas.addEventListener("mousedown", (e) => {
     startDrawing(e, whiteboardCanvas);
-
 });
 
-whiteboardCanvas.addEventListener("pointermove", (e) => {
-
-    if (e.pointerType === "touch" && e.isPrimary === false) {
-        return;
-    }
-
-    e.preventDefault();
-
+whiteboardCanvas.addEventListener("mousemove", (e) => {
     moveDrawing(e, whiteboardCanvas);
-
 });
 
-whiteboardCanvas.addEventListener("pointerup", (e) => {
+whiteboardCanvas.addEventListener("mouseup", stopDrawing);
 
-    e.preventDefault();
+whiteboardCanvas.addEventListener("mouseleave", stopDrawing);
 
-    stopDrawing();
-
-    if (whiteboardCanvas.hasPointerCapture(e.pointerId)) {
-        whiteboardCanvas.releasePointerCapture(e.pointerId);
-    }
-
-});
-
-whiteboardCanvas.addEventListener("pointercancel", (e) => {
-
-    stopDrawing();
-
-    if (whiteboardCanvas.hasPointerCapture(e.pointerId)) {
-        whiteboardCanvas.releasePointerCapture(e.pointerId);
-    }
-
-});
 
 // ==========================
 // ERASER SYSTEM
