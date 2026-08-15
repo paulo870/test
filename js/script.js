@@ -5,7 +5,9 @@ const prevBtn = document.getElementById("prev-btn");
 const nextBtn = document.getElementById("next-btn");
 document.addEventListener("DOMContentLoaded", () => {
     });
-const studentDropdownLinks = document.querySelectorAll("#students-book-dropdown > .dropdown-content > a");
+const studentDropdownLinks = document.querySelectorAll(
+    "#students-book-dropdown .unit-item > a"
+);
 const activityDropdownLinks = document.querySelectorAll("#activity-book-dropdown a");
 const dropdownBtns = document.querySelectorAll(".dropdown-btn");
 
