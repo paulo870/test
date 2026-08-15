@@ -3013,19 +3013,10 @@ select:focus-visible {
 
 
 /* =========================================
-   SHOW LESSON MENU
+   SHOW LESSON MENU ON CLICK
    ========================================= */
 
-.unit-item:hover > .lesson-dropdown {
-    display: flex;
-}
-
-
-/* =========================================
-   SHOW LESSONS WHEN HOVERING UNIT
-   ========================================= */
-
-.unit-item:hover > .lesson-dropdown {
+.unit-item > .lesson-dropdown.show {
     display: flex;
 }
 
