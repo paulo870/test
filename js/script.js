@@ -376,8 +376,6 @@ nextBtn.addEventListener("click", () => {
 // ZOOM SYSTEM
 // ==========================
 
-let currentScale = 1;
-
 // Minimum and maximum zoom
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 5;
@@ -519,7 +517,6 @@ slideContainer.addEventListener("touchcancel", function() {
     pinchStartDistance = null;
 
 }, { passive: false });
-
 // ==========================
 // HOME BUTTON
 // ==========================
