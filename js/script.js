@@ -119,7 +119,7 @@ function loadStudentUnit(unitNumber) {
 
     let pageNumbers = [];
     switch(unitNumber) {
-        case "1": pageNumbers = [6,10,11,12,13,14,15,16,17,18]; break;
+        case "1": pageNumbers = [10,11,12,13,14,15,16,17,18]; break;
         case "2": pageNumbers = [12,13,14,15,16,17]; break;
         case "3": pageNumbers = [18,19,20,21,22,23,24,25]; break;
         case "4": pageNumbers = [26,27,28,29,30,31]; break;
@@ -233,7 +233,7 @@ function getLessonPages(unit, lesson) {
     const lessonMap = {
 
         1: {
-            1: [6, 7],
+            1: [ 6, 7],
             2: [8, 9],
             3: [14, 15],
             4: [16, 17],
