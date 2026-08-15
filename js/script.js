@@ -90,9 +90,20 @@ function autoFitImage() {
 }
 
 function loadImage(src) {
+
+    slideImage.style.display = "none";
+
     slideImage.onload = function() {
+        slideImage.style.display = "block";
         autoFitImage();
+        resizeEditCanvas();
     };
+
+    slideImage.onerror = function() {
+        console.error("Failed to load image:", src);
+        slideImage.style.display = "none";
+    };
+
     slideImage.src = src;
 }
 
