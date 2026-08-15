@@ -131,7 +131,7 @@ body::before {
 
     z-index: 1000;
 
-    overflow: visible;
+    overflow: hidden;
 }
 
 
@@ -2920,26 +2920,37 @@ select:focus-visible {
    ========================================================= */
 
 /* =========================================================
-   LOGO — KEEP COMPACT
+   CONTROL BAR LOGO — STRICT CONSTRAINT
    ========================================================= */
 
 .control-bar .logo,
 .control-bar img.logo {
+    display: block !important;
+
     width: 46px !important;
-    height: auto !important;
+    height: 46px !important;
+
+    min-width: 0 !important;
+    min-height: 0 !important;
 
     max-width: 46px !important;
     max-height: 46px !important;
 
-    object-fit: contain;
+    object-fit: contain !important;
 
-    margin: 8px auto 14px !important;
+    flex: 0 0 46px !important;
+
+    box-sizing: border-box !important;
+
+    margin: 0 auto 12px auto !important;
 
     padding: 0 !important;
 
     transform: none !important;
 
     box-shadow: none !important;
+
+    overflow: hidden !important;
 }
 /* =========================================
    STUDENT BOOK - UNIT / LESSON DROPDOWN
