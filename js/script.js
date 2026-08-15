@@ -1156,15 +1156,7 @@ function getPos(e, canvas) {
 // ==========================
 
 function startDrawing(e, canvas) {
-
-    if (!currentTool) return;
-
-    // Don't draw with a second finger
-    if (e.pointerType === "touch" && e.isPrimary === false) {
-        return;
-    }
-
-    const { x, y } = getPos(e, canvas);
+if (!currentTool) return;
     const { x, y } = getPos(e, canvas);
 
     if (currentTool === "eraser") {
@@ -1270,7 +1262,6 @@ whiteboardCanvas.addEventListener("mousemove", (e) => {
 whiteboardCanvas.addEventListener("mouseup", stopDrawing);
 
 whiteboardCanvas.addEventListener("mouseleave", stopDrawing);
-
 
 // ==========================
 // ERASER SYSTEM
@@ -1617,3 +1608,5 @@ function updateCursor() {
         drawingCanvas.style.cursor = "pointer";
     }
 }
+
+
