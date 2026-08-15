@@ -2918,74 +2918,30 @@ select:focus-visible {
    ========================================================= */
 
 /* =========================================================
-   LOGO — SAME SIZE AS CONTROL ICONS
+   LOGO — SAME SIZE SYSTEM AS CONTROL ICONS
    ========================================================= */
 
 .control-bar .logo,
 .control-bar img.logo {
-    width: 50px;
-    height: 50px;
+    width: 50px !important;
+    height: 50px !important;
 
-    margin: 12px 0;
+    max-width: 50px !important;
+    max-height: 50px !important;
 
-    padding: 7px;
+    padding: 7px !important;
 
-    box-sizing: border-box;
+    box-sizing: border-box !important;
 
     object-fit: contain;
 
-    border-radius: 13px;
+    margin: 12px 0 !important;
 
-    transform: none;
+    flex-shrink: 0;
 
-    box-shadow: none;
-}
-/* =========================================================
-   LOGO RESPONSIVE SIZE
-   ========================================================= */
+    transform: none !important;
 
-@media (max-width: 1100px) {
-    .control-bar .logo,
-    .control-bar img.logo {
-        width: 44px;
-        height: 44px;
-
-        margin: 9px 0;
-    }
-}
-
-@media (max-width: 850px) {
-    .control-bar .logo,
-    .control-bar img.logo {
-        width: 42px;
-        height: 42px;
-
-        margin: 8px 0;
-    }
-}
-
-@media (max-width: 600px) {
-    .control-bar .logo,
-    .control-bar img.logo {
-        width: 38px;
-        height: 38px;
-
-        margin: 6px 0;
-
-        padding: 5px;
-
-        border-radius: 10px;
-    }
-}
-
-@media (max-width: 420px) {
-    .control-bar .logo,
-    .control-bar img.logo {
-        width: 34px;
-        height: 34px;
-
-        margin: 5px 0;
-    }
+    box-shadow: none !important;
 }
 /* =========================================
    STUDENT BOOK - UNIT / LESSON DROPDOWN
