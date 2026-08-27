@@ -1,1579 +1,3328 @@
-const slideImage = document.getElementById("slide-image");
-const slideContainer = document.querySelector(".slide-container");
-const homeBtn = document.getElementById("home-btn");
-const prevBtn = document.getElementById("prev-btn");
-const nextBtn = document.getElementById("next-btn");
-document.addEventListener("DOMContentLoaded", () => {
-    });
-const studentDropdownLinks = document.querySelectorAll(
-    "#students-book-dropdown .unit-item > a"
+/* =========================================================
+   ACADEMIA POLIGLOTA
+   INTERACTIVE BOOK PLATFORM
+   LESSON CARD ENGINE + SUPABASE MEDIA
+   ========================================================= */
+
+/*
+   IMPORTANT
+
+   This version changes the lesson experience from:
+
+       IMAGE / SLIDE
+
+   to:
+
+       LESSON
+          ↓
+       3D CONTENT CARDS
+          ↓
+       CLICK / TAP
+          ↓
+       CARD EXPANDS
+          ↓
+       TEXT / AUDIO / VIDEO / IMAGE
+
+   Supabase is used for media storage and lesson data.
+
+   The code also keeps compatibility with the existing
+   presentation / whiteboard / audio / video controls.
+*/
+
+
+/* =========================================================
+   01. SUPABASE CONFIGURATION
+   ========================================================= */
+
+const SUPABASE_URL =
+    "https://kioqhgkpfqdhjqidrlwf.supabase.co";
+
+const SUPABASE_ANON_KEY =
+    "sb_publishable_ZDAJmFtSl9WNGVlZPyvngA_ZWiv_Q4g";
+
+let supabaseClient = null;
+
+if (
+    typeof window.supabase !== "undefined" &&
+    SUPABASE_URL &&
+    SUPABASE_ANON_KEY
+) {
+    supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+    );
+}
+
+
+/* =========================================================
+   02. APPLICATION STATE
+   ========================================================= */
+
+const state = {
+
+    currentSlide: 0,
+
+    currentLesson: null,
+
+    currentCard: null,
+
+    lessons: [],
+
+    cards: [],
+
+    media: [],
+
+    units: [],
+
+    currentUnit: null,
+
+    currentLessonId: null,
+
+    isCardOpen: false,
+
+    audioPlaying: false,
+
+    videoPlaying: false,
+
+    zoom: 1,
+
+    drawing: false,
+
+    pencilSize: 5,
+
+    pencilColor: "#111111",
+
+    editMode: false
+
+};
+
+
+/* =========================================================
+   03. LOCAL FALLBACK LESSON DATA
+
+   This allows the application to continue working even
+   before Supabase has been configured completely.
+   ========================================================= */
+
+const localLessons = [
+
+    {
+        id: "lesson-1",
+
+        title: "Introduction",
+
+        unit: "Unit 1",
+
+        description:
+            "Introduction to the lesson.",
+
+        cards: [
+
+            {
+                id: "card-1",
+
+                type: "text",
+
+                title: "Welcome",
+
+                subtitle: "Start here",
+
+                content:
+                    "Welcome to today's lesson. Tap this card to expand it and begin learning."
+
+            },
+
+            {
+                id: "card-2",
+
+                type: "text",
+
+                title: "Key Vocabulary",
+
+                subtitle: "Vocabulary",
+
+                content:
+                    "Learn the most important vocabulary from this lesson. Tap the card to see the complete explanation."
+
+            },
+
+            {
+                id: "card-3",
+
+                type: "audio",
+
+                title: "Listening",
+
+                subtitle: "Listen",
+
+                content:
+                    "Listen carefully and repeat what you hear.",
+
+                media_url: ""
+
+            },
+
+            {
+
+                id: "card-4",
+
+                type: "video",
+
+                title: "Lesson Video",
+
+                subtitle: "Watch",
+
+                content:
+                    "Watch the lesson video.",
+
+                media_url: ""
+
+            }
+
+        ]
+
+    }
+
+];
+
+
+/* =========================================================
+   04. DOM HELPERS
+   ========================================================= */
+
+function $(selector) {
+
+    return document.querySelector(selector);
+
+}
+
+
+function $all(selector) {
+
+    return Array.from(
+        document.querySelectorAll(selector)
+    );
+
+}
+
+
+function createElement(tag, className, content = "") {
+
+    const element =
+        document.createElement(tag);
+
+    if (className) {
+
+        element.className =
+            className;
+
+    }
+
+    if (content !== "") {
+
+        element.innerHTML =
+            content;
+
+    }
+
+    return element;
+
+}
+
+
+/* =========================================================
+   05. INITIALIZATION
+   ========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        initializeApplication();
+
+        initializeExistingControls();
+
+        initializeLessonSystem();
+
+        initializeMediaUpload();
+
+        initializeWhiteboard();
+
+        initializeKeyboard();
+
+        await loadLessons();
+
+    }
 );
-const activityDropdownLinks = document.querySelectorAll("#activity-book-dropdown a");
-const dropdownBtns = document.querySelectorAll(".dropdown-btn");
 
-const audioBtn = document.getElementById("audio-btn");
-const audioListContainer = document.getElementById("audio-list-container");
-const audioPlayer = document.getElementById("slide-audio");
-const audioSource = document.getElementById("audio-source");
-const hideAudioBtn = document.getElementById("hide-audio-btn");
 
-// Show audio player and hide button
-function showAudioPlayer() {
-    audioPlayer.style.display = "block";
-    hideAudioBtn.style.display = "inline-block";
+/* =========================================================
+   06. INITIALIZE APPLICATION
+   ========================================================= */
+
+function initializeApplication() {
+
+    document.body.classList.add(
+        "poliglota-app-ready"
+    );
+
 }
 
-// Hide audio player when hide button is clicked
-hideAudioBtn.addEventListener("click", () => {
-    audioPlayer.style.display = "none";
-    hideAudioBtn.style.display = "none";
-});
-let currentImages = [];
-let currentIndex = 0;
-let currentScale = 1;
 
-// ==========================
-// SAVE CURRENT PAGE STATE
-// ==========================
-function saveCurrentState(bookType, unit, pageNum) {
-    localStorage.setItem("pptkb1State", JSON.stringify({ bookType, unit, pageNum }));
+/* =========================================================
+   07. LESSON SYSTEM
+   ========================================================= */
+
+function initializeLessonSystem() {
+
+    /*
+       Find an existing lesson container.
+
+       If it doesn't exist in the HTML, create it.
+    */
+
+    let lessonContainer =
+        document.querySelector(
+            "#lesson-content"
+        );
+
+    if (!lessonContainer) {
+
+        lessonContainer =
+            document.createElement("div");
+
+        lessonContainer.id =
+            "lesson-content";
+
+        lessonContainer.className =
+            "lesson-content";
+
+        const slideContainer =
+            document.querySelector(
+                ".slide-container"
+            );
+
+        if (slideContainer) {
+
+            slideContainer.appendChild(
+                lessonContainer
+            );
+
+        } else {
+
+            document.body.appendChild(
+                lessonContainer
+            );
+
+        }
+
+    }
+
+    /*
+       Delegated click handler for cards.
+    */
+
+    lessonContainer.addEventListener(
+        "click",
+        handleCardClick
+    );
+
 }
-// ==========================
-// DROPDOWN TOGGLE
-// ==========================
-dropdownBtns.forEach(btn => {
-    btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const parentDropdown = btn.parentElement;
-        document.querySelectorAll('.dropdown').forEach(d => {
-            if(d !== parentDropdown) d.classList.remove('show');
-        });
-        parentDropdown.classList.toggle('show');
-    });
-});
 
-window.addEventListener("click", (e) => {
+
+/* =========================================================
+   08. LOAD LESSONS
+   ========================================================= */
+
+async function loadLessons() {
+
+    /*
+       First try Supabase.
+
+       If Supabase isn't ready or the tables don't exist,
+       fall back to local lessons.
+    */
+
+    if (!supabaseClient) {
+
+        state.lessons =
+            localLessons;
+
+        renderLessonList();
+
+        if (state.lessons.length) {
+
+            openLesson(
+                state.lessons[0].id
+            );
+
+        }
+
+        return;
+
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+            .from("lessons")
+            .select(`
+                *,
+                lesson_cards (
+                    *
+                )
+            `)
+            .order(
+                "position",
+                {
+                    ascending: true
+                }
+            );
+
+        if (error) {
+
+            console.warn(
+                "Supabase lessons unavailable:",
+                error
+            );
+
+            state.lessons =
+                localLessons;
+
+        } else {
+
+            state.lessons =
+                normalizeLessons(data);
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Error loading lessons:",
+            error
+        );
+
+        state.lessons =
+            localLessons;
+
+    }
+
+    renderLessonList();
+
+    if (state.lessons.length) {
+
+        openLesson(
+            state.lessons[0].id
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   09. NORMALIZE SUPABASE LESSONS
+   ========================================================= */
+
+function normalizeLessons(data) {
+
+    if (!Array.isArray(data)) {
+
+        return [];
+
+    }
+
+    return data.map(
+        lesson => {
+
+            return {
+
+                id:
+                    lesson.id,
+
+                title:
+                    lesson.title ||
+                    "Lesson",
+
+                unit:
+                    lesson.unit ||
+                    "",
+
+                description:
+                    lesson.description ||
+                    "",
+
+                cards:
+                    Array.isArray(
+                        lesson.lesson_cards
+                    )
+                        ?
+                        lesson.lesson_cards
+                            .sort(
+                                (
+                                    a,
+                                    b
+                                ) =>
+                                    (
+                                        a.position ||
+                                        0
+                                    ) -
+                                    (
+                                        b.position ||
+                                        0
+                                    )
+                            )
+                        :
+                        []
+
+            };
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   10. RENDER LESSON LIST
+   ========================================================= */
+
+function renderLessonList() {
+
+    const containers = [
+
+        "#students-book-dropdown",
+
+        "#presentation-list-container",
+
+        "#presentations-unit-container"
+
+    ];
+
+    containers.forEach(
+        selector => {
+
+            const container =
+                document.querySelector(
+                    selector
+                );
+
+            if (!container) {
+
+                return;
+
+            }
+
+            /*
+               Don't destroy existing controls that may
+               belong to the original application.
+            */
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   11. OPEN LESSON
+   ========================================================= */
+
+async function openLesson(lessonId) {
+
+    const lesson =
+        state.lessons.find(
+            item =>
+                String(item.id) ===
+                String(lessonId)
+        );
+
+    if (!lesson) {
+
+        console.warn(
+            "Lesson not found:",
+            lessonId
+        );
+
+        return;
+
+    }
+
+    state.currentLesson =
+        lesson;
+
+    state.currentLessonId =
+        lesson.id;
+
+    state.cards =
+        lesson.cards || [];
+
+    state.currentCard =
+        null;
+
+    state.isCardOpen =
+        false;
+
+    hideLegacySlide();
+
+    renderLesson();
+
+    saveCurrentLessonLocally();
+
+}
+
+
+/* =========================================================
+   12. RENDER LESSON
+   ========================================================= */
+
+function renderLesson() {
+
+    const container =
+        document.querySelector(
+            "#lesson-content"
+        );
+
+    if (!container) {
+
+        return;
+
+    }
+
+    container.innerHTML = "";
+
+    container.classList.add(
+        "lesson-card-mode"
+    );
+
+
+    /* -----------------------------------------------------
+       LESSON HEADER
+       ----------------------------------------------------- */
+
+    const header =
+        document.createElement("div");
+
+    header.className =
+        "lesson-header";
+
+
+    const unit =
+        document.createElement("div");
+
+    unit.className =
+        "lesson-unit";
+
+    unit.textContent =
+        state.currentLesson.unit ||
+        "LESSON";
+
+
+    const title =
+        document.createElement("h1");
+
+    title.className =
+        "lesson-title";
+
+    title.textContent =
+        state.currentLesson.title ||
+        "Lesson";
+
+
+    const description =
+        document.createElement("p");
+
+    description.className =
+        "lesson-description";
+
+    description.textContent =
+        state.currentLesson.description ||
+        "Explore the lesson cards below.";
+
+
+    header.appendChild(unit);
+
+    header.appendChild(title);
 
     if (
-        e.target.closest(".dropdown") ||
-        e.target.closest(".lesson-dropdown")
+        state.currentLesson.description
     ) {
-        return;
+
+        header.appendChild(
+            description
+        );
+
     }
 
-    document.querySelectorAll(".dropdown").forEach(d => {
-        d.classList.remove("show");
-    });
 
-    document.querySelectorAll(".lesson-dropdown").forEach(menu => {
-        menu.classList.remove("show");
-    });
+    /* -----------------------------------------------------
+       CARD GRID
+       ----------------------------------------------------- */
 
-});
+    const grid =
+        document.createElement("div");
 
-// ==========================
-// LOAD IMAGE FUNCTION
-// ==========================
-function autoFitImage() {
-    const containerWidth = slideContainer.clientWidth;
-    const containerHeight = slideContainer.clientHeight;
-    const imgWidth = slideImage.naturalWidth;
-    const imgHeight = slideImage.naturalHeight;
+    grid.className =
+        "lesson-card-grid";
 
-    const scaleX = containerWidth / imgWidth;
-    const scaleY = containerHeight / imgHeight;
 
-    currentScale = Math.min(scaleX, scaleY);
+    if (!state.cards.length) {
 
-    slideImage.style.width = imgWidth * currentScale + "px";
-    slideImage.style.height = imgHeight * currentScale + "px";
-}
+        const empty =
+            document.createElement("div");
 
-function loadImage(src) {
+        empty.className =
+            "lesson-empty";
 
-    slideImage.style.display = "none";
+        empty.innerHTML = `
+            <div class="lesson-empty-icon">
+                +
+            </div>
 
-    slideImage.onload = function() {
-        slideImage.style.display = "block";
-        autoFitImage();
-        resizeEditCanvas();
-    };
+            <h3>
+                No lesson content yet
+            </h3>
 
-    slideImage.onerror = function() {
-        console.error("Failed to load image:", src);
-        slideImage.style.display = "none";
-    };
+            <p>
+                Add lesson cards from Supabase.
+            </p>
+        `;
 
-    slideImage.src = src;
-}
+        grid.appendChild(
+            empty
+        );
 
-// ==========================
-// HOME PAGE
-// ==========================
-function loadHome() {
-    currentImages = [];
-    currentIndex = 0;
-    loadImage("images/homepage.jpg");
-    prevBtn.style.display = "none";
-    nextBtn.style.display = "none";
-}
-
-// ==========================
-// STUDENT BOOK
-// ==========================
-function loadStudentUnit(unitNumber) {
-    currentImages = [];
-    currentIndex = 0;
-
-    const folderName = "unit_" + unitNumber;
-    const basePath = `images/student-book-pages/${folderName}/`;
-
-    let pageNumbers = [];
-    switch(unitNumber) {
-        case "1": pageNumbers = [10,11,12,13,14,15,16,17,18]; break;
-        case "2": pageNumbers = [12,13,14,15,16,17]; break;
-        case "3": pageNumbers = [18,19,20,21,22,23,24,25]; break;
-        case "4": pageNumbers = [26,27,28,29,30,31]; break;
-        case "5": pageNumbers = [32,33,34,35,36,37]; break;
-        case "6": pageNumbers = [38,39,40,41,42,43,44,45]; break;
-        case "7": pageNumbers = [46,47,48,49,50,51]; break;
-        case "8": pageNumbers = [52,53,54,55,56,57]; break;
-        case "9": pageNumbers = [58,59,60,61,62,63,64,65]; break;
-        case "10": pageNumbers = [66,67,68,69,70,71]; break;
-        case "11": pageNumbers = [72,73,74,75,76,77]; break;
-        case "12": pageNumbers = [78,79,80,81,82,83,84,85]; break;
-        default: pageNumbers = []; break;
-    }
-
-    pageNumbers.forEach(num => {
-        currentImages.push(basePath + "page" + num + ".jpg");
-    });
-
-    loadImage(currentImages[currentIndex]);
-    prevBtn.style.display = "block";
-    nextBtn.style.display = "block";
-}
-
-// ==========================
-// ACTIVITY BOOK
-// ==========================
-function loadActivityUnit(unitNumber) {
-    currentImages = [];
-    currentIndex = 0;
-
-    const folderName = "unit_" + unitNumber;
-    const basePath = `images/activity-book-pages/${folderName}/`;
-
-    let pageNumbers = [];
-    switch(unitNumber) {
-        case "1": pageNumbers = [106,107]; break;
-        case "2": pageNumbers = [108,109]; break;
-        case "3": pageNumbers = [110,111]; break;
-        case "4": pageNumbers = [112,113]; break;
-        case "5": pageNumbers = [114,115]; break;
-        case "6": pageNumbers = [116,117]; break;
-        case "7": pageNumbers = [118,119]; break;
-        case "8": pageNumbers = [120,121]; break;
-        case "9": pageNumbers = [122,123]; break;
-        case "10": pageNumbers = [124,125]; break;
-        case "11": pageNumbers = [126,127]; break;
-        case "12": pageNumbers = [128,129]; break;
-        default: pageNumbers = []; break;
-    }
-
-    pageNumbers.forEach(num => {
-        currentImages.push(basePath + "page" + num + ".JPG");
-    });
-
-    if (currentImages.length > 1) {
-        prevBtn.style.display = "block";
-        nextBtn.style.display = "block";
     } else {
-        prevBtn.style.display = "none";
-        nextBtn.style.display = "none";
+
+        state.cards.forEach(
+            (card, index) => {
+
+                grid.appendChild(
+                    createLessonCard(
+                        card,
+                        index
+                    )
+                );
+
+            }
+        );
+
     }
 
-    loadImage(currentImages[currentIndex]);
+
+    container.appendChild(
+        header
+    );
+
+    container.appendChild(
+        grid
+    );
+
 }
 
 
+/* =========================================================
+   13. CREATE 3D CARD
+   ========================================================= */
+
+function createLessonCard(
+    card,
+    index
+) {
+
+    const wrapper =
+        document.createElement("article");
+
+    wrapper.className =
+        "lesson-card-wrapper";
 
 
+    const element =
+        document.createElement("div");
+
+    element.className =
+        "lesson-card";
+
+    element.dataset.cardId =
+        card.id || index;
+
+    element.dataset.cardType =
+        card.type || "text";
 
 
-// ==========================
-// DROPDOWN EVENTS
-// ==========================
+    /* -----------------------------------------------------
+       CARD FRONT
+       ----------------------------------------------------- */
 
-studentDropdownLinks.forEach(link => {
+    const front =
+        document.createElement("div");
 
-    link.addEventListener("click", (e) => {
+    front.className =
+        "lesson-card-front";
 
-        e.preventDefault();
-        e.stopPropagation();
 
-        const unit = link.getAttribute("data-unit");
+    const icon =
+        document.createElement("div");
 
-        // Find the lesson submenu belonging to this unit
-        const lessonMenu = link.parentElement.querySelector(".lesson-dropdown");
+    icon.className =
+        "lesson-card-icon";
 
-        if (!lessonMenu) {
-            console.log("No lesson dropdown found for Unit " + unit);
-            return;
+    icon.innerHTML =
+        getCardIcon(
+            card.type
+        );
+
+
+    const title =
+        document.createElement("h2");
+
+    title.className =
+        "lesson-card-title";
+
+    title.textContent =
+        card.title ||
+        "Lesson content";
+
+
+    const subtitle =
+        document.createElement("p");
+
+    subtitle.className =
+        "lesson-card-subtitle";
+
+    subtitle.textContent =
+        card.subtitle ||
+        getCardTypeLabel(
+            card.type
+        );
+
+
+    const hint =
+        document.createElement("div");
+
+    hint.className =
+        "lesson-card-hint";
+
+    hint.innerHTML =
+        "Tap to explore <span>→</span>";
+
+
+    front.appendChild(
+        icon
+    );
+
+    front.appendChild(
+        title
+    );
+
+    front.appendChild(
+        subtitle
+    );
+
+    front.appendChild(
+        hint
+    );
+
+
+    /* -----------------------------------------------------
+       CARD BACK / EXPANDED CONTENT
+       ----------------------------------------------------- */
+
+    const back =
+        document.createElement("div");
+
+    back.className =
+        "lesson-card-back";
+
+
+    const close =
+        document.createElement("button");
+
+    close.className =
+        "lesson-card-close";
+
+    close.type =
+        "button";
+
+    close.innerHTML =
+        "×";
+
+    close.setAttribute(
+        "aria-label",
+        "Close"
+    );
+
+
+    const expandedTitle =
+        document.createElement("h2");
+
+    expandedTitle.className =
+        "lesson-card-expanded-title";
+
+    expandedTitle.textContent =
+        card.title ||
+        "Lesson content";
+
+
+    const content =
+        document.createElement("div");
+
+    content.className =
+        "lesson-card-content";
+
+    renderCardContent(
+        content,
+        card
+    );
+
+
+    back.appendChild(
+        close
+    );
+
+    back.appendChild(
+        expandedTitle
+    );
+
+    back.appendChild(
+        content
+    );
+
+
+    element.appendChild(
+        front
+    );
+
+    element.appendChild(
+        back
+    );
+
+
+    wrapper.appendChild(
+        element
+    );
+
+
+    /*
+       Close button.
+    */
+
+    close.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            closeLessonCard(
+                element
+            );
+
+        }
+    );
+
+
+    /*
+       Card click.
+    */
+
+    element.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target.closest(
+                    ".lesson-card-close"
+                )
+            ) {
+
+                return;
+
+            }
+
+            openLessonCard(
+                element,
+                card
+            );
+
+        }
+    );
+
+
+    return wrapper;
+
+}
+
+
+/* =========================================================
+   14. CARD ICONS
+   ========================================================= */
+
+function getCardIcon(type) {
+
+    switch (
+        String(type || "")
+            .toLowerCase()
+    ) {
+
+        case "audio":
+            return "🎧";
+
+        case "video":
+            return "▶";
+
+        case "image":
+            return "▣";
+
+        case "text":
+        case "explanation":
+            return "Aa";
+
+        case "question":
+            return "?";
+
+        case "exercise":
+            return "✓";
+
+        case "grammar":
+            return "Aa";
+
+        case "listening":
+            return "♫";
+
+        case "speaking":
+            return "◉";
+
+        default:
+            return "◆";
+
+    }
+
+}
+
+
+/* =========================================================
+   15. CARD TYPE LABEL
+   ========================================================= */
+
+function getCardTypeLabel(type) {
+
+    switch (
+        String(type || "")
+            .toLowerCase()
+    ) {
+
+        case "audio":
+            return "Audio";
+
+        case "video":
+            return "Video";
+
+        case "image":
+            return "Visual";
+
+        case "text":
+            return "Explanation";
+
+        case "question":
+            return "Question";
+
+        case "exercise":
+            return "Practice";
+
+        case "grammar":
+            return "Grammar";
+
+        case "listening":
+            return "Listening";
+
+        case "speaking":
+            return "Speaking";
+
+        default:
+            return "Explore";
+
+    }
+
+}
+
+
+/* =========================================================
+   16. RENDER CARD CONTENT
+   ========================================================= */
+
+function renderCardContent(
+    container,
+    card
+) {
+
+    const type =
+        String(
+            card.type || "text"
+        ).toLowerCase();
+
+
+    /*
+       TEXT
+    */
+
+    if (
+        type === "text" ||
+        type === "explanation" ||
+        type === "grammar"
+    ) {
+
+        const text =
+            document.createElement(
+                "div"
+            );
+
+        text.className =
+            "lesson-card-text";
+
+        text.innerHTML =
+            sanitizeLessonHTML(
+                card.content ||
+                ""
+            );
+
+        container.appendChild(
+            text
+        );
+
+        return;
+
+    }
+
+
+    /*
+       IMAGE
+    */
+
+    if (
+        type === "image"
+    ) {
+
+        if (
+            card.media_url
+        ) {
+
+            const image =
+                document.createElement(
+                    "img"
+                );
+
+            image.className =
+                "lesson-card-image";
+
+            image.src =
+                card.media_url;
+
+            image.alt =
+                card.title ||
+                "Lesson image";
+
+            image.loading =
+                "lazy";
+
+            container.appendChild(
+                image
+            );
+
         }
 
-        // Close other lesson menus
-        document.querySelectorAll(".lesson-dropdown").forEach(menu => {
-            if (menu !== lessonMenu) {
-                menu.classList.remove("show");
-            }
-        });
+        if (
+            card.content
+        ) {
 
-        // Toggle this unit's lesson menu
-        lessonMenu.classList.toggle("show");
+            appendDescription(
+                container,
+                card.content
+            );
 
-    });
+        }
 
-});
-// ==========================
-// GET LESSON PAGES
-// ==========================
+        return;
 
-function getLessonPages(unit, lesson) {
+    }
 
-    const lessonMap = {
 
-        1: {
-            1: [ 6, 7],
-            2: [8, 9],
-            3: [10],
-            4: [11],
-            5: [106,107]
-        },
+    /*
+       AUDIO
+    */
 
-        2: {
-            1: [12, 13],
-            2: [14,15],
-            3: [16],
-            4: [17],
-            5: [108,109]
-        },
-        3: {
-            1: [18, 19],
-            2: [20,21],
-            3: [22,23],
-            4: [24,25],
-            5: [110,111]
-        },
-       4: {
-            1: [26, 27],
-            2: [28,29],
-            3: [30],
-            4: [31],
-            5: [112,113]
-        },
-       5: {
-            1: [32,33],
-            2: [34,35],
-            3: [36],
-            4: [37],
-            5: [114,115]
-        },
-        6: {
-            1: [38,39],
-            2: [40,41],
-            3: [42,43],
-            4: [44,45],
-            5: [116,117]
-        }, 
-         7: {
-            1: [46,47],
-            2: [48,49],
-            3: [50],
-            4: [51],
-            5: [118,119]
-        },   
-          8: {
-            1: [52,53],
-            2: [54,55],
-            3: [56],
-            4: [57],
-            5: [120,121]
-        },   
-          9: {
-            1: [58,59],
-            2: [60,61],
-            3: [62,63],
-            4: [64,65],
-            5: [122,123]
-        },   
-          10: {
-            1: [66,67],
-            2: [68,69],
-            3: [70],
-            4: [71],
-            5: [124,125]
-        },   
-          11: {
-            1: [72,73],
-            2: [74,75],
-            3: [76],
-            4: [77],
-            5: [126,127]
-        },   
-          12: {
-            1: [78,79],
-            2: [80,81],
-            3: [82,83],
-            4: [84,85],
-            5: [128,129]
-        },     
-    };
+    if (
+        type === "audio" ||
+        type === "listening"
+    ) {
 
-    return lessonMap[unit]?.[lesson] || [];
+        if (
+            card.media_url
+        ) {
+
+            const audio =
+                document.createElement(
+                    "audio"
+                );
+
+            audio.className =
+                "lesson-card-audio";
+
+            audio.controls =
+                true;
+
+            audio.preload =
+                "metadata";
+
+            audio.src =
+                card.media_url;
+
+            container.appendChild(
+                audio
+            );
+
+        } else {
+
+            showMissingMedia(
+                container,
+                "Audio"
+            );
+
+        }
+
+        if (
+            card.content
+        ) {
+
+            appendDescription(
+                container,
+                card.content
+            );
+
+        }
+
+        return;
+
+    }
+
+
+    /*
+       VIDEO
+    */
+
+    if (
+        type === "video"
+    ) {
+
+        if (
+            card.media_url
+        ) {
+
+            const video =
+                document.createElement(
+                    "video"
+                );
+
+            video.className =
+                "lesson-card-video";
+
+            video.controls =
+                true;
+
+            video.preload =
+                "metadata";
+
+            video.playsInline =
+                true;
+
+            video.src =
+                card.media_url;
+
+            container.appendChild(
+                video
+            );
+
+        } else {
+
+            showMissingMedia(
+                container,
+                "Video"
+            );
+
+        }
+
+        if (
+            card.content
+        ) {
+
+            appendDescription(
+                container,
+                card.content
+            );
+
+        }
+
+        return;
+
+    }
+
+
+    /*
+       DEFAULT
+    */
+
+    if (
+        card.content
+    ) {
+
+        appendDescription(
+            container,
+            card.content
+        );
+
+    }
+
 }
-// ==========================
-// LESSON MENU
-// ==========================
-const lessonDropdownLinks = document.querySelectorAll(".lesson-dropdown a");
 
-lessonDropdownLinks.forEach(link => {
 
-    link.addEventListener("click", (e) => {
+/* =========================================================
+   17. DESCRIPTION
+   ========================================================= */
 
-        e.preventDefault();
-        e.stopPropagation();
+function appendDescription(
+    container,
+    content
+) {
 
-        const unit = link.getAttribute("data-unit");
-        const lesson = link.getAttribute("data-lesson");
+    const description =
+        document.createElement(
+            "div"
+        );
 
-        console.log("Opening Unit:", unit, "Lesson:", lesson);
+    description.className =
+        "lesson-card-text";
 
-        // ==========================
-        // NEW LESSON FOLDER PATH
-        // ==========================
+    description.innerHTML =
+        sanitizeLessonHTML(
+            content
+        );
 
-        const lessonPath =
-            `images/student-book-pages/unit_${unit}/lesson_${lesson}/`;
+    container.appendChild(
+        description
+    );
+
+}
+
+
+/* =========================================================
+   18. MISSING MEDIA
+   ========================================================= */
+
+function showMissingMedia(
+    container,
+    mediaType
+) {
+
+    const message =
+        document.createElement(
+            "div"
+        );
+
+    message.className =
+        "lesson-media-missing";
+
+    message.innerHTML = `
+        <strong>
+            ${mediaType}
+        </strong>
+
+        <span>
+            No ${mediaType.toLowerCase()} has been uploaded yet.
+        </span>
+    `;
+
+    container.appendChild(
+        message
+    );
+
+}
+
+
+/* =========================================================
+   19. OPEN CARD
+   ========================================================= */
+
+function openLessonCard(
+    element,
+    card
+) {
+
+    /*
+       Close other cards first.
+    */
+
+    $all(
+        ".lesson-card.is-expanded"
+    ).forEach(
+        other => {
+
+            if (
+                other !== element
+            ) {
+
+                other.classList.remove(
+                    "is-expanded"
+                );
+
+            }
+
+        }
+    );
+
+
+    element.classList.add(
+        "is-expanded"
+    );
+
+
+    document.body.classList.add(
+        "lesson-card-open"
+    );
+
+
+    state.currentCard =
+        card;
+
+    state.isCardOpen =
+        true;
+
+
+    /*
+       Focus expanded card.
+    */
+
+    setTimeout(
+        () => {
+
+            element.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+
+        },
+        50
+    );
+
+}
+
+
+/* =========================================================
+   20. CLOSE CARD
+   ========================================================= */
+
+function closeLessonCard(
+    element
+) {
+
+    element.classList.remove(
+        "is-expanded"
+    );
+
+    state.currentCard =
+        null;
+
+    state.isCardOpen =
+        false;
+
+    document.body.classList.remove(
+        "lesson-card-open"
+    );
+
+}
+
+
+/* =========================================================
+   21. CARD CLICK FALLBACK
+   ========================================================= */
+
+function handleCardClick(
+    event
+) {
+
+    const card =
+        event.target.closest(
+            ".lesson-card"
+        );
+
+    if (!card) {
+
+        return;
+
+    }
+
+}
+
+
+/* =========================================================
+   22. HIDE ORIGINAL SLIDE
+   ========================================================= */
+
+function hideLegacySlide() {
+
+    const image =
+        document.querySelector(
+            "#slide-image"
+        );
+
+    if (image) {
+
+        image.style.display =
+            "none";
+
+    }
+
+    const wrapper =
+        document.querySelector(
+            ".slide-wrapper"
+        );
+
+    if (wrapper) {
+
+        wrapper.classList.add(
+            "lesson-mode-active"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   23. SANITIZE CONTENT
+   ========================================================= */
+
+function sanitizeLessonHTML(
+    html
+) {
+
+    /*
+       Basic protection.
+
+       Text supplied by teachers should preferably be
+       stored as plain text.
+
+       This permits basic formatting while removing
+       dangerous script / iframe elements.
+    */
+
+    const temp =
+        document.createElement(
+            "div"
+        );
+
+    temp.innerHTML =
+        String(
+            html || ""
+        );
+
+    temp.querySelectorAll(
+        "script, iframe, object, embed"
+    ).forEach(
+        element =>
+            element.remove()
+    );
+
+    return temp.innerHTML;
+
+}
+
+
+/* =========================================================
+   24. SUPABASE MEDIA
+   ========================================================= */
+
+async function loadMedia() {
+
+    if (!supabaseClient) {
+
+        return [];
+
+    }
+
+    try {
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+            .from("lesson_media")
+            .select("*")
+            .order(
+                "created_at",
+                {
+                    ascending: false
+                }
+            );
+
+        if (error) {
+
+            console.error(
+                "Could not load media:",
+                error
+            );
+
+            return [];
+
+        }
+
+        state.media =
+            data || [];
+
+        return state.media;
+
+    } catch (error) {
+
+        console.error(
+            "Media loading failed:",
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+/* =========================================================
+   25. UPLOAD SYSTEM
+   ========================================================= */
+
+function initializeMediaUpload() {
+
+    const uploadButton =
+        document.querySelector(
+            "#upload-media-btn"
+        );
+
+    const fileInput =
+        document.querySelector(
+            "#media-upload-input"
+        );
+
+
+    if (
+        !uploadButton ||
+        !fileInput
+    ) {
+
+        return;
+
+    }
+
+
+    uploadButton.addEventListener(
+        "click",
+        () => {
+
+            fileInput.click();
+
+        }
+    );
+
+
+    fileInput.addEventListener(
+        "change",
+        async event => {
+
+            const files =
+                Array.from(
+                    event.target.files || []
+                );
+
+            if (!files.length) {
+
+                return;
+
+            }
+
+            for (
+                const file of files
+            ) {
+
+                await uploadMedia(
+                    file
+                );
+
+            }
+
+            fileInput.value =
+                "";
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   26. UPLOAD MEDIA
+   ========================================================= */
+
+async function uploadMedia(
+    file
+) {
+
+    if (!supabaseClient) {
+
+        alert(
+            "Supabase is not configured yet."
+        );
+
+        return null;
+
+    }
+
+
+    const allowedTypes = [
+
+        "image/jpeg",
+
+        "image/png",
+
+        "image/webp",
+
+        "image/gif",
+
+        "audio/mpeg",
+
+        "audio/mp3",
+
+        "audio/wav",
+
+        "audio/ogg",
+
+        "audio/webm",
+
+        "video/mp4",
+
+        "video/webm",
+
+        "video/ogg"
+
+    ];
+
+
+    if (
+        !allowedTypes.includes(
+            file.type
+        )
+    ) {
+
+        alert(
+            "This file type is not supported."
+        );
+
+        return null;
+
+    }
+
+
+    /*
+       Maximum file size.
+
+       Change this according to your
+       Supabase Storage plan.
+    */
+
+    const maxSize =
+        500 * 1024 * 1024;
+
+
+    if (
+        file.size > maxSize
+    ) {
+
+        alert(
+            "The file is larger than 500 MB."
+        );
+
+        return null;
+
+    }
+
+
+    const extension =
+        getFileExtension(
+            file.name
+        );
+
+
+    const safeName =
+        sanitizeFileName(
+            file.name
+        );
+
+
+    const path =
+        `${Date.now()}-${safeName}`;
+
+
+    showUploadStatus(
+        `Uploading ${file.name}...`
+    );
+
+
+    try {
+
+        const {
+            error
+        } = await supabaseClient
+            .storage
+            .from(
+                "lesson-media"
+            )
+            .upload(
+                path,
+                file,
+                {
+                    cacheControl:
+                        "3600",
+
+                    upsert:
+                        false,
+
+                    contentType:
+                        file.type
+
+                }
+            );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        const {
+            data: publicData
+        } =
+            supabaseClient
+                .storage
+                .from(
+                    "lesson-media"
+                )
+                .getPublicUrl(
+                    path
+                );
+
+
+        const publicUrl =
+            publicData.publicUrl;
+
+
+        const mediaType =
+            detectMediaType(
+                file.type
+            );
+
+
+        const {
+            data,
+            error:
+                databaseError
+        } =
+            await supabaseClient
+                .from(
+                    "lesson_media"
+                )
+                .insert({
+
+                    file_name:
+                        file.name,
+
+                    file_path:
+                        path,
+
+                    file_url:
+                        publicUrl,
+
+                    media_type:
+                        mediaType,
+
+                    mime_type:
+                        file.type,
+
+                    file_size:
+                        file.size
+
+                })
+                .select()
+                .single();
+
+
+        if (databaseError) {
+
+            /*
+               The storage upload succeeded but
+               database insertion failed.
+            */
+
+            console.error(
+                "Media DB error:",
+                databaseError
+            );
+
+            showUploadStatus(
+                "File uploaded, but media record could not be saved."
+            );
+
+            return null;
+
+        }
+
+
+        state.media.push(
+            data
+        );
+
+
+        showUploadStatus(
+            `${file.name} uploaded successfully.`
+        );
+
+
+        return data;
+
+
+    } catch (error) {
+
+        console.error(
+            "Upload failed:",
+            error
+        );
+
+        showUploadStatus(
+            `Upload failed: ${error.message}`
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/* =========================================================
+   27. MEDIA TYPE
+   ========================================================= */
+
+function detectMediaType(
+    mime
+) {
+
+    if (
+        mime.startsWith(
+            "image/"
+        )
+    ) {
+
+        return "image";
+
+    }
+
+    if (
+        mime.startsWith(
+            "audio/"
+        )
+    ) {
+
+        return "audio";
+
+    }
+
+    if (
+        mime.startsWith(
+            "video/"
+        )
+    ) {
+
+        return "video";
+
+    }
+
+    return "other";
+
+}
+
+
+/* =========================================================
+   28. DELETE MEDIA
+   ========================================================= */
+
+async function deleteMedia(
+    mediaId
+) {
+
+    if (!supabaseClient) {
+
+        return false;
+
+    }
+
+
+    try {
+
+        const {
+            data: media,
+            error
+        } =
+            await supabaseClient
+                .from(
+                    "lesson_media"
+                )
+                .select("*")
+                .eq(
+                    "id",
+                    mediaId
+                )
+                .single();
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
 
         /*
-         * IMPORTANT:
-         * JavaScript cannot automatically discover the files
-         * inside a folder on Vercel/server hosting.
-         *
-         * Therefore, we define which pages belong to each lesson.
-         */
+           Delete storage file.
+        */
 
-        const lessonPages = getLessonPages(unit, lesson);
+        if (
+            media.file_path
+        ) {
 
-        if (lessonPages.length === 0) {
-            console.warn(
-                `No pages found for Unit ${unit}, Lesson ${lesson}`
+            const {
+                error:
+                    storageError
+            } =
+                await supabaseClient
+                    .storage
+                    .from(
+                        "lesson-media"
+                    )
+                    .remove([
+                        media.file_path
+                    ]);
+
+
+            if (
+                storageError
+            ) {
+
+                console.warn(
+                    "Storage deletion error:",
+                    storageError
+                );
+
+            }
+
+        }
+
+
+        /*
+           Delete database record.
+        */
+
+        const {
+            error:
+                databaseError
+        } =
+            await supabaseClient
+                .from(
+                    "lesson_media"
+                )
+                .delete()
+                .eq(
+                    "id",
+                    mediaId
+                );
+
+
+        if (
+            databaseError
+        ) {
+
+            throw databaseError;
+
+        }
+
+
+        state.media =
+            state.media.filter(
+                item =>
+                    item.id !==
+                    mediaId
             );
-            return;
+
+
+        showUploadStatus(
+            "Media deleted."
+        );
+
+
+        return true;
+
+
+    } catch (error) {
+
+        console.error(
+            "Could not delete media:",
+            error
+        );
+
+        showUploadStatus(
+            `Delete failed: ${error.message}`
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   29. FILE NAME HELPERS
+   ========================================================= */
+
+function sanitizeFileName(
+    filename
+) {
+
+    return filename
+        .normalize(
+            "NFD"
+        )
+        .replace(
+            /[\u0300-\u036f]/g,
+            ""
+        )
+        .replace(
+            /[^a-zA-Z0-9._-]/g,
+            "-"
+        )
+        .replace(
+            /-+/g,
+            "-"
+        );
+
+}
+
+
+function getFileExtension(
+    filename
+) {
+
+    const parts =
+        filename.split(".");
+
+    return parts.length > 1
+        ? parts.pop()
+        : "";
+
+}
+
+
+/* =========================================================
+   30. UPLOAD STATUS
+   ========================================================= */
+
+function showUploadStatus(
+    message
+) {
+
+    let status =
+        document.querySelector(
+            "#upload-status"
+        );
+
+
+    if (!status) {
+
+        status =
+            document.createElement(
+                "div"
+            );
+
+        status.id =
+            "upload-status";
+
+        status.className =
+            "upload-status";
+
+        document.body.appendChild(
+            status
+        );
+
+    }
+
+
+    status.textContent =
+        message;
+
+    status.classList.add(
+        "visible"
+    );
+
+
+    clearTimeout(
+        status._timer
+    );
+
+
+    status._timer =
+        setTimeout(
+            () => {
+
+                status.classList.remove(
+                    "visible"
+                );
+
+            },
+            4000
+        );
+
+}
+
+
+/* =========================================================
+   31. ASSIGN MEDIA TO CARD
+   ========================================================= */
+
+async function assignMediaToCard(
+    cardId,
+    mediaId
+) {
+
+    if (!supabaseClient) {
+
+        return false;
+
+    }
+
+
+    try {
+
+        const {
+            data: media,
+            error
+        } =
+            await supabaseClient
+                .from(
+                    "lesson_media"
+                )
+                .select(
+                    "*"
+                )
+                .eq(
+                    "id",
+                    mediaId
+                )
+                .single();
+
+
+        if (error) {
+
+            throw error;
+
         }
 
-        // Build the NEW paths
-        currentImages = lessonPages.map(page =>
-            `${lessonPath}page${page}.jpg`
+
+        const {
+            error:
+                updateError
+        } =
+            await supabaseClient
+                .from(
+                    "lesson_cards"
+                )
+                .update({
+
+                    media_id:
+                        media.id,
+
+                    media_url:
+                        media.file_url
+
+                })
+                .eq(
+                    "id",
+                    cardId
+                );
+
+
+        if (updateError) {
+
+            throw updateError;
+
+        }
+
+
+        await loadLessons();
+
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Could not assign media:",
+            error
         );
 
-        // Start at the FIRST page of the lesson
-        currentIndex = 0;
+        return false;
 
-        loadImage(currentImages[currentIndex]);
-
-        prevBtn.style.display = "block";
-        nextBtn.style.display = "block";
-
-        // Save current state
-        saveCurrentState(
-            "student",
-            unit,
-            lessonPages[0]
-        );
-
-        console.log(
-            "Opening:",
-            currentImages[currentIndex]
-        );
-
-        // Close lesson menus
-        document.querySelectorAll(".lesson-dropdown").forEach(menu => {
-            menu.classList.remove("show");
-        });
-
-    });
-
-});
-
-
-activityDropdownLinks.forEach(link => {
-    link.addEventListener("click", (e) => {
-        e.preventDefault();
-        const unit = link.getAttribute("data-unit");
-        loadActivityUnit(unit);
-        // Save state
-        saveCurrentState(
-            "activity",
-            unit,
-            parseInt(currentImages[currentIndex].match(/page(\d+)/)[1])
-        );
-    });
-});
-
-// ==========================
-// NAVIGATION
-// ==========================
-prevBtn.addEventListener("click", () => {
-    if (currentIndex > 0) {
-        currentIndex--;
-        loadImage(currentImages[currentIndex]);
-         // Save state
-        saveCurrentState(
-            currentImages[currentIndex].includes("student-book-pages") ? "student" : "activity",
-            currentImages[currentIndex].match(/unit_(\d+)/)[1],
-            currentImages[currentIndex].match(/page(\d+)/)[1]
-        );
-    }
-});
-
-nextBtn.addEventListener("click", () => {
-    if (currentIndex < currentImages.length - 1) {
-        currentIndex++;
-        loadImage(currentImages[currentIndex]);
-         // Save state
-        saveCurrentState(
-            currentImages[currentIndex].includes("student-book-pages") ? "student" : "activity",
-            currentImages[currentIndex].match(/unit_(\d+)/)[1],
-            currentImages[currentIndex].match(/page(\d+)/)[1]
-        );
-    }
-});
-
-// ==========================
-// ZOOM SYSTEM
-// ==========================
-
-// Minimum and maximum zoom
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 5;
-
-// Apply zoom ONLY to the slide image
-function applyZoom() {
-
-    if (!slideImage.naturalWidth || !slideImage.naturalHeight) {
-        return;
     }
 
-    slideImage.style.width =
-        (slideImage.naturalWidth * currentScale) + "px";
-
-    slideImage.style.height =
-        (slideImage.naturalHeight * currentScale) + "px";
-
-    resizeEditCanvas();
 }
 
 
-// ==========================
-// COMPUTER — CTRL + MOUSE WHEEL
-// ==========================
+/* =========================================================
+   32. CREATE LESSON CARD
+   ========================================================= */
 
-slideContainer.addEventListener("wheel", function(e) {
+async function createLessonCard(
+    lessonId,
+    cardData
+) {
 
-    if (!e.ctrlKey) return;
+    if (!supabaseClient) {
 
-    e.preventDefault();
+        return null;
 
-    if (e.deltaY < 0) {
-
-        currentScale += 0.1;
-
-    } else {
-
-        currentScale -= 0.1;
     }
 
-    currentScale = Math.max(
-        MIN_ZOOM,
-        Math.min(MAX_ZOOM, currentScale)
-    );
 
-    applyZoom();
+    try {
 
-}, { passive: false });
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from(
+                    "lesson_cards"
+                )
+                .insert({
+
+                    lesson_id:
+                        lessonId,
+
+                    title:
+                        cardData.title ||
+                        "New Card",
+
+                    subtitle:
+                        cardData.subtitle ||
+                        "",
+
+                    type:
+                        cardData.type ||
+                        "text",
+
+                    content:
+                        cardData.content ||
+                        "",
+
+                    media_id:
+                        cardData.media_id ||
+                        null,
+
+                    media_url:
+                        cardData.media_url ||
+                        null,
+
+                    position:
+                        cardData.position ||
+                        0
+
+                })
+                .select()
+                .single();
 
 
-// ==========================
-// ANDROID / TOUCH — PINCH ZOOM
-// ==========================
+        if (error) {
 
-let pinchStartDistance = null;
-let pinchStartScale = 1;
+            throw error;
+
+        }
 
 
-// Calculate distance between two fingers
-function getTouchDistance(touch1, touch2) {
+        await loadLessons();
 
-    const dx = touch2.clientX - touch1.clientX;
-    const dy = touch2.clientY - touch1.clientY;
 
-    return Math.sqrt(
-        dx * dx + dy * dy
-    );
+        return data;
+
+    } catch (error) {
+
+        console.error(
+            "Could not create card:",
+            error
+        );
+
+        return null;
+
+    }
+
 }
 
 
-// Start pinch
-slideContainer.addEventListener("touchstart", function(e) {
+/* =========================================================
+   33. DELETE LESSON CARD
+   ========================================================= */
 
-    if (e.touches.length !== 2) return;
+async function deleteLessonCard(
+    cardId
+) {
 
-    e.preventDefault();
+    if (!supabaseClient) {
 
-    pinchStartDistance = getTouchDistance(
-        e.touches[0],
-        e.touches[1]
-    );
+        return false;
 
-    // Remember the zoom level when the pinch begins
-    pinchStartScale = currentScale;
-
-}, { passive: false });
-
-
-// Continue pinch
-slideContainer.addEventListener("touchmove", function(e) {
-
-    if (e.touches.length !== 2) return;
-
-    e.preventDefault();
-
-    const currentDistance = getTouchDistance(
-        e.touches[0],
-        e.touches[1]
-    );
-
-    if (!pinchStartDistance) return;
-
-    // How much the fingers moved apart/together
-    const scaleChange =
-        currentDistance / pinchStartDistance;
-
-    // Calculate new zoom
-    currentScale =
-        pinchStartScale * scaleChange;
-
-    // Limit zoom
-    currentScale = Math.max(
-        MIN_ZOOM,
-        Math.min(MAX_ZOOM, currentScale)
-    );
-
-    applyZoom();
-
-}, { passive: false });
-
-
-// Finish pinch
-slideContainer.addEventListener("touchend", function(e) {
-
-    if (e.touches.length < 2) {
-
-        pinchStartDistance = null;
-
-        // currentScale is deliberately NOT reset
-        // The zoom remains exactly where the user left it.
     }
 
-}, { passive: false });
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from(
+                    "lesson_cards"
+                )
+                .delete()
+                .eq(
+                    "id",
+                    cardId
+                );
 
 
-// Also handle cancelled touches
-slideContainer.addEventListener("touchcancel", function() {
+        if (error) {
 
-    pinchStartDistance = null;
+            throw error;
 
-}, { passive: false });
-// ==========================
-// HOME BUTTON
-// ==========================
-homeBtn.addEventListener("click", function(e) {
-    e.preventDefault();
-    loadHome();
-});
+        }
 
-window.addEventListener("load", () => {
-    const navigationEntries = performance.getEntriesByType("navigation");
-    const isReload = navigationEntries.length > 0 && navigationEntries[0].type === "reload";
 
-    if (isReload) {
-        // Page was refreshed → restore previous state if exists
-        const savedState = localStorage.getItem("pptkb1State");
-        if (savedState) {
-            const { bookType, unit, pageNum } = JSON.parse(savedState);
-            if (bookType === "student") {
-                loadStudentUnit(unit);
-                currentIndex = currentImages.findIndex(src => src.includes(`page${pageNum}.JPG`));
-                if (currentIndex >= 0) loadImage(currentImages[currentIndex]);
-            } else if (bookType === "activity") {
-                loadActivityUnit(unit);
-                currentIndex = currentImages.findIndex(src => src.includes(`page${pageNum}.JPG`));
-                if (currentIndex >= 0) loadImage(currentImages[currentIndex]);
+        await loadLessons();
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Could not delete card:",
+            error
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   34. UPDATE LESSON CARD
+   ========================================================= */
+
+async function updateLessonCard(
+    cardId,
+    updates
+) {
+
+    if (!supabaseClient) {
+
+        return false;
+
+    }
+
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from(
+                    "lesson_cards"
+                )
+                .update(
+                    updates
+                )
+                .eq(
+                    "id",
+                    cardId
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        await loadLessons();
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Could not update card:",
+            error
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   35. EXISTING CONTROLS
+   ========================================================= */
+
+function initializeExistingControls() {
+
+    initializeNavigation();
+
+    initializeAudio();
+
+    initializeVideo();
+
+    initializePresentation();
+
+    initializeDropdowns();
+
+}
+
+
+/* =========================================================
+   36. NAVIGATION
+   ========================================================= */
+
+function initializeNavigation() {
+
+    const previous =
+        document.querySelector(
+            "#prev-btn"
+        );
+
+    const next =
+        document.querySelector(
+            "#next-btn"
+        );
+
+
+    if (previous) {
+
+        previous.addEventListener(
+            "click",
+            () => {
+
+                navigateLesson(
+                    -1
+                );
+
             }
-        } else {
-            loadHome(); // fallback if nothing saved
-        }
-    } else {
-        // First time opening → always Home
-        loadHome();
-    }
-});
-
-// ==========================
-// AUDIO FUNCTIONALITY FOR ALL UNITS
-// ==========================
-
-audioBtn.addEventListener("click", function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-  // TOGGLE: hide if already visible
-    if (audioListContainer.style.display === "flex") {
-        audioListContainer.style.display = "none";
-        return;
-    }
-    // Clear previous buttons
-    audioListContainer.innerHTML = "";
-    audioListContainer.style.display = "flex";
-
-    if (currentImages.length === 0) return;
-
-    const pageSrc = currentImages[currentIndex];
-
-    // Determine if Student or Activity Book
-    let bookType;
-    if (pageSrc.includes("student-book-pages")) bookType = "student";
-    else if (pageSrc.includes("activity-book-pages")) bookType = "activity";
-    else return;
-
-    // Extract unit number
-    const unitMatch = pageSrc.match(/unit_(\d+)/i);
-    if (!unitMatch) return;
-    const unit = parseInt(unitMatch[1]);
-
-    // Extract page number
-    const pageMatch = pageSrc.match(/page(\d+)/i);
-    if (!pageMatch) return;
-    const pageNum = parseInt(pageMatch[1]);
-
-    // Define audio tracks for all units (Student Book)
-    const studentBookAudioTracks = {
-        1: {8:["page8_Track_1.1"],9:["page9_Track_1.2","page9_Track_1.3"],10:["br2_003_a1_4"]},
-        2: {13:["br2_003_a2_1"],15:["br2_003_a2_2"],16:["br2_003_a2_3"]},
-        3: {19:["br2_003_a3_1"],20:["br2_003_a3_2"],21:["br2_003_a3_3","br2_003_a3_4"],22:["br2_003_a3_5"]},
-        4: {27:["br2_003_a4_1"],28:["br2_003_a4_2"],29:["br2_003_a4_3"],30:["br2_003_a4_4"]},
-        5: {34:["br2_003_a5_1"],35:["br2_003_a5_2","br2_003_a5_3"],36:["br2_003_a5_4","br2_003_a5_5","br2_003_a5_6"]},
-        6: {38:["br2_003_a6_1"],41:["br2_003_a6_2","br2_003_a6_3"],42:["br2_003_a6_4"],43:["br2_003_a6_5"]},
-        7: {47:["br2_003_a7_1"],49:["br2_003_a7_2","br2_003_a7_3"],50:["br2_003_a7_4"]},
-        8: {54:["br2_003_a8_1"],55:["br2_003_a8_2"],56:["br2_003_a8_3"]},
-        9: {59:["br2_003_a9_1"],60:["br2_003_a9_2"],61:["br2_003_a9_3"],62:["br2_003_a9_4"],},
-        10: {67:["br2_003_a10_1"],68:["br2_003_a10_2"],69:["br2_003_a10_3"],70:["br2_003_a10_4"]},
-        11: {72:["br2_003_a11_1"],73:["br2_003_a11_1"],75:["br2_003_a11_2"],76:["br2_003_a11_3","br2_003_a11_4"]},
-        12: {79:["br2_003_a12_1"],81:["br2_003_a12_2"],82:["br2_003_a12_3","br2_003_a12_4","br2_003_a12_5"],83:["br2_003_a12_6"]},
-    };
-
-    // Define audio tracks for all units (Activity Book)
-    const activityBookAudioTracks = {
-        1: {4:["page4_Track_02"],15:["br2_003_a2_2"],7:["page7_Track_04"]},
-        2: {13:["br2_003_a2_1"],12:["page12_Track_06"],16:["page16_Track_07"]},
-        3: {18:["page18_Track_08"],19:["page19_Track_09"],20:["page20_Track_10"],21:["page21_Track_11"],22:["page22_Track_12"]},
-        4: {24:["page24_Track_13"],25:["page25_Track_14"],26:["page26_Track_15"],28:["page28_Track_16"]},
-        5: {34:["page34_Track_18"],36:["page36_Track_19"],38:["page38_Track_20"]},
-        6: {40:["page40_Track_21"],41:["page41_Track_22"],42:["page42_Track_23"],46:["page46_Track_24"]},
-        7: {48:["page48_Track_25"],50:["page50_Track_26"],52:["page52_Track_27"]},
-        8: {54:["page54_Track_28"],55:["page55_Track_29"],56:["page56_Track_30","page56_Track_31"],57:["page57_Track_32"],60:["page60_Track_33"],62:["page62_Track_34"]},
-        9: {64:["page64_Track_35"],66:["page66_Track_36"]},
-        10: {70:["page70_Track_37"],72:["page72_Track_38"],73:["page73_Track_39"]},
-        11: {78:["page78_Track_40"],80:["page80_Track_41"]},
-        12: {84:["page84_Track_42"],86:["page86_Track_43"],87:["page87_Track_44"] }
-    };
-
-    // Pick the correct track list
-    let tracks;
-    if (bookType === "student") tracks = studentBookAudioTracks[unit] ? studentBookAudioTracks[unit][pageNum] || [] : [];
-    else tracks = activityBookAudioTracks[unit] ? activityBookAudioTracks[unit][pageNum] || [] : [];
-
-    if (tracks.length === 0) {
-        
-        return;
-    }
-
-    // Create buttons for each track
-    tracks.forEach(track => {
-        const btn = document.createElement("button");
-        const trackNumber = track.split("_")[2]; // get number
-        btn.textContent = `Audio ${trackNumber}`;
-
-        btn.addEventListener("click", () => {
-            const folder = bookType === "student" ? "student-book-audios" : "activity-book-audios";
-            audioSource.src = `audios/${folder}/unit_${unit}/${track}.mp3`;
-            audioPlayer.load();
-            showAudioPlayer(); // <-- use the new function
-            audioPlayer.controls = true;
-        });
-
-        audioListContainer.appendChild(btn);
-    });
-});
-
-// Hide audio list if click outside
-window.addEventListener("click", () => {
-    audioListContainer.style.display = "none";
-});
-// ==========================
-// VIDEO FUNCTIONALITY FOR UNIT 1
-// ==========================
-
-const videoBtn = document.querySelector('a img[alt="Videos"]').parentElement;
-const videoListContainer = document.createElement("div");
-videoListContainer.id = "video-list-container";
-document.body.appendChild(videoListContainer);
-
-const videoPlayer = document.getElementById("slide-video");
-const videoSource = document.getElementById("video-source");
-const hideVideoBtn = document.getElementById("hide-video-btn");
-
-// Show video player and hide button
-function showVideoPlayer() {
-    videoPlayer.style.display = "block";
-    hideVideoBtn.style.display = "inline-block";
-}
-
-// Hide video player when hide button is clicked
-hideVideoBtn.addEventListener("click", () => {
-    videoPlayer.pause();
-    videoPlayer.style.display = "none";
-    hideVideoBtn.style.display = "none";
-});
-
-// Double-click to toggle fullscreen
-videoPlayer.addEventListener("dblclick", () => {
-    if (!document.fullscreenElement) {
-        videoPlayer.requestFullscreen().catch(err => console.log(err));
-    } else {
-        document.exitFullscreen();
-    }
-});
-
-// Define videos for Unit 1
-// Define videos for Unit 1
-const unitVideos = {
-    1: {
-        10: ["presentation1"],
-        },
-    3: {
-        24: ["br2_004_v1_1","br2_004_v1_2"],
-        25: ["br2_004_v1_3"]
-    },
-
-    6: {
-        44: ["br2_004_v2_1"],
-        45: ["br2_004_v2_2","br2_004_v2_3"]
-    },
-
-    9: {
-        64: ["br2_004_v3_1", "br2_004_v3_2"],
-        65: ["br2_004_v3_3","br2_004_v3_4","br2_004_v3_5","br2_004_v3_6"]
-    },
-
-    12: {
-        84: ["br2_004_v4_1"],
-        85: ["br2_004_v4_2","br2_004_v4_3","br2_004_v4_4"]
-    }
-};
-// Click event for video icon (Student Book only)
-videoBtn.addEventListener("click", function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-   // TOGGLE: hide if already visible
-    if (videoListContainer.style.display === "flex") {
-        videoListContainer.style.display = "none";
-        return;
-    }
-
-    // Clear previous buttons
-    videoListContainer.innerHTML = "";
-    videoListContainer.style.display = "flex";
-
-    if (currentImages.length === 0) return;
-
-    const pageSrc = currentImages[currentIndex];
-
-    // ONLY show videos for Student Book pages
-    if (!pageSrc.includes("student-book-pages")) return; // <- key change
-
-    // Extract unit number
-    const unitMatch = pageSrc.match(/unit_(\d+)/i);
-    if (!unitMatch) return;
-    const unit = parseInt(unitMatch[1]);
-
-    // Extract page number
-    const pageMatch = pageSrc.match(/page(\d+)/i);
-    if (!pageMatch) return;
-    const pageNum = parseInt(pageMatch[1]);
-
-    // Get videos for this page
-    const tracks = unitVideos[unit] ? unitVideos[unit][pageNum] || [] : [];
-
-    if (tracks.length === 0) return; // <- do nothing if no videos
-
-    tracks.forEach((track, index) => {
-        const btn = document.createElement("button");
-        btn.textContent = `Video ${index + 1}`;
-
-        btn.addEventListener("click", () => {
-            videoSource.src = `video/unit_${unit}/${track}.mp4`;
-            videoPlayer.load();
-            showVideoPlayer();
-        });
-
-        videoListContainer.appendChild(btn);
-    });
-});
-
-// Hide video list if click outside
-window.addEventListener("click", () => {
-    videoListContainer.style.display = "none";
-});
-
-// ==========================
-// DRAWING TARGET SYSTEM (NEW CORE FIX)
-// ==========================
-
-const editCanvas = document.getElementById("edit-canvas");
-const editCtx = editCanvas.getContext("2d");
-
-const whiteboardCanvas = document.getElementById("whiteboard-canvas");
-const whiteboardCtx = whiteboardCanvas.getContext("2d");
-
-// ACTIVE CANVAS
-let drawingCanvas = editCanvas;
-let drawingCtx = editCtx;
-
-// Switch drawing target
-function setDrawingTarget(type) {
-
-    if (type === "whiteboard") {
-        drawingCanvas = whiteboardCanvas;
-        drawingCtx = whiteboardCtx;
-    } else {
-        drawingCanvas = editCanvas;
-        drawingCtx = editCtx;
-    }
-
-    updateCursor();
-}
-
-// ==========================
-// EDIT TRAY TOGGLE SYSTEM
-// ==========================
-
-const editBtn = document.getElementById("edit-btn");
-const editTray = document.getElementById("edit-tray");
-const pencilTool = document.getElementById("pencil-tool");
-
-editBtn.addEventListener("click", function(e) {
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    editTray.style.display =
-        editTray.style.display === "flex"
-            ? "none"
-            : "flex";
-});
-
-// ==========================
-// WHITEBOARD TOGGLE
-// ==========================
-
-const whiteboardBtn = document.getElementById("whiteboard-btn");
-const whiteboard = document.getElementById("whiteboard");
-
-whiteboardBtn.addEventListener("click", function(e) {
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (whiteboard.style.display === "flex") {
-
-        whiteboard.style.display = "none";
-        editTray.style.display = "none";
-
-        setDrawingTarget("slide");
-
-    } else {
-
-        whiteboard.style.display = "flex";
-        editTray.style.display = "flex";
-
-        resizeWhiteboardCanvas();
-
-        setDrawingTarget("whiteboard");
-    }
-});
-
-// Hide whiteboard when changing pages
-studentDropdownLinks.forEach(link => {
-
-    link.addEventListener("click", () => {
-
-        whiteboard.style.display = "none";
-        editTray.style.display = "none";
-
-        setDrawingTarget("slide");
-    });
-});
-
-activityDropdownLinks.forEach(link => {
-
-    link.addEventListener("click", () => {
-
-        whiteboard.style.display = "none";
-        editTray.style.display = "none";
-
-        setDrawingTarget("slide");
-    });
-});
-
-// ==========================
-// TOOL SYSTEM
-// ==========================
-
-let currentTool = null;
-function setTool(tool) {
-
-    // toggle OFF
-    if (currentTool === tool) {
-
-        currentTool = null;
-
-    } else {
-
-        currentTool = tool;
-    }
-
-    updateToolUI();
-    updateCursor();
-}
-const penTool = document.getElementById("pen-tool");
-const eraserTool = document.getElementById("eraser-tool");
-const highlightTool = document.getElementById("highlight-tool");
-const textTool = document.getElementById("text-tool");
-const clearTool = document.getElementById("clear-tool");
-
-pencilTool.addEventListener("click", () => setTool("pencil"));
-penTool.addEventListener("click", () => setTool("pen"));
-eraserTool.addEventListener("click", () => setTool("eraser"));
-highlightTool.addEventListener("click", () => setTool("marker"));
-
-textTool.addEventListener("click", () => setTool("text"));
-function updateToolUI() {
-
-    const tools = {
-        pencil: pencilTool,
-        pen: penTool,
-        eraser: eraserTool,
-        marker: highlightTool,
-        text: textTool
-    };
-
-    Object.values(tools).forEach(btn => {
-        if (btn) btn.classList.remove("active-tool");
-    });
-
-    if (tools[currentTool]) {
-        tools[currentTool].classList.add("active-tool");
-    }
-}
-// ==========================
-// CLEAR CURRENT CANVAS
-// ==========================
-
-clearTool.addEventListener("click", () => {
-
-    const currentCanvasId = drawingCanvas.id;
-
-    // Remove only strokes from current canvas
-    strokes = strokes.filter(stroke => {
-        return stroke.canvas !== currentCanvasId;
-    });
-
-    // Clear actual canvas
-    if (currentCanvasId === "whiteboard-canvas") {
-
-        whiteboardCtx.clearRect(
-            0,
-            0,
-            whiteboardCanvas.width,
-            whiteboardCanvas.height
         );
 
-    } else {
+    }
 
-        editCtx.clearRect(
-            0,
-            0,
-            editCanvas.width,
-            editCanvas.height
+
+    if (next) {
+
+        next.addEventListener(
+            "click",
+            () => {
+
+                navigateLesson(
+                    1
+                );
+
+            }
         );
+
     }
 
-    redrawStrokes();
-});
-// ==========================
-// CURSOR SYSTEM
-// ==========================
-
-function updateCursor() {
-
-    if (currentTool === "text") {
-
-        drawingCanvas.style.cursor = "text";
-
-        // allow clicking textboxes
-        editCanvas.style.pointerEvents = "none";
-
-    } else {
-
-        editCanvas.style.pointerEvents = "auto";
-
-        if (currentTool === "eraser") {
-            drawingCanvas.style.cursor = "crosshair";
-        }
-
-        else if (currentTool === "marker") {
-            drawingCanvas.style.cursor = "cell";
-        }
-
-        else {
-            drawingCanvas.style.cursor = "default";
-        }
-    }
-}
-// ==========================
-// DRAWING ENGINE
-// ==========================
-
-let strokes = [];
-let currentStroke = null;
-let drawing = false;
-
-let pencilSize = 3;
-
-// ==========================
-// RESIZE SYSTEM
-// ==========================
-
-function resizeEditCanvas() {
-
-    const rect = slideImage.getBoundingClientRect();
-
-    editCanvas.width = rect.width;
-    editCanvas.height = rect.height;
-
-    editCanvas.style.left = slideImage.offsetLeft + "px";
-    editCanvas.style.top = slideImage.offsetTop + "px";
-
-    redrawStrokes();
-    rerenderAllTextBoxes();
 }
 
-function resizeWhiteboardCanvas() {
 
-    whiteboardCanvas.width = whiteboard.offsetWidth;
-    whiteboardCanvas.height = whiteboard.offsetHeight;
+/* =========================================================
+   37. LESSON NAVIGATION
+   ========================================================= */
 
-    redrawStrokes();
-}
+function navigateLesson(
+    direction
+) {
 
-window.addEventListener("resize", () => {
-
-    resizeEditCanvas();
-    resizeWhiteboardCanvas();
-});
-
-// ==========================
-// POSITION SYSTEM
-// ==========================
-
-function getPos(e, canvas) {
-
-    const rect = canvas.getBoundingClientRect();
-
-    return {
-        x: (e.clientX - rect.left) / canvas.width,
-        y: (e.clientY - rect.top) / canvas.height
-    };
-}
-
-// ==========================
-// DRAW START
-// ==========================
-
-function startDrawing(e, canvas) {
-if (!currentTool) return;
-    const { x, y } = getPos(e, canvas);
-
-    if (currentTool === "eraser") {
-
-        drawing = true;
-
-        eraseAt(x, y, canvas.id);
-
-        redrawStrokes();
+    if (
+        !state.lessons.length
+    ) {
 
         return;
+
     }
 
-    drawing = true;
 
-    let color = "red";
-    let size = pencilSize;
+    const index =
+        state.lessons.findIndex(
+            lesson =>
+                lesson.id ===
+                state.currentLessonId
+        );
 
-    if (currentTool === "pen") {
 
-        color = "blue";
-        size = 4;
+    let nextIndex =
+        index + direction;
+
+
+    if (
+        nextIndex < 0
+    ) {
+
+        nextIndex =
+            state.lessons.length - 1;
+
     }
 
-    if (currentTool === "marker") {
 
-        color = "rgba(255,255,0,0.4)";
-        size = 18;
+    if (
+        nextIndex >=
+        state.lessons.length
+    ) {
+
+        nextIndex =
+            0;
+
     }
 
-    currentStroke = {
-        type: "stroke",
-        canvas: canvas.id,
-        color,
-        size,
-        points: [{ x, y }]
-    };
 
-    strokes.push(currentStroke);
+    openLesson(
+        state.lessons[
+            nextIndex
+        ].id
+    );
+
 }
 
-// ==========================
-// DRAW MOVE
-// ==========================
 
-function moveDrawing(e, canvas) {
+/* =========================================================
+   38. AUDIO
+   ========================================================= */
 
-    if (!drawing) return;
+function initializeAudio() {
 
-    const { x, y } = getPos(e, canvas);
+    const audio =
+        document.querySelector(
+            "#slide-audio"
+        );
 
-    if (currentTool === "eraser") {
+    const hideButton =
+        document.querySelector(
+            "#hide-audio-btn"
+        );
 
-        eraseAt(x, y, canvas.id);
 
-        redrawStrokes();
+    if (
+        hideButton &&
+        audio
+    ) {
 
-        return;
+        hideButton.addEventListener(
+            "click",
+            () => {
+
+                audio.pause();
+
+                audio.style.display =
+                    "none";
+
+            }
+        );
+
     }
 
-    currentStroke.points.push({ x, y });
-
-    redrawStrokes();
 }
 
-// ==========================
-// DRAW STOP
-// ==========================
 
-function stopDrawing() {
+/* =========================================================
+   39. VIDEO
+   ========================================================= */
 
-    drawing = false;
+function initializeVideo() {
+
+    const video =
+        document.querySelector(
+            "#slide-video"
+        );
+
+    const hideButton =
+        document.querySelector(
+            "#hide-video-btn"
+        );
+
+
+    if (
+        hideButton &&
+        video
+    ) {
+
+        hideButton.addEventListener(
+            "click",
+            () => {
+
+                video.pause();
+
+                video.close?.();
+
+                video.style.display =
+                    "none";
+
+            }
+        );
+
+    }
+
 }
 
-// ==========================
-// EDIT CANVAS EVENTS
-// ==========================
 
-editCanvas.addEventListener("mousedown", (e) => {
-    startDrawing(e, editCanvas);
-});
+/* =========================================================
+   40. PRESENTATION
+   ========================================================= */
 
-editCanvas.addEventListener("mousemove", (e) => {
-    moveDrawing(e, editCanvas);
-});
+function initializePresentation() {
 
-editCanvas.addEventListener("mouseup", stopDrawing);
+    const viewer =
+        document.querySelector(
+            "#presentation-viewer"
+        );
 
-editCanvas.addEventListener("mouseleave", stopDrawing);
+    const frame =
+        document.querySelector(
+            "#presentation-frame"
+        );
 
-// ==========================
-// WHITEBOARD EVENTS
-// ==========================
+    const close =
+        document.querySelector(
+            "#hide-presentation-btn"
+        );
 
-whiteboardCanvas.addEventListener("mousedown", (e) => {
-    startDrawing(e, whiteboardCanvas);
-});
 
-whiteboardCanvas.addEventListener("mousemove", (e) => {
-    moveDrawing(e, whiteboardCanvas);
-});
+    if (close) {
 
-whiteboardCanvas.addEventListener("mouseup", stopDrawing);
+        close.addEventListener(
+            "click",
+            () => {
 
-whiteboardCanvas.addEventListener("mouseleave", stopDrawing);
+                if (frame) {
 
-// ==========================
-// ERASER SYSTEM
-// ==========================
+                    frame.src =
+                        "about:blank";
 
-function eraseAt(x, y, canvasId) {
-
-    const radius = 0.01;
-
-    strokes = strokes.flatMap(stroke => {
-
-        if (stroke.canvas !== canvasId) return [stroke];
-
-        let newStrokes = [];
-        let temp = [];
-
-        for (let p of stroke.points) {
-
-            const dx = p.x - x;
-            const dy = p.y - y;
-
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist > radius) {
-
-                temp.push(p);
-
-            } else {
-
-                if (temp.length) {
-
-                    newStrokes.push({
-                        type: "stroke",
-                        canvas: stroke.canvas,
-                        color: stroke.color,
-                        size: stroke.size,
-                        points: temp
-                    });
-
-                    temp = [];
                 }
+
+                if (viewer) {
+
+                    viewer.style.display =
+                        "none";
+
+                }
+
+                close.style.display =
+                    "none";
+
             }
-        }
+        );
 
-        if (temp.length) {
+    }
 
-            newStrokes.push({
-                type: "stroke",
-                canvas: stroke.canvas,
-                color: stroke.color,
-                size: stroke.size,
-                points: temp
-            });
-        }
-
-        return newStrokes;
-    });
 }
 
-// ==========================
-// REDRAW SYSTEM
-// ==========================
 
-function redrawStrokes() {
+/* =========================================================
+   41. DROPDOWNS
+   ========================================================= */
 
-    editCtx.clearRect(0, 0, editCanvas.width, editCanvas.height);
+function initializeDropdowns() {
 
-    whiteboardCtx.clearRect(
-        0,
-        0,
-        whiteboardCanvas.width,
-        whiteboardCanvas.height
+    $all(
+        ".dropdown"
+    ).forEach(
+        dropdown => {
+
+            const icon =
+                dropdown.querySelector(
+                    ".control-icon"
+                );
+
+            if (!icon) {
+
+                return;
+
+            }
+
+
+            icon.addEventListener(
+                "click",
+                event => {
+
+                    event.stopPropagation();
+
+
+                    $all(
+                        ".dropdown.show"
+                    ).forEach(
+                        other => {
+
+                            if (
+                                other !==
+                                dropdown
+                            ) {
+
+                                other.classList.remove(
+                                    "show"
+                                );
+
+                            }
+
+                        }
+                    );
+
+
+                    dropdown.classList.toggle(
+                        "show"
+                    );
+
+                }
+            );
+
+        }
     );
 
-    strokes.forEach(item => {
 
-        let ctx;
-        let canvas;
+    document.addEventListener(
+        "click",
+        () => {
 
-        if (item.canvas === "whiteboard-canvas") {
+            $all(
+                ".dropdown.show"
+            ).forEach(
+                dropdown =>
+                    dropdown.classList.remove(
+                        "show"
+                    )
+            );
 
-            ctx = whiteboardCtx;
-            canvas = whiteboardCanvas;
+        }
+    );
 
-        } else {
+}
 
-            ctx = editCtx;
-            canvas = editCanvas;
+
+/* =========================================================
+   42. WHITEBOARD
+   ========================================================= */
+
+function initializeWhiteboard() {
+
+    const canvas =
+        document.querySelector(
+            "#whiteboard-canvas"
+        );
+
+    if (!canvas) {
+
+        return;
+
+    }
+
+
+    const context =
+        canvas.getContext(
+            "2d"
+        );
+
+
+    function resizeCanvas() {
+
+        const rect =
+            canvas.getBoundingClientRect();
+
+        const ratio =
+            window.devicePixelRatio ||
+            1;
+
+
+        canvas.width =
+            rect.width *
+            ratio;
+
+        canvas.height =
+            rect.height *
+            ratio;
+
+
+        context.scale(
+            ratio,
+            ratio
+        );
+
+        context.lineCap =
+            "round";
+
+        context.lineJoin =
+            "round";
+
+    }
+
+
+    resizeCanvas();
+
+
+    window.addEventListener(
+        "resize",
+        resizeCanvas
+    );
+
+
+    function getPosition(
+        event
+    ) {
+
+        const rect =
+            canvas.getBoundingClientRect();
+
+
+        if (
+            event.touches &&
+            event.touches.length
+        ) {
+
+            return {
+
+                x:
+                    event.touches[0].clientX -
+                    rect.left,
+
+                y:
+                    event.touches[0].clientY -
+                    rect.top
+
+            };
+
         }
 
-        ctx.strokeStyle = item.color;
-        ctx.lineWidth = item.size;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
 
-        ctx.beginPath();
+        return {
 
-        item.points.forEach((p, i) => {
+            x:
+                event.clientX -
+                rect.left,
 
-            const x = p.x * canvas.width;
-            const y = p.y * canvas.height;
+            y:
+                event.clientY -
+                rect.top
 
-            if (i === 0) {
+        };
 
-                ctx.moveTo(x, y);
+    }
 
-            } else {
 
-                ctx.lineTo(x, y);
+    function startDrawing(
+        event
+    ) {
+
+        state.drawing =
+            true;
+
+
+        const pos =
+            getPosition(
+                event
+            );
+
+
+        context.beginPath();
+
+        context.moveTo(
+            pos.x,
+            pos.y
+        );
+
+        context.strokeStyle =
+            state.pencilColor;
+
+        context.lineWidth =
+            state.pencilSize;
+
+
+        event.preventDefault();
+
+    }
+
+
+    function draw(
+        event
+    ) {
+
+        if (
+            !state.drawing
+        ) {
+
+            return;
+
+        }
+
+
+        const pos =
+            getPosition(
+                event
+            );
+
+
+        context.lineTo(
+            pos.x,
+            pos.y
+        );
+
+        context.stroke();
+
+
+        event.preventDefault();
+
+    }
+
+
+    function stopDrawing() {
+
+        state.drawing =
+            false;
+
+        context.closePath();
+
+    }
+
+
+    canvas.addEventListener(
+        "mousedown",
+        startDrawing
+    );
+
+    canvas.addEventListener(
+        "mousemove",
+        draw
+    );
+
+    canvas.addEventListener(
+        "mouseup",
+        stopDrawing
+    );
+
+    canvas.addEventListener(
+        "mouseleave",
+        stopDrawing
+    );
+
+
+    canvas.addEventListener(
+        "touchstart",
+        startDrawing,
+        {
+            passive: false
+        }
+    );
+
+    canvas.addEventListener(
+        "touchmove",
+        draw,
+        {
+            passive: false
+        }
+    );
+
+    canvas.addEventListener(
+        "touchend",
+        stopDrawing
+    );
+
+
+    const clear =
+        document.querySelector(
+            "#clear-tool"
+        );
+
+
+    if (clear) {
+
+        clear.addEventListener(
+            "click",
+            () => {
+
+                context.clearRect(
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+
             }
-        });
+        );
 
-        ctx.stroke();
-    });
-}
-
-// ==========================
-// TEXT TOOL (FIXED VERSION)
-// ==========================
-
-let activeTextBox = null;
-
-// click handler
-editCanvas.addEventListener("click", handleTextClick);
-whiteboardCanvas.addEventListener("click", handleTextClick);
-
-function handleTextClick(e) {
-    if (currentTool !== "text") return;
-
-    const canvas = drawingCanvas;
-    const rect = canvas.getBoundingClientRect();
-
-    // FIX: correct absolute positioning (no shift left anymore)
-const x = (e.clientX - rect.left) / rect.width;
-const y = (e.clientY - rect.top) / rect.height;
-
-    createTextBox(x, y, canvas);
-}
-
-// ==========================
-// CREATE TEXT BOX (FIXED)
-// ==========================
-function createTextBox(x, y, canvas) {
-
-    const box = document.createElement("div");
-
-    box.contentEditable = true;
-    box.classList.add("slide-textbox");
-
-    box.dataset.x = x;
-    box.dataset.y = y;
-    box.dataset.canvas = canvas.id;
-
-    box.style.position = "absolute";
-
-    // POSITION
-    const rect = canvas.getBoundingClientRect();
-
-    box.style.left = (x * rect.width) + "px";
-    box.style.top = (y * rect.height) + "px";
-
-    // STYLE
-    box.style.minWidth = "50px";
-    box.style.minHeight = "20px";
-    box.style.color = "red";
-    box.style.fontSize = "28px";
-    box.style.fontWeight = "bold";
-    box.style.outline = "none";
-    box.style.cursor = "move";
-    box.style.zIndex = "999999"; // VERY IMPORTANT
-    box.style.pointerEvents = "auto"; // VERY IMPORTANT
-
-    // allow interaction
-    box.style.userSelect = "text";
-
-    canvas.parentElement.appendChild(box);
-
-    box.focus();
-
-    activeTextBox = box;
-
-    showTextToolbar(box);
-
-    enableDrag(box);
-}
-
-// ==========================
-// TOOLBAR (FIXED POSITIONING)
-// ==========================
-const textToolbar = document.createElement("div");
-
-textToolbar.style.position = "absolute";
-textToolbar.style.display = "none";
-textToolbar.style.gap = "6px";
-textToolbar.style.padding = "5px";
-textToolbar.style.background = "#fff";
-textToolbar.style.border = "1px solid #ccc";
-textToolbar.style.zIndex = "99999";
-textToolbar.style.borderRadius = "6px";
-
-document.body.appendChild(textToolbar);
-
-function showTextToolbar(box) {
-
-    textToolbar.innerHTML = "";
-
-    textToolbar.style.display = "flex";
-
-    // FIX: real screen position (not offsetLeft/Top)
-    const rect = box.getBoundingClientRect();
-
-    textToolbar.style.left = rect.left + "px";
-    textToolbar.style.top = (rect.top - 40) + "px";
-
-    // DELETE
-    const del = document.createElement("button");
-    del.innerText = "🗑️";
-    del.onclick = () => {
-        box.remove();
-        textToolbar.style.display = "none";
-    };
-
-    // SIZE +
-    const plus = document.createElement("button");
-    plus.innerText = "A+";
-    plus.onclick = () => {
-        let size = parseInt(window.getComputedStyle(box).fontSize);
-        box.style.fontSize = (size + 2) + "px";
-    };
-
-    // SIZE -
-    const minus = document.createElement("button");
-    minus.innerText = "A-";
-    minus.onclick = () => {
-        let size = parseInt(window.getComputedStyle(box).fontSize);
-        if (size > 10) box.style.fontSize = (size - 2) + "px";
-    };
-
-    // COLORS
-    const red = document.createElement("button");
-    red.innerText = "🔴";
-    red.onclick = () => box.style.color = "red";
-
-    const black = document.createElement("button");
-    black.innerText = "⚫";
-    black.onclick = () => box.style.color = "black";
-
-    const blue = document.createElement("button");
-    blue.innerText = "🔵";
-    blue.onclick = () => box.style.color = "blue";
-
-    textToolbar.append(del, plus, minus, red, black, blue);
-}
-
-// hide toolbar when clicking outside
-document.addEventListener("click", (e) => {
-    if (e.target.contentEditable === "true") {
-        activeTextBox = e.target;
-        showTextToolbar(e.target);
-    } else if (!textToolbar.contains(e.target)) {
-        textToolbar.style.display = "none";
     }
-});
 
-// ==========================
-// DRAG TEXT BOX (NEW FEATURE)
-// ==========================
-function enableDrag(el) {
-    let offsetX = 0;
-    let offsetY = 0;
-    let dragging = false;
-
-    el.addEventListener("mousedown", (e) => {
-        dragging = true;
-
-        const rect = el.getBoundingClientRect();
-
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
-
-        document.body.style.userSelect = "none";
-    });
-
-    document.addEventListener("mousemove", (e) => {
-        if (!dragging) return;
-
-        const parentRect = el.parentElement.getBoundingClientRect();
-
-        el.style.left = (e.clientX - parentRect.left - offsetX) + "px";
-        el.style.top = (e.clientY - parentRect.top - offsetY) + "px";
-    });
-
-    document.addEventListener("mouseup", () => {
-        dragging = false;
-        document.body.style.userSelect = "auto";
-    });
 }
-// ==========================
-// INITIAL SETUP
-// ==========================
 
-window.addEventListener("load", () => {
 
-    setDrawingTarget("slide");
+/* =========================================================
+   43. KEYBOARD
+   ========================================================= */
 
-    resizeEditCanvas();
-    resizeWhiteboardCanvas();
+function initializeKeyboard() {
 
-    updateCursor(); // safe initial call
+    document.addEventListener(
+        "keydown",
+        event => {
 
-});
+            if (
+                event.key ===
+                "Escape"
+            ) {
 
-// ==========================
-// CURSOR SYSTEM
-// ==========================
+                $all(
+                    ".lesson-card.is-expanded"
+                ).forEach(
+                    card =>
+                        closeLessonCard(
+                            card
+                        )
+                );
 
-function updateCursor() {
+                return;
 
-    if (!drawingCanvas) return;
+            }
 
-    // NO TOOL SELECTED
-    if (!currentTool) {
-        drawingCanvas.style.cursor = "default";
+
+            if (
+                event.key ===
+                "ArrowLeft"
+            ) {
+
+                navigateLesson(
+                    -1
+                );
+
+            }
+
+
+            if (
+                event.key ===
+                "ArrowRight"
+            ) {
+
+                navigateLesson(
+                    1
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   44. LOCAL PROGRESS
+   ========================================================= */
+
+function saveCurrentLessonLocally() {
+
+    if (
+        !state.currentLessonId
+    ) {
+
         return;
+
     }
 
-    // ERASER
-    if (currentTool === "eraser") {
-        drawingCanvas.style.cursor = "crosshair";
+
+    try {
+
+        localStorage.setItem(
+            "poliglotaCurrentLesson",
+            state.currentLessonId
+        );
+
+    } catch (
+        error
+    ) {
+
+        console.warn(
+            "Could not save lesson state.",
+            error
+        );
+
     }
 
-    // TEXT TOOL
-    else if (currentTool === "text") {
-        drawingCanvas.style.cursor = "text";
-    }
-
-    // MARKER / HIGHLIGHT
-    else if (currentTool === "marker") {
-        drawingCanvas.style.cursor = "cell";
-    }
-
-    // DEFAULT FOR ALL OTHER TOOLS
-    else {
-        drawingCanvas.style.cursor = "pointer";
-    }
 }
 
 
+/* =========================================================
+   45. RESTORE LESSON
+   ========================================================= */
+
+function restoreLastLesson() {
+
+    try {
+
+        const id =
+            localStorage.getItem(
+                "poliglotaCurrentLesson"
+            );
+
+
+        if (
+            id &&
+            state.lessons.some(
+                lesson =>
+                    String(
+                        lesson.id
+                    ) ===
+                    String(id)
+            )
+        ) {
+
+            openLesson(
+                id
+            );
+
+            return true;
+
+        }
+
+    } catch (
+        error
+    ) {
+
+        console.warn(
+            "Could not restore lesson.",
+            error
+        );
+
+    }
+
+    return false;
+
+}
+
+
+/* =========================================================
+   46. SUPABASE AUTH CHECK
+   ========================================================= */
+
+async function getCurrentUser() {
+
+    if (!supabaseClient) {
+
+        return null;
+
+    }
+
+
+    try {
+
+        const {
+            data
+        } =
+            await supabaseClient
+                .auth
+                .getUser();
+
+
+        return data?.user ||
+            null;
+
+    } catch (
+        error
+    ) {
+
+        console.warn(
+            "Auth check failed:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/* =========================================================
+   47. EXPORT API
+   ========================================================= */
+
+window.PoliglotaLesson = {
+
+    state,
+
+    loadLessons,
+
+    openLesson,
+
+    openLessonCard,
+
+    closeLessonCard,
+
+    createLessonCard,
+
+    updateLessonCard,
+
+    deleteLessonCard,
+
+    uploadMedia,
+
+    deleteMedia,
+
+    assignMediaToCard,
+
+    loadMedia,
+
+    getCurrentUser
+
+};
+
+
+/* =========================================================
+   48. DEBUG
+   ========================================================= */
+
+window.poliglotaState =
+    state;
+
+console.log(
+    "Academia Poliglota lesson card system loaded."
+);
