@@ -240,6 +240,284 @@ studentDropdownLinks.forEach(link => {
 // ==========================
 
 function getLessonPages(unit, lesson) {
+    // ============================================================
+// LESSON CARD SYSTEM
+// ============================================================
+
+// Number of cards shown in every lesson.
+// This can later come from Supabase.
+const LESSON_CARD_COUNT = 8;
+
+// Current lesson information
+let currentLessonUnit = null;
+let currentLessonNumber = null;
+
+// Generate lesson cards dynamically
+function generateLessonCards() {
+
+    const lessonCards = [];
+
+    for (let i = 1; i <= LESSON_CARD_COUNT; i++) {
+
+        lessonCards.push({
+            id: i,
+            title: `Lesson Part ${i}`,
+            type: "empty",
+            content: null
+        });
+
+    }
+
+    return lessonCards;
+}
+
+
+// Current lesson cards
+let currentLessonCards = [];
+
+
+// Load a lesson
+function loadLessonCards(unit, lesson) {
+
+    currentLessonUnit = unit;
+    currentLessonNumber = lesson;
+
+    // Generate the cards
+    currentLessonCards = generateLessonCards();
+
+    console.log(
+        `Loading Unit ${unit}, Lesson ${lesson}`
+    );
+
+    console.log(
+        "Generated lesson cards:",
+        currentLessonCards
+    );
+
+    renderLessonCards();
+
+}
+    // ============================================================
+// RENDER LESSON CARDS
+// ============================================================
+
+function renderLessonCards() {
+
+    const container =
+        document.getElementById("lesson-cards-container");
+
+    if (!container) {
+
+        console.error(
+            "lesson-cards-container was not found."
+        );
+
+        return;
+    }
+
+    // Clear previous lesson
+    container.innerHTML = "";
+
+    currentLessonCards.forEach(card => {
+
+        const cardElement =
+            document.createElement("div");
+
+        cardElement.className = "lesson-card";
+
+        cardElement.dataset.cardId = card.id;
+
+        cardElement.innerHTML = `
+
+            <div class="lesson-card-inner">
+
+                <div class="lesson-card-front">
+
+                    <div class="lesson-card-number">
+                        ${card.id}
+                    </div>
+
+                    <h3>
+                        ${card.title}
+                    </h3>
+
+                    <span class="lesson-card-open">
+                        Open
+                    </span>
+
+                </div>
+
+                <div class="lesson-card-content">
+
+                    <button
+                        class="lesson-card-close"
+                        type="button"
+                    >
+                        ×
+                    </button>
+
+                    <div class="lesson-card-expanded-content">
+
+                        ${renderLessonCardContent(card)}
+
+                    </div>
+
+                </div>
+
+            </div>
+        `;
+
+        // Open card
+        cardElement.addEventListener("click", () => {
+
+            openLessonCard(cardElement);
+
+        });
+
+        // Close card
+        const closeButton =
+            cardElement.querySelector(
+                ".lesson-card-close"
+            );
+
+        closeButton.addEventListener("click", (e) => {
+
+            e.stopPropagation();
+
+            closeLessonCard(cardElement);
+
+        });
+
+        container.appendChild(cardElement);
+
+    });
+
+}
+    // ============================================================
+// RENDER LESSON CARDS
+// ============================================================
+
+function renderLessonCards() {
+
+    const container =
+        document.getElementById("lesson-cards-container");
+
+    if (!container) {
+
+        console.error(
+            "lesson-cards-container was not found."
+        );
+
+        return;
+    }
+
+    // Clear previous lesson
+    container.innerHTML = "";
+
+    currentLessonCards.forEach(card => {
+
+        const cardElement =
+            document.createElement("div");
+
+        cardElement.className = "lesson-card";
+
+        cardElement.dataset.cardId = card.id;
+
+        cardElement.innerHTML = `
+
+            <div class="lesson-card-inner">
+
+                <div class="lesson-card-front">
+
+                    <div class="lesson-card-number">
+                        ${card.id}
+                    </div>
+
+                    <h3>
+                        ${card.title}
+                    </h3>
+
+                    <span class="lesson-card-open">
+                        Open
+                    </span>
+
+                </div>
+
+                <div class="lesson-card-content">
+
+                    <button
+                        class="lesson-card-close"
+                        type="button"
+                    >
+                        ×
+                    </button>
+
+                    <div class="lesson-card-expanded-content">
+
+                        ${renderLessonCardContent(card)}
+
+                    </div>
+
+                </div>
+
+            </div>
+        `;
+
+        // Open card
+        cardElement.addEventListener("click", () => {
+
+            openLessonCard(cardElement);
+
+        });
+
+        // Close card
+        const closeButton =
+            cardElement.querySelector(
+                ".lesson-card-close"
+            );
+
+        closeButton.addEventListener("click", (e) => {
+
+            e.stopPropagation();
+
+            closeLessonCard(cardElement);
+
+        });
+
+        container.appendChild(cardElement);
+
+    });
+
+}
+    // ============================================================
+// OPEN / CLOSE LESSON CARD
+// ============================================================
+
+function openLessonCard(cardElement) {
+
+    // Close any other open card
+    document
+        .querySelectorAll(".lesson-card.expanded")
+        .forEach(card => {
+
+            if (card !== cardElement) {
+
+                card.classList.remove("expanded");
+
+            }
+
+        });
+
+    cardElement.classList.add("expanded");
+
+}
+
+
+function closeLessonCard(cardElement) {
+
+    cardElement.classList.remove("expanded");
+
+}
 
     const lessonMap = {
 
@@ -364,27 +642,25 @@ lessonDropdownLinks.forEach(link => {
          * Therefore, we define which pages belong to each lesson.
          */
 
-        const lessonPages = getLessonPages(unit, lesson);
+        // ============================================================
+// OPEN LESSON AS INTERACTIVE CARDS
+// ============================================================
 
-        if (lessonPages.length === 0) {
-            console.warn(
-                `No pages found for Unit ${unit}, Lesson ${lesson}`
-            );
-            return;
-        }
+loadLessonCards(unit, lesson);
 
-        // Build the NEW paths
-        currentImages = lessonPages.map(page =>
-            `${lessonPath}page${page}.jpg`
-        );
+// Hide image navigation while using lesson cards
+prevBtn.style.display = "none";
+nextBtn.style.display = "none";
 
-        // Start at the FIRST page of the lesson
-        currentIndex = 0;
+// Hide the current slide image
+slideImage.style.display = "none";
 
-        loadImage(currentImages[currentIndex]);
-
-        prevBtn.style.display = "block";
-        nextBtn.style.display = "block";
+// Save lesson state
+saveCurrentState(
+    "student",
+    unit,
+    lesson
+);
 
         // Save current state
         saveCurrentState(
