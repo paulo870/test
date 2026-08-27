@@ -1,4283 +1,831 @@
-/* =========================================================
-   ACADEMIA POLIGLOTA
-   INTERACTIVE BOOK PLATFORM
-   PREMIUM PROFESSIONAL UI
-   ========================================================= */
+/* ============================================================
+   RESET
+============================================================ */
 
-
-/* =========================================================
-   01. GLOBAL
-   ========================================================= */
-
-*,
-*::before,
-*::after {
+* {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 html,
 body {
     width: 100%;
     height: 100%;
-    margin: 0;
-
-    font-family:
-        Inter,
-        "Segoe UI",
-        Arial,
-        sans-serif;
-
-    color: #ffffff;
-
-    background: #07151d;
-
     overflow: hidden;
-
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 body {
-    position: relative;
-
-    background-image:
-        linear-gradient(
-            135deg,
-            rgba(3, 15, 22, 0.82),
-            rgba(7, 30, 40, 0.66)
-        ),
-        url('../images/background.jpg');
-
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-
-    background-attachment: fixed;
+    background: #111827;
+    color: white;
 }
 
 
-/* =========================================================
-   02. BACKGROUND ATMOSPHERE
-   ========================================================= */
+/* ============================================================
+   APP
+============================================================ */
 
-body::after {
-    content: "";
-
-    position: fixed;
-    inset: 0;
-
-    pointer-events: none;
-
-    background:
-        radial-gradient(
-            circle at 15% 10%,
-            rgba(37, 125, 152, 0.16),
-            transparent 30%
-        ),
-
-        radial-gradient(
-            circle at 85% 90%,
-            rgba(72, 224, 130, 0.055),
-            transparent 30%
-        );
-
-    z-index: -2;
-}
-
-
-body::before {
-    content: "";
-
-    position: fixed;
-    inset: 0;
-
-    pointer-events: none;
-
-    background-image:
-        linear-gradient(
-            rgba(255,255,255,0.018) 1px,
-            transparent 1px
-        ),
-        linear-gradient(
-            90deg,
-            rgba(255,255,255,0.018) 1px,
-            transparent 1px
-        );
-
-    background-size: 48px 48px;
-
-    mask-image:
-        linear-gradient(
-            to bottom,
-            rgba(0,0,0,0.75),
-            transparent
-        );
-
-    -webkit-mask-image:
-        linear-gradient(
-            to bottom,
-            rgba(0,0,0,0.75),
-            transparent
-        );
-
-    z-index: -1;
-}
-
-
-/* =========================================================
-   03. DESIGN VARIABLES
-   ========================================================= */
-
-:root {
-
-    --navy-1: #06131b;
-    --navy-2: #081c25;
-    --navy-3: #0b2732;
-
-    --teal: #17647d;
-    --teal-light: #287f99;
-
-    --green: #48e082;
-    --green-soft: rgba(72,224,130,0.12);
-    --green-border: rgba(72,224,130,0.24);
-
-    --white: #ffffff;
-    --text: rgba(255,255,255,0.92);
-    --text-soft: rgba(255,255,255,0.70);
-    --text-muted: rgba(255,255,255,0.48);
-
-    --border: rgba(255,255,255,0.085);
-    --border-light: rgba(255,255,255,0.13);
-
-    --shadow:
-        0 18px 50px rgba(0,0,0,0.38);
-
-    --shadow-heavy:
-        0 30px 90px rgba(0,0,0,0.58);
-
-    --glass:
-        rgba(8,27,36,0.94);
-}
-
-
-/* =========================================================
-   04. CONTROL BAR
-   ========================================================= */
-
-.control-bar {
-    position: fixed;
-
-    top: 0;
-    left: 0;
-
-    width: 90px;
+.app {
+    width: 100%;
     height: 100vh;
-
     display: flex;
-    flex-direction: column;
+}
+
+
+/* ============================================================
+   SIDEBAR
+============================================================ */
+
+.sidebar {
+    width: 230px;
+    min-width: 230px;
+    height: 100vh;
+    background: #172033;
+    padding: 15px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.control-btn,
+.dropdown-btn {
+    width: 100%;
+    min-height: 46px;
+    border: none;
+    border-radius: 10px;
+    background: #26344e;
+    color: white;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex;
     align-items: center;
     justify-content: flex-start;
-
-    padding-top: 15px;
-
-    background:
-        linear-gradient(
-            180deg,
-            rgba(11,43,55,0.98),
-            rgba(5,24,32,0.99)
-        );
-
-    border-right:
-        1px solid rgba(255,255,255,0.08);
-
-    box-shadow:
-        8px 0 35px rgba(0,0,0,0.28),
-        inset -1px 0 rgba(255,255,255,0.025);
-
-    backdrop-filter:
-        blur(20px);
-
-    -webkit-backdrop-filter:
-        blur(20px);
-
-    z-index: 1000;
-
-    overflow: visible;
+    gap: 10px;
+    padding: 10px 14px;
+    transition: 0.2s ease;
 }
 
-
-/* subtle light at top of sidebar */
-
-.control-bar::before {
-    content: "";
-
-    position: absolute;
-
-    top: 0;
-    left: 0;
-
-    width: 100%;
-    height: 130px;
-
-    background:
-        radial-gradient(
-            ellipse at top center,
-            rgba(72,224,130,0.08),
-            transparent 70%
-        );
-
-    pointer-events: none;
+.control-btn:hover,
+.dropdown-btn:hover {
+    background: #354766;
+    transform: translateY(-1px);
 }
 
-
-/* illuminated edge */
-
-.control-bar::after {
-    content: "";
-
-    position: absolute;
-
-    top: 0;
-    right: -1px;
-
-    width: 1px;
-    height: 100%;
-
-    background:
-        linear-gradient(
-            to bottom,
-            rgba(72,224,130,0.45),
-            transparent 30%,
-            transparent 70%,
-            rgba(72,224,130,0.15)
-        );
-
-    pointer-events: none;
-}
-
-
-/* =========================================================
-   CONTROL BAR LOGO
-   SAME SIZE AS CONTROL ICONS
-   ========================================================= */
-
-
-/* =========================================================
-   06. CONTROL ITEMS
-   ========================================================= */
-
-.control-item {
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-
-    width: 100%;
-}
-
-
-/* =========================================================
-   07. CONTROL ICONS
-   ========================================================= */
-
-.control-icon {
-
-    position: relative;
-
-    width: 50px;
-    height: 50px;
-
-    margin: 9px 0;
-
-    padding: 7px;
-
-    box-sizing: border-box;
-
+.control-btn img {
+    width: 24px;
+    height: 24px;
     object-fit: contain;
-
-    border-radius: 13px;
-
-    border:
-        1px solid transparent;
-
-    opacity: 0.82;
-
-    cursor: pointer;
-
-    transition:
-        transform .20s ease,
-        background-color .20s ease,
-        border-color .20s ease,
-        box-shadow .20s ease,
-        filter .20s ease,
-        opacity .20s ease;
 }
 
 
-.control-icon:hover {
-
-    transform:
-        translateY(-2px)
-        scale(1.035);
-
-    opacity: 1;
-
-    background:
-        rgba(255,255,255,0.055);
-
-    border-color:
-        rgba(255,255,255,0.08);
-
-    box-shadow:
-        0 8px 24px rgba(0,0,0,0.24),
-        0 0 15px rgba(72,224,130,0.05);
-
-    filter:
-        brightness(1.08);
-}
-
-
-.control-icon:active {
-
-    transform:
-        scale(0.93);
-
-    transition:
-        transform .06s ease;
-}
-
-
-/* =========================================================
-   08. CONTROL LABELS
-   ========================================================= */
-
-.control-label {
-
-    color:
-        rgba(255,255,255,0.55);
-
-    font-size:
-        9px;
-
-    font-weight:
-        600;
-
-    letter-spacing:
-        0.45px;
-
-    text-transform:
-        uppercase;
-
-    margin-top:
-        -5px;
-
-    margin-bottom:
-        8px;
-
-    text-align:
-        center;
-
-    user-select:
-        none;
-
-    transition:
-        color .2s ease;
-}
-
-
-.control-item:hover .control-label {
-
-    color:
-        rgba(255,255,255,0.88);
-}
-
-
-/* =========================================================
-   09. DROPDOWN CONTAINERS
-   ========================================================= */
+/* ============================================================
+   DROPDOWNS
+============================================================ */
 
 .dropdown {
     position: relative;
-
-    display: flex;
-    justify-content: center;
+    width: 100%;
 }
 
+.dropdown-btn {
+    cursor: pointer;
+}
 
 .dropdown-content {
-
-    position: absolute;
-
-    left: 84px;
-    top: 2px;
-
-    min-width: 180px;
-
     display: none;
-    flex-direction: column;
-
-    padding: 8px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(13,40,51,0.985),
-            rgba(5,22,30,0.985)
-        );
-
-    border:
-        1px solid rgba(255,255,255,0.09);
-
-    border-radius:
-        14px;
-
-    box-shadow:
-        0 20px 55px rgba(0,0,0,0.46),
-        0 0 25px rgba(0,0,0,0.16),
-        inset 0 1px 0 rgba(255,255,255,0.04);
-
-    backdrop-filter:
-        blur(22px);
-
-    -webkit-backdrop-filter:
-        blur(22px);
-
-    z-index:
-        3000;
-
-    overflow:
-        visible;
-
-    animation:
-        dropdownIn .18s ease-out;
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 6px;
+    margin-bottom: 8px;
 }
 
-
-@keyframes dropdownIn {
-
-    from {
-        opacity: 0;
-        transform:
-            translateX(-7px)
-            scale(.98);
-    }
-
-    to {
-        opacity: 1;
-        transform:
-            translateX(0)
-            scale(1);
-    }
+.dropdown.show > .dropdown-content {
+    display: block;
 }
-
-
-.dropdown.show .dropdown-content {
-    display: flex;
-}
-
-
-/* =========================================================
-   10. DROPDOWN LINKS
-   ========================================================= */
 
 .dropdown-content a {
-
-    position: relative;
-
-    display: flex;
-    align-items: center;
-
-    min-height:
-        40px;
-
-    box-sizing:
-        border-box;
-
-    padding:
-        0 13px;
-
-    color:
-        rgba(255,255,255,0.72);
-
-    text-decoration:
-        none;
-
-    font-size:
-        12px;
-
-    font-weight:
-        500;
-
-    letter-spacing:
-        .15px;
-
-    border-radius:
-        9px;
-
-    transition:
-        background-color .18s ease,
-        color .18s ease,
-        padding-left .18s ease,
-        transform .18s ease;
+    color: #e5e7eb;
+    text-decoration: none;
+    display: block;
+    padding: 9px 10px;
+    border-radius: 6px;
+    font-size: 14px;
 }
-
-
-.dropdown-content a::before {
-
-    content: "";
-
-    width:
-        5px;
-
-    height:
-        5px;
-
-    margin-right:
-        10px;
-
-    flex-shrink:
-        0;
-
-    border-radius:
-        50%;
-
-    background:
-        rgba(72,224,130,0.30);
-
-    transition:
-        background-color .18s ease,
-        box-shadow .18s ease;
-}
-
 
 .dropdown-content a:hover {
-
-    padding-left:
-        17px;
-
-    color:
-        #ffffff;
-
-    background:
-        linear-gradient(
-            90deg,
-            rgba(72,224,130,0.12),
-            rgba(72,224,130,0.025)
-        );
-
-    transform:
-        translateX(2px);
+    background: #273449;
 }
 
 
-.dropdown-content a:hover::before {
+/* ============================================================
+   UNIT ITEMS
+============================================================ */
 
-    background:
-        #48e082;
+.unit-item {
+    position: relative;
+}
 
-    box-shadow:
-        0 0 8px rgba(72,224,130,0.7);
+.unit-item > a {
+    font-weight: bold;
+}
+
+.lesson-dropdown {
+    display: none;
+    padding-left: 12px;
+}
+
+.lesson-dropdown.show {
+    display: block;
+}
+
+.lesson-dropdown a {
+    font-size: 13px;
+    color: #cbd5e1;
 }
 
 
-/* =========================================================
-   11. SLIDE CONTAINER
-   ========================================================= */
+/* ============================================================
+   MAIN CONTENT
+============================================================ */
+
+.main-content {
+    flex: 1;
+    min-width: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+.viewer-header {
+    height: 75px;
+    min-height: 75px;
+    display: flex;
+    align-items: center;
+    padding: 0 25px;
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+}
+
+.viewer-header h1 {
+    font-size: 22px;
+}
+
+.viewer-header p {
+    margin-top: 5px;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+
+/* ============================================================
+   VIEWER
+============================================================ */
+
+.viewer-area {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 20px;
+}
 
 .slide-container {
+    position: relative;
+    width: min(1200px, 100%);
+    height: min(750px, 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #020617;
+    border-radius: 15px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
 
+
+/* ============================================================
+   IMAGE
+============================================================ */
+
+#slide-image {
     position: absolute;
-
-    left: 90px;
-    top: 0;
-
-    width:
-        calc(100% - 90px);
-
-    height:
-        100vh;
-
-    overflow:
-        auto;
-
-    background-image:
-        linear-gradient(
-            rgba(4,17,24,0.12),
-            rgba(4,17,24,0.12)
-        ),
-        url('../images/background.jpg');
-
-    background-size:
-        cover;
-
-    background-position:
-        center;
-
-    background-repeat:
-        no-repeat;
-
-    scrollbar-width:
-        thin;
-
-    scrollbar-color:
-        rgba(72,224,130,0.30)
-        rgba(0,0,0,0.12);
+    display: none;
+    max-width: none;
+    max-height: none;
+    user-select: none;
+    pointer-events: none;
 }
 
 
-/* =========================================================
-   12. SCROLLBAR
-   ========================================================= */
+/* ============================================================
+   NAVIGATION BUTTONS
+============================================================ */
 
-.slide-container::-webkit-scrollbar {
-    width:
-        8px;
+.navigation-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 70px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    z-index: 100;
+}
 
-    height:
-        8px;
+.navigation-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.navigation-btn.previous {
+    left: 10px;
+}
+
+.navigation-btn.next {
+    right: 10px;
 }
 
 
-.slide-container::-webkit-scrollbar-track {
-    background:
-        rgba(0,0,0,0.10);
-}
+/* ============================================================
+   LESSON CARDS CONTAINER
+============================================================ */
 
-
-.slide-container::-webkit-scrollbar-thumb {
-
-    background:
-        rgba(30,96,122,0.70);
-
-    border-radius:
-        10px;
-
-    border:
-        2px solid transparent;
-
-    background-clip:
-        padding-box;
-}
-
-
-.slide-container::-webkit-scrollbar-thumb:hover {
-
-    background:
-        rgba(72,224,130,0.60);
-
-    background-clip:
-        padding-box;
-}
-
-
-/* =========================================================
-   13. SLIDE WRAPPER
-   ========================================================= */
-
-.slide-wrapper {
-
-    position:
-        relative;
-
-    width:
-        100%;
-
-    min-height:
-        100%;
-
-    box-sizing:
-        border-box;
-
-    display:
-        block;
-
-    padding:
-        0;
-}
-
-/* =========================================================
-   14. LESSON CARD SYSTEM
-   ========================================================= */
-
-#lesson-cards-container {
-
+.lesson-cards-container {
+    position: absolute;
+    inset: 0;
     width: 100%;
-    max-width: 1400px;
+    height: 100%;
+    padding: 35px;
+    display: none;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+    overflow-y: auto;
+    perspective: 1200px;
+}
 
-    min-height: 100%;
-
+.lesson-cards-container.active {
     display: grid;
-
-    grid-template-columns:
-        repeat(4, minmax(220px, 1fr));
-
-    grid-template-rows:
-        repeat(2, minmax(260px, 1fr));
-
-    gap: 24px;
-
-    padding: 50px;
-
-    margin: 0 auto;
-
-    box-sizing: border-box;
 }
 
 
-/* =========================================================
-   15. LESSON CARD
-   ========================================================= */
+/* ============================================================
+   LESSON CARD
+============================================================ */
 
 .lesson-card {
-
     position: relative;
+    min-width: 0;
+    min-height: 0;
+    cursor: pointer;
+    perspective: 1200px;
+}
 
-    min-height: 260px;
+.lesson-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 190px;
+    transform-style: preserve-3d;
+    transition:
+        transform 0.5s ease,
+        box-shadow 0.3s ease;
+}
+
+
+/* ============================================================
+   CARD FRONT
+============================================================ */
+
+.lesson-card-front {
+    position: absolute;
+    inset: 0;
+    padding: 25px;
+    border-radius: 18px;
+    background: linear-gradient(
+        145deg,
+        #334155,
+        #1e293b
+    );
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow:
+        0 15px 30px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.08);
 
     display: flex;
-
     flex-direction: column;
-
     justify-content: center;
-
     align-items: center;
 
-    padding: 28px;
-
-    overflow: hidden;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(16,52,65,0.96),
-            rgba(5,24,32,0.96)
-        );
-
-    border:
-        1px solid rgba(255,255,255,0.10);
-
-    border-radius:
-        22px;
-
-    box-shadow:
-        0 20px 50px rgba(0,0,0,0.32),
-        inset 0 1px 0 rgba(255,255,255,0.045);
-
-    backdrop-filter:
-        blur(18px);
-
-    -webkit-backdrop-filter:
-        blur(18px);
-
-    cursor:
-        pointer;
-
-    transition:
-        transform .25s ease,
-        box-shadow .25s ease,
-        border-color .25s ease,
-        background .25s ease;
-
-    transform-style:
-        preserve-3d;
-}
-
-
-/* glow */
-
-.lesson-card::before {
-
-    content: "";
-
-    position: absolute;
-
-    inset: 0;
-
-    pointer-events: none;
-
-    background:
-        radial-gradient(
-            circle at 50% 0%,
-            rgba(72,224,130,0.10),
-            transparent 55%
-        );
-
-    opacity: 0.8;
-}
-
-
-/* hover */
-
-.lesson-card:hover {
+    backface-visibility: hidden;
 
     transform:
-        translateY(-7px)
-        rotateX(2deg)
-        rotateY(-2deg);
+        rotateX(0deg)
+        rotateY(0deg);
+}
 
-    border-color:
-        rgba(72,224,130,0.24);
-
+.lesson-card:hover .lesson-card-front {
+    transform: translateY(-5px);
     box-shadow:
-        0 30px 70px rgba(0,0,0,0.45),
-        0 0 30px rgba(72,224,130,0.07);
+        0 22px 40px rgba(0,0,0,0.45);
 }
-
-
-/* =========================================================
-   16. CARD CONTENT
-   ========================================================= */
-
-.lesson-card-content {
-
-    position:
-        relative;
-
-    z-index:
-        2;
-
-    width:
-        100%;
-
-    text-align:
-        center;
-
-    pointer-events:
-        none;
-}
-
 
 .lesson-card-number {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.12);
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
 
-    display:
-        block;
+.lesson-card-front h3 {
+    font-size: 18px;
+    text-align: center;
+}
 
-    margin-bottom:
-        12px;
-
-    color:
-        rgba(72,224,130,0.75);
-
-    font-size:
-        12px;
-
-    font-weight:
-        700;
-
-    letter-spacing:
-        2px;
+.lesson-card-open {
+    margin-top: 15px;
+    font-size: 12px;
+    color: #94a3b8;
 }
 
 
-.lesson-card h3 {
-
-    margin:
-        0 0 8px;
-
-    color:
-        #ffffff;
-
-    font-size:
-        20px;
-
-    font-weight:
-        650;
-
-    line-height:
-        1.25;
-}
-
-
-.lesson-card p {
-
-    margin:
-        0;
-
-    color:
-        rgba(255,255,255,0.55);
-
-    font-size:
-        12px;
-
-    line-height:
-        1.5;
-}
-
-
-/* =========================================================
-   17. ADD BUTTON
-   ========================================================= */
-
-.lesson-card-add {
-
-    position:
-        absolute;
-
-    right:
-        16px;
-
-    bottom:
-        16px;
-
-    width:
-        42px;
-
-    height:
-        42px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    padding:
-        0;
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(72,224,130,0.10);
-
-    border:
-        1px solid rgba(72,224,130,0.24);
-
-    border-radius:
-        50%;
-
-    font-family:
-        inherit;
-
-    font-size:
-        25px;
-
-    font-weight:
-        300;
-
-    line-height:
-        1;
-
-    cursor:
-        pointer;
-
-    z-index:
-        10;
-
-    transition:
-        transform .20s ease,
-        background .20s ease,
-        border-color .20s ease,
-        box-shadow .20s ease;
-}
-
-
-.lesson-card-add:hover {
-
-    transform:
-        scale(1.10)
-        rotate(90deg);
-
-    background:
-        rgba(72,224,130,0.20);
-
-    border-color:
-        rgba(72,224,130,0.50);
-
-    box-shadow:
-        0 0 20px rgba(72,224,130,0.20);
-}
-
-
-.lesson-card-add:active {
-
-    transform:
-        scale(.94);
-}
-
-
-/* =========================================================
-   18. CARD WITH CONTENT
-   ========================================================= */
-
-.lesson-card.has-content {
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(17,65,72,0.97),
-            rgba(6,28,35,0.97)
-        );
-
-    border-color:
-        rgba(72,224,130,0.20);
-}
-
-
-/* =========================================================
-   19. CARD MEDIA PREVIEW
-   ========================================================= */
-
-.lesson-card-preview {
-
-    position:
-        absolute;
-
-    inset:
-        0;
-
-    z-index:
-        1;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    overflow:
-        hidden;
-
-    border-radius:
-        inherit;
-
-    background:
-        rgba(0,0,0,0.18);
-}
-
-
-.lesson-card-preview img {
-
-    width:
-        100%;
-
-    height:
-        100%;
-
-    object-fit:
-        cover;
-}
-
-
-.lesson-card-preview video {
-
-    width:
-        100%;
-
-    height:
-        100%;
-
-    object-fit:
-        cover;
-}
-
-
-.lesson-card-preview audio {
-
-    width:
-        85%;
-
-    max-width:
-        320px;
-}
-
-
-/* dark overlay over previews */
-
-.lesson-card-preview::after {
-
-    content:
-        "";
-
-    position:
-        absolute;
-
-    inset:
-        0;
-
-    background:
-        linear-gradient(
-            to top,
-            rgba(3,12,17,0.88),
-            rgba(3,12,17,0.10)
-        );
-
-    pointer-events:
-        none;
-}
-
-
-/* =========================================================
-   20. CARD TYPE LABEL
-   ========================================================= */
-
-.lesson-card-type {
-
-    position:
-        absolute;
-
-    top:
-        14px;
-
-    left:
-        14px;
-
-    z-index:
-        5;
-
-    padding:
-        5px 9px;
-
-    color:
-        rgba(255,255,255,0.82);
-
-    background:
-        rgba(5,20,27,0.72);
-
-    border:
-        1px solid rgba(255,255,255,0.08);
-
-    border-radius:
-        7px;
-
-    font-size:
-        9px;
-
-    font-weight:
-        700;
-
-    letter-spacing:
-        1px;
-
-    text-transform:
-        uppercase;
-
-    backdrop-filter:
-        blur(10px);
-
-    -webkit-backdrop-filter:
-        blur(10px);
-}
-
-/* =========================================================
-   15. NAVIGATION BUTTONS
-   ========================================================= */
-
-#prev-btn,
-#next-btn {
-
-    position:
-        fixed;
-
-    top:
-        50%;
-
-    transform:
-        translateY(-50%);
-
-    width:
-        46px;
-
-    height:
-        70px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    padding:
-        0;
-
-    font-size:
-        28px;
-
-    line-height:
-        1;
-
-    color:
-        rgba(255,255,255,0.70);
-
-    background:
-        rgba(6,21,28,0.74);
-
-    border:
-        1px solid rgba(255,255,255,0.085);
-
-    border-radius:
-        12px;
-
-    cursor:
-        pointer;
-
-    backdrop-filter:
-        blur(15px);
-
-    -webkit-backdrop-filter:
-        blur(15px);
-
-    box-shadow:
-        0 12px 35px rgba(0,0,0,0.30);
-
-    z-index:
-        1001;
-
-    transition:
-        background-color .20s ease,
-        color .20s ease,
-        transform .20s ease,
-        border-color .20s ease,
-        box-shadow .20s ease;
-}
-
-
-#prev-btn {
-    left:
-        108px;
-}
-
-
-#next-btn {
-    right:
-        20px;
-}
-
-
-#prev-btn:hover,
-#next-btn:hover {
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(23,100,125,0.90);
-
-    border-color:
-        rgba(72,224,130,0.17);
-
-    box-shadow:
-        0 15px 40px rgba(0,0,0,0.34),
-        0 0 18px rgba(72,224,130,0.07);
-}
-
-
-#prev-btn:hover {
-
-    transform:
-        translateY(-50%)
-        translateX(-2px);
-}
-
-
-#next-btn:hover {
-
-    transform:
-        translateY(-50%)
-        translateX(2px);
-}
-
-
-#prev-btn:active,
-#next-btn:active {
-
-    transform:
-        translateY(-50%)
-        scale(.94);
-}
-
-
-/* =========================================================
-   16. AUDIO LIST
-   ========================================================= */
-
-#audio-list-container {
-
-    position:
-        fixed;
-
-    top:
-        58px;
-
-    left:
-        112px;
-
-    display:
-        none;
-
-    flex-direction:
-        column;
-
-    min-width:
-        200px;
-
-    max-width:
-        290px;
-
-    gap:
-        7px;
-
-    padding:
-        10px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(13,40,51,0.985),
-            rgba(5,22,30,0.985)
-        );
-
-    border:
-        1px solid rgba(255,255,255,0.09);
-
-    border-radius:
-        15px;
-
-    box-shadow:
-        0 22px 60px rgba(0,0,0,0.46),
-        inset 0 1px 0 rgba(255,255,255,0.04);
-
-    backdrop-filter:
-        blur(22px);
-
-    -webkit-backdrop-filter:
-        blur(22px);
-
-    z-index:
-        4000;
-
-    overflow:
-        hidden;
-
-    animation:
-        mediaPanelIn .20s ease-out;
-}
-
-
-@keyframes mediaPanelIn {
-
-    from {
-        opacity: 0;
-
-        transform:
-            translateY(-7px)
-            scale(.98);
-    }
-
-    to {
-        opacity: 1;
-
-        transform:
-            translateY(0)
-            scale(1);
-    }
-}
-
-
-/* =========================================================
-   17. AUDIO BUTTONS
-   ========================================================= */
-
-#audio-list-container button {
-
-    position:
-        relative;
-
-    width:
-        100%;
-
-    min-height:
-        39px;
-
-    padding:
-        8px 12px;
-
-    box-sizing:
-        border-box;
-
-    font-family:
-        inherit;
-
-    font-size:
-        12px;
-
-    font-weight:
-        500;
-
-    text-align:
-        left;
-
-    color:
-        rgba(255,255,255,0.72);
-
-    background:
-        rgba(255,255,255,0.035);
-
-    border:
-        1px solid rgba(255,255,255,0.06);
-
-    border-radius:
-        9px;
-
-    cursor:
-        pointer;
-
-    transition:
-        background .18s ease,
-        border-color .18s ease,
-        transform .18s ease,
-        color .18s ease;
-}
-
-
-#audio-list-container button:hover {
-
-    color:
-        #ffffff;
-
-    background:
-        linear-gradient(
-            90deg,
-            rgba(30,96,122,0.40),
-            rgba(72,224,130,0.07)
-        );
-
-    border-color:
-        rgba(72,224,130,0.20);
-
-    transform:
-        translateX(3px);
-}
-
-
-#audio-list-container button:active {
-
-    transform:
-        scale(.98);
-}
-
-
-/* =========================================================
-   18. AUDIO PLAYER
-   ========================================================= */
-
-#slide-audio {
-
-    position:
-        fixed;
-
-    left:
-        112px;
-
-    bottom:
-        30px;
-
-    width:
-        min(430px, calc(100vw - 140px));
-
-    z-index:
-        4000;
-
-    padding:
-        7px;
-
-    box-sizing:
-        border-box;
-
-    border-radius:
-        14px;
-
-    background:
-        rgba(5,20,27,0.93);
-
-    border:
-        1px solid rgba(255,255,255,0.09);
-
-    box-shadow:
-        0 20px 50px rgba(0,0,0,0.42);
-
-    backdrop-filter:
-        blur(20px);
-
-    -webkit-backdrop-filter:
-        blur(20px);
-
-    accent-color:
-        #48e082;
-}
-
-
-/* =========================================================
-   19. AUDIO BUTTON
-   ========================================================= */
-
-#audio-btn {
-
-    position:
-        relative;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    border-radius:
-        13px;
-
-    transition:
-        background .20s ease,
-        box-shadow .20s ease;
-}
-
-
-#audio-btn:hover {
-
-    background:
-        rgba(255,255,255,0.06);
-}
-
-
-#audio-btn.active {
-
-    background:
-        rgba(72,224,130,0.10);
-
-    box-shadow:
-        inset 0 0 0 1px
-        rgba(72,224,130,0.18),
-        0 0 18px
-        rgba(72,224,130,0.07);
-}
-
-
-#audio-btn.active::after {
-
-    content: "";
-
-    position:
-        absolute;
-
-    right:
-        5px;
-
-    top:
-        5px;
-
-    width:
-        6px;
-
-    height:
-        6px;
-
-    border-radius:
-        50%;
-
-    background:
-        #48e082;
-
-    box-shadow:
-        0 0 9px
-        rgba(72,224,130,0.8);
-}
-
-
-/* =========================================================
-   20. HIDE AUDIO BUTTON
-   ========================================================= */
-
-#hide-audio-btn {
-
-    min-height:
-        34px;
-
-    padding:
-        7px 12px;
-
-    margin-top:
-        6px;
-
-    font-family:
-        inherit;
-
-    font-size:
-        11px;
-
-    font-weight:
-        500;
-
-    color:
-        rgba(255,255,255,0.70);
-
-    background:
-        rgba(255,255,255,0.045);
-
-    border:
-        1px solid rgba(255,255,255,0.07);
-
-    border-radius:
-        8px;
-
-    cursor:
-        pointer;
-
-    transition:
-        all .18s ease;
-}
-
-
-#hide-audio-btn:hover {
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(72,224,130,0.10);
-
-    border-color:
-        rgba(72,224,130,0.20);
-}
-
-
-/* =========================================================
-   21. VIDEO LIST
-   ========================================================= */
-
-#video-list-container {
-
-    position:
-        fixed;
-
-    top:
-        58px;
-
-    left:
-        112px;
-
-    display:
-        none;
-
-    flex-direction:
-        column;
-
-    min-width:
-        220px;
-
-    max-width:
-        300px;
-
-    gap:
-        7px;
-
-    padding:
-        10px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(13,40,51,0.985),
-            rgba(5,22,30,0.985)
-        );
-
-    border:
-        1px solid rgba(255,255,255,0.09);
-
-    border-radius:
-        15px;
-
-    box-shadow:
-        0 22px 60px rgba(0,0,0,0.48);
-
-    backdrop-filter:
-        blur(22px);
-
-    -webkit-backdrop-filter:
-        blur(22px);
-
-    z-index:
-        4000;
-
-    overflow:
-        hidden;
-
-    animation:
-        mediaPanelIn .20s ease-out;
-}
-
-
-/* =========================================================
-   22. VIDEO BUTTONS
-   ========================================================= */
-
-#video-list-container button {
-
-    width:
-        100%;
-
-    min-height:
-        40px;
-
-    padding:
-        9px 13px;
-
-    font-family:
-        inherit;
-
-    font-size:
-        12px;
-
-    font-weight:
-        500;
-
-    text-align:
-        left;
-
-    color:
-        rgba(255,255,255,0.72);
-
-    background:
-        rgba(255,255,255,0.035);
-
-    border:
-        1px solid rgba(255,255,255,0.06);
-
-    border-radius:
-        9px;
-
-    cursor:
-        pointer;
-
-    transition:
-        all .18s ease;
-}
-
-
-#video-list-container button:hover {
-
-    color:
-        #ffffff;
-
-    background:
-        linear-gradient(
-            90deg,
-            rgba(30,96,122,0.40),
-            rgba(72,224,130,0.07)
-        );
-
-    border-color:
-        rgba(72,224,130,0.20);
-
-    transform:
-        translateX(3px);
-}
-
-
-#video-list-container button:active {
-
-    transform:
-        scale(.98);
-}
-
-
-/* =========================================================
-   23. VIDEO PLAYER
-   ========================================================= */
-
-#slide-video {
-
-    position:
-        fixed;
-
-    top:
-        50%;
-
-    left:
-        50%;
-
-    max-width:
-        80%;
-
-    max-height:
-        70%;
+/* ============================================================
+   EXPANDED CARD
+============================================================ */
+
+.lesson-card.expanded {
+    position: fixed;
+    z-index: 5000;
+
+    left: 50%;
+    top: 50%;
+
+    width: min(900px, calc(100vw - 100px));
+    height: min(650px, calc(100vh - 120px));
 
     transform:
         translate(-50%, -50%);
 
-    padding:
-        4px;
-
-    box-sizing:
-        border-box;
-
-    background:
-        #030b10;
-
-    border:
-        1px solid rgba(255,255,255,0.11);
-
-    border-radius:
-        15px;
-
-    box-shadow:
-        0 30px 90px rgba(0,0,0,0.65);
-
-    z-index:
-        4000;
+    cursor: default;
 }
 
-
-#slide-video::backdrop {
-
-    background:
-        rgba(1,7,11,0.84);
+.lesson-card.expanded .lesson-card-inner {
+    transform: none;
 }
 
-
-/* =========================================================
-   24. HIDE VIDEO
-   ========================================================= */
-
-#hide-video-btn {
-
-    min-height:
-        34px;
-
-    padding:
-        7px 12px;
-
-    font-family:
-        inherit;
-
-    font-size:
-        11px;
-
-    font-weight:
-        500;
-
-    color:
-        rgba(255,255,255,0.75);
-
-    background:
-        rgba(5,20,27,0.94);
-
-    border:
-        1px solid rgba(255,255,255,0.08);
-
-    border-radius:
-        8px;
-
-    cursor:
-        pointer;
-
-    transition:
-        all .18s ease;
+.lesson-card.expanded .lesson-card-front {
+    display: none;
 }
 
-
-#hide-video-btn:hover {
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(72,224,130,0.10);
-
-    border-color:
-        rgba(72,224,130,0.20);
-}
-
-
-/* =========================================================
-   25. EDIT TRAY
-   ========================================================= */
-
-#edit-tray {
-
-    position:
-        fixed;
-
-    left:
-        50%;
-
-    bottom:
-        18px;
-
-    transform:
-        translateX(-50%);
-
-    display:
-        none;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    gap:
-        6px;
-
-    padding:
-        8px;
+.lesson-card-content {
+    position: absolute;
+    inset: 0;
+    padding: 50px;
+    border-radius: 22px;
 
     background:
         linear-gradient(
             145deg,
-            rgba(11,35,45,0.97),
-            rgba(5,20,27,0.97)
+            #f8fafc,
+            #e2e8f0
         );
 
-    border:
-        1px solid rgba(255,255,255,0.10);
-
-    border-radius:
-        15px;
+    color: #0f172a;
 
     box-shadow:
-        0 24px 65px rgba(0,0,0,0.48),
-        inset 0 1px 0
-        rgba(255,255,255,0.04);
+        0 40px 100px rgba(0,0,0,0.6);
 
-    backdrop-filter:
-        blur(22px);
+    overflow-y: auto;
+    display: none;
+}
 
-    -webkit-backdrop-filter:
-        blur(22px);
-
-    z-index:
-        5000;
-
-    animation:
-        editTrayIn .22s ease-out;
+.lesson-card.expanded .lesson-card-content {
+    display: block;
 }
 
 
-@keyframes editTrayIn {
+/* ============================================================
+   CARD CLOSE
+============================================================ */
 
-    from {
-        opacity:
-            0;
+.lesson-card-close {
+    position: absolute;
+    right: 18px;
+    top: 18px;
 
-        transform:
-            translateX(-50%)
-            translateY(8px)
-            scale(.97);
-    }
+    width: 40px;
+    height: 40px;
 
-    to {
-        opacity:
-            1;
+    border: none;
+    border-radius: 50%;
 
-        transform:
-            translateX(-50%)
-            translateY(0)
-            scale(1);
-    }
+    background: #cbd5e1;
+    color: #0f172a;
+
+    font-size: 25px;
+    cursor: pointer;
+}
+
+.lesson-card-close:hover {
+    background: #94a3b8;
 }
 
 
-/* =========================================================
-   26. EDIT TOOLS
-   ========================================================= */
+/* ============================================================
+   PLACEHOLDER CONTENT
+============================================================ */
 
-.edit-tool-btn {
+.lesson-card-placeholder {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
 
-    position:
-        relative;
+.placeholder-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 45px;
+    margin-bottom: 20px;
+}
 
-    width:
-        46px;
+.lesson-card-placeholder h3 {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
 
-    height:
-        46px;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    padding:
-        0;
-
-    font-family:
-        inherit;
-
-    font-size:
-        22px;
-
-    color:
-        rgba(255,255,255,0.78);
-
-    background:
-        rgba(255,255,255,0.035);
-
-    border:
-        1px solid rgba(255,255,255,0.07);
-
-    border-radius:
-        11px;
-
-    cursor:
-        pointer;
-
-    user-select:
-        none;
-
-    -webkit-tap-highlight-color:
-        transparent;
-
-    transition:
-        all .18s ease;
+.lesson-card-placeholder p {
+    color: #64748b;
 }
 
 
-.edit-tool-btn:hover {
+/* ============================================================
+   CARD MEDIA
+============================================================ */
 
-    color:
-        #ffffff;
+.lesson-text-content {
+    font-size: 20px;
+    line-height: 1.7;
+}
 
-    background:
-        rgba(255,255,255,0.075);
+.lesson-audio-content,
+.lesson-video-content,
+.lesson-image-content {
+    width: 100%;
+}
 
-    border-color:
-        rgba(255,255,255,0.13);
+.lesson-audio-content audio {
+    width: 100%;
+    margin-top: 25px;
+}
 
-    transform:
-        translateY(-2px);
+.lesson-video-content video {
+    width: 100%;
+    max-height: 500px;
+    border-radius: 12px;
+}
 
-    box-shadow:
-        0 8px 20px rgba(0,0,0,0.23);
+.lesson-image-content img {
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
 }
 
 
-.edit-tool-btn.active,
-.active-tool {
+/* ============================================================
+   AUDIO
+============================================================ */
 
-    color:
-        #ffffff;
+.media-list {
+    position: absolute;
+    left: 250px;
+    bottom: 30px;
+    display: none;
+    gap: 8px;
+    z-index: 2000;
+    flex-wrap: wrap;
+}
 
-    background:
-        linear-gradient(
-            145deg,
-            rgba(72,224,130,0.20),
-            rgba(72,224,130,0.055)
-        );
+.media-list button {
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    background: #334155;
+    color: white;
+    cursor: pointer;
+}
 
-    border-color:
-        rgba(72,224,130,0.30);
+.audio-player-wrapper,
+.video-player-wrapper {
+    position: fixed;
+    z-index: 3000;
+    display: none;
+    background: #0f172a;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
 
-    box-shadow:
-        0 0 0 1px
-        rgba(72,224,130,0.05),
-        0 0 18px
-        rgba(72,224,130,0.09);
+.audio-player-wrapper {
+    bottom: 25px;
+    right: 25px;
+}
+
+.audio-player-wrapper audio {
+    width: 320px;
+}
+
+.audio-player-wrapper button,
+.video-player-wrapper button {
+    margin-left: 8px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
 }
 
 
-.edit-tool-btn.active::after,
-.active-tool::after {
+/* ============================================================
+   VIDEO
+============================================================ */
 
-    content: "";
+#video-list-container {
+    position: fixed;
+    right: 30px;
+    bottom: 30px;
+    display: none;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 3500;
+}
 
-    position:
-        absolute;
+#video-list-container button {
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    background: #334155;
+    color: white;
+    cursor: pointer;
+}
 
-    left:
-        50%;
+.video-player-wrapper {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
 
-    bottom:
-        4px;
-
-    width:
-        5px;
-
-    height:
-        5px;
-
-    transform:
-        translateX(-50%);
-
-    border-radius:
-        50%;
-
-    background:
-        #48e082;
-
-    box-shadow:
-        0 0 8px
-        rgba(72,224,130,0.75);
+#slide-video {
+    width: min(900px, 80vw);
+    max-height: 75vh;
 }
 
 
-.edit-tool-btn:active {
+/* ============================================================
+   EDIT TRAY
+============================================================ */
 
-    transform:
-        translateY(1px)
-        scale(.95);
+.edit-tray {
+    position: fixed;
+    left: 250px;
+    bottom: 20px;
+    z-index: 4000;
+
+    display: none;
+    gap: 7px;
+
+    padding: 10px;
+
+    background: #0f172a;
+    border-radius: 12px;
+
+    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+}
+
+.edit-tray button {
+    border: none;
+    border-radius: 7px;
+    padding: 9px 12px;
+    background: #334155;
+    color: white;
+    cursor: pointer;
+}
+
+.edit-tray button:hover,
+.edit-tray button.active-tool {
+    background: #475569;
 }
 
 
-/* =========================================================
-   27. CLEAR TOOL
-   ========================================================= */
-
-#clear-tool:hover {
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(220,70,70,0.12);
-
-    border-color:
-        rgba(255,100,100,0.20);
-}
-
-
-#clear-tool img {
-
-    width:
-        23px;
-
-    height:
-        23px;
-
-    object-fit:
-        contain;
-}
-
-
-/* =========================================================
-   28. WHITEBOARD
-   ========================================================= */
-
-#whiteboard {
-
-    position:
-        fixed;
-
-    top:
-        3%;
-
-    left:
-        130px;
-
-    width:
-        calc(95% - 90px);
-
-    height:
-        80vh;
-
-    box-sizing:
-        border-box;
-
-    display:
-        none;
-
-    background:
-        #ffffff;
-
-    border:
-        1px solid rgba(255,255,255,0.18);
-
-    border-radius:
-        15px;
-
-    box-shadow:
-        0 30px 90px rgba(0,0,0,0.52),
-        0 0 0 5px rgba(5,20,27,0.68);
-
-    overflow:
-        hidden;
-
-    z-index:
-        3000;
-}
-
-
-#whiteboard::before {
-
-    content:
-        "";
-
-    position:
-        absolute;
-
-    inset:
-        0;
-
-    pointer-events:
-        none;
-
-    border:
-        1px solid rgba(0,0,0,0.10);
-
-    border-radius:
-        inherit;
-
-    z-index:
-        5;
-}
-
-
-#whiteboard-canvas {
-
-    width:
-        100%;
-
-    height:
-        100%;
-
-    display:
-        block;
-
-    cursor:
-        crosshair;
-
-    background:
-        #ffffff;
-
-    touch-action:
-        none;
-}
-
-
-/* =========================================================
-   29. PENCIL MENU
-   ========================================================= */
-
-#pencil-size-menu {
-
-    position:
-        absolute;
-
-    left:
-        50%;
-
-    bottom:
-        70px;
-
-    transform:
-        translateX(-50%);
-
-    display:
-        none;
-
-    flex-direction:
-        row;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    gap:
-        9px;
-
-    padding:
-        8px 10px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(11,35,45,0.97),
-            rgba(5,20,27,0.97)
-        );
-
-    border:
-        1px solid rgba(255,255,255,0.09);
-
-    border-radius:
-        12px;
-
-    box-shadow:
-        0 18px 45px rgba(0,0,0,0.40);
-
-    backdrop-filter:
-        blur(20px);
-
-    -webkit-backdrop-filter:
-        blur(20px);
-
-    z-index:
-        5100;
-
-    animation:
-        sizeMenuIn .18s ease-out;
-}
-
-
-@keyframes sizeMenuIn {
-
-    from {
-        opacity:
-            0;
-
-        transform:
-            translateX(-50%)
-            translateY(6px)
-            scale(.96);
-    }
-
-    to {
-        opacity:
-            1;
-
-        transform:
-            translateX(-50%)
-            translateY(0)
-            scale(1);
-    }
-}
-
-
-.size-option {
-
-    position:
-        relative;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    width:
-        38px;
-
-    height:
-        38px;
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(255,255,255,0.04);
-
-    border:
-        1px solid rgba(255,255,255,0.07);
-
-    border-radius:
-        9px;
-
-    cursor:
-        pointer;
-
-    transition:
-        all .18s ease;
-}
-
-
-.size-option::after {
-
-    content:
-        "";
-
-    display:
-        block;
-
-    border-radius:
-        50%;
-
-    background:
-        #ffffff;
-}
-
-
-.size-option[data-size="2"]::after {
-
-    width:
-        5px;
-
-    height:
-        5px;
-}
-
-
-.size-option[data-size="5"]::after {
-
-    width:
-        10px;
-
-    height:
-        10px;
-}
-
-
-.size-option[data-size="10"]::after {
-
-    width:
-        17px;
-
-    height:
-        17px;
-}
-
-
-.size-option:hover {
-
-    transform:
-        translateY(-2px);
-
-    background:
-        rgba(255,255,255,0.08);
-
-    border-color:
-        rgba(72,224,130,0.24);
-}
-
-
-.size-option.active {
-
-    background:
-        rgba(72,224,130,0.11);
-
-    border-color:
-        rgba(72,224,130,0.32);
-
-    box-shadow:
-        0 0 14px
-        rgba(72,224,130,0.08);
-}
-
-
-/* =========================================================
-   30. SLIDE EDIT CANVAS
-   ========================================================= */
+/* ============================================================
+   CANVASES
+============================================================ */
 
 #edit-canvas {
-
-    position:
-        absolute;
-
-    z-index:
-        2;
-
-    pointer-events:
-        auto;
+    position: absolute;
+    z-index: 1500;
+    pointer-events: auto;
 }
 
+.whiteboard {
+    position: absolute;
+    inset: 0;
+    display: none;
+    z-index: 2000;
+    background: white;
+}
+
+#whiteboard-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+
+/* ============================================================
+   TEXT BOX
+============================================================ */
 
 .slide-textbox {
-
-    position:
-        absolute;
-
-    z-index:
-        999999;
-
-    pointer-events:
-        auto;
+    position: absolute;
+    min-width: 50px;
+    min-height: 20px;
+    z-index: 999999;
+    color: red;
+    font-size: 28px;
+    font-weight: bold;
+    outline: none;
+    cursor: move;
+    user-select: text;
 }
 
 
-/* =========================================================
-   31. TEXT BOX
-   ========================================================= */
-
-.text-box {
-
-    position:
-        absolute;
-
-    min-width:
-        80px;
-
-    min-height:
-        24px;
-
-    padding:
-        4px 6px;
-
-    font-family:
-        inherit;
-
-    font-size:
-        20px;
-
-    color:
-        #111111;
-
-    background:
-        rgba(255,255,255,0.97);
-
-    border:
-        1px solid rgba(30,96,122,0.42);
-
-    border-radius:
-        6px;
-
-    outline:
-        none;
-
-    box-shadow:
-        0 7px 18px rgba(0,0,0,0.13);
-
-    z-index:
-        1000;
-
-    transition:
-        border-color .15s ease,
-        box-shadow .15s ease;
-}
-
-
-.text-box:focus {
-
-    border-color:
-        #48e082;
-
-    box-shadow:
-        0 0 0 2px
-        rgba(72,224,130,0.14),
-        0 8px 22px
-        rgba(0,0,0,0.15);
-}
-
-
-/* =========================================================
-   32. TEXT TOOLBAR
-   ========================================================= */
-
-.text-box-toolbar {
-
-    position:
-        absolute;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    gap:
-        4px;
-
-    padding:
-        5px 6px;
-
-    background:
-        rgba(7,24,32,0.97);
-
-    border:
-        1px solid rgba(255,255,255,0.09);
-
-    border-radius:
-        9px;
-
-    box-shadow:
-        0 15px 35px rgba(0,0,0,0.34);
-
-    backdrop-filter:
-        blur(16px);
-
-    -webkit-backdrop-filter:
-        blur(16px);
-
-    font-size:
-        13px;
-
-    z-index:
-        1100;
-}
-
-
-.text-box-toolbar button {
-
-    min-width:
-        28px;
-
-    height:
-        28px;
-
-    padding:
-        2px 6px;
-
-    color:
-        rgba(255,255,255,0.78);
-
-    background:
-        rgba(255,255,255,0.045);
-
-    border:
-        1px solid rgba(255,255,255,0.07);
-
-    border-radius:
-        6px;
-
-    cursor:
-        pointer;
-
-    transition:
-        all .16s ease;
-}
-
-
-.text-box-toolbar button:hover {
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(72,224,130,0.11);
-
-    border-color:
-        rgba(72,224,130,0.20);
-}
-
-
-.text-box-toolbar input[type="color"] {
-
-    width:
-        27px;
-
-    height:
-        27px;
-
-    padding:
-        2px;
-
-    border:
-        1px solid rgba(255,255,255,0.10);
-
-    border-radius:
-        6px;
-
-    background:
-        rgba(255,255,255,0.04);
-
-    cursor:
-        pointer;
-}
-
-
-.text-box-toolbar input,
-.text-box-toolbar select {
-
-    font-family:
-        inherit;
-
-    color:
-        rgba(255,255,255,0.86);
-
-    background:
-        rgba(255,255,255,0.05);
-
-    border:
-        1px solid rgba(255,255,255,0.07);
-
-    border-radius:
-        6px;
-
-    outline:
-        none;
-}
-
-
-/* =========================================================
-   33. PRESENTATION LIST
-   ========================================================= */
-
-#presentation-list-container {
-
-    position:
-        fixed;
-
-    top:
-        58px;
-
-    left:
-        112px;
-
-    display:
-        none;
-
-    flex-direction:
-        column;
-
-    min-width:
-        210px;
-
-    max-width:
-        300px;
-
-    gap:
-        7px;
-
-    padding:
-        10px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(13,40,51,0.985),
-            rgba(5,22,30,0.985)
-        );
-
-    border:
-        1px solid rgba(255,255,255,0.09);
-
-    border-radius:
-        15px;
-
-    box-shadow:
-        0 22px 60px rgba(0,0,0,0.46);
-
-    backdrop-filter:
-        blur(22px);
-
-    -webkit-backdrop-filter:
-        blur(22px);
-
-    z-index:
-        4000;
-
-    max-height:
-        70vh;
-
-    overflow-y:
-        auto;
-
-    scrollbar-width:
-        thin;
-
-    scrollbar-color:
-        rgba(72,224,130,0.30)
-        transparent;
-
-    animation:
-        mediaPanelIn .20s ease-out;
-}
-
-
-/* =========================================================
-   34. PRESENTATION BUTTONS
-   ========================================================= */
-
-#presentation-list-container button {
-
-    position:
-        relative;
-
-    width:
-        100%;
-
-    min-height:
-        40px;
-
-    padding:
-        9px 13px;
-
-    font-family:
-        inherit;
-
-    font-size:
-        12px;
-
-    font-weight:
-        500;
-
-    text-align:
-        left;
-
-    color:
-        rgba(255,255,255,0.72);
-
-    background:
-        rgba(255,255,255,0.035);
-
-    border:
-        1px solid rgba(255,255,255,0.06);
-
-    border-radius:
-        9px;
-
-    cursor:
-        pointer;
-
-    transition:
-        all .18s ease;
-}
-
-
-#presentation-list-container button:hover {
-
-    color:
-        #ffffff;
-
-    background:
-        linear-gradient(
-            90deg,
-            rgba(30,96,122,0.40),
-            rgba(72,224,130,0.07)
-        );
-
-    border-color:
-        rgba(72,224,130,0.21);
-
-    transform:
-        translateX(3px);
-}
-
-
-#presentation-list-container button:active {
-
-    transform:
-        scale(.98);
-}
-
-
-/* =========================================================
-   35. PRESENTATION UNIT LIST
-   ========================================================= */
-
-#presentations-unit-container {
-
-    position:
-        fixed;
-
-    top:
-        58px;
-
-    left:
-        112px;
-
-    display:
-        none;
-
-    flex-direction:
-        column;
-
-    min-width:
-        165px;
-
-    gap:
-        7px;
-
-    padding:
-        10px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(13,40,51,0.985),
-            rgba(5,22,30,0.985)
-        );
-
-    border:
-        1px solid rgba(255,255,255,0.09);
-
-    border-radius:
-        15px;
-
-    box-shadow:
-        0 22px 60px rgba(0,0,0,0.46);
-
-    backdrop-filter:
-        blur(22px);
-
-    -webkit-backdrop-filter:
-        blur(22px);
-
-    z-index:
-        4000;
-
-    animation:
-        mediaPanelIn .20s ease-out;
-}
-
-
-#presentations-unit-container button {
-
-    width:
-        100%;
-
-    min-height:
-        38px;
-
-    padding:
-        8px 12px;
-
-    font-family:
-        inherit;
-
-    font-size:
-        12px;
-
-    font-weight:
-        500;
-
-    text-align:
-        left;
-
-    color:
-        rgba(255,255,255,0.72);
-
-    background:
-        rgba(255,255,255,0.035);
-
-    border:
-        1px solid rgba(255,255,255,0.06);
-
-    border-radius:
-        9px;
-
-    cursor:
-        pointer;
-
-    transition:
-        all .18s ease;
-}
-
-
-#presentations-unit-container button:hover {
-
-    color:
-        #ffffff;
-
-    background:
-        linear-gradient(
-            90deg,
-            rgba(30,96,122,0.40),
-            rgba(72,224,130,0.07)
-        );
-
-    border-color:
-        rgba(72,224,130,0.21);
-
-    transform:
-        translateX(3px);
-}
-
-
-/* =========================================================
-   36. PRESENTATION VIEWER
-   ========================================================= */
-
-#presentation-viewer {
-
-    position:
-        fixed;
-
-    top:
-        50%;
-
-    left:
-        50%;
-
-    transform:
-        translate(-50%,-50%);
-
-    width:
-        90%;
-
-    height:
-        90%;
-
-    display:
-        none;
-
-    background:
-        #030b10;
-
-    border:
-        1px solid rgba(255,255,255,0.11);
-
-    border-radius:
-        18px;
-
-    overflow:
-        hidden;
-
-    box-shadow:
-        0 35px 100px rgba(0,0,0,0.68);
-
-    z-index:
-        5000;
-
-    animation:
-        viewerIn .22s ease-out;
-}
-
-
-@keyframes viewerIn {
-
-    from {
-
-        opacity:
-            0;
-
-        transform:
-            translate(-50%,-50%)
-            scale(.97);
+/* ============================================================
+   MOBILE
+============================================================ */
+
+@media (max-width: 900px) {
+
+    .sidebar {
+        width: 180px;
+        min-width: 180px;
     }
 
-    to {
+    .lesson-cards-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(4, minmax(0, 1fr));
+        padding: 20px;
+        gap: 15px;
+    }
 
-        opacity:
-            1;
+    .lesson-card.expanded {
+        width: calc(100vw - 40px);
+        height: calc(100vh - 100px);
+    }
 
-        transform:
-            translate(-50%,-50%)
-            scale(1);
+    .lesson-card-content {
+        padding: 35px 25px;
+    }
+
+    .edit-tray {
+        left: 195px;
+        max-width: calc(100vw - 210px);
+        overflow-x: auto;
     }
 }
 
-
-#presentation-frame {
-
-    width:
-        100%;
-
-    height:
-        100%;
-
-    display:
-        block;
-
-    border:
-        none;
-
-    background:
-        #ffffff;
-}
-
-
-/* =========================================================
-   37. PRESENTATION CLOSE
-   ========================================================= */
-
-#hide-presentation-btn {
-
-    position:
-        fixed;
-
-    top:
-        20px;
-
-    right:
-        20px;
-
-    display:
-        none;
-
-    min-width:
-        42px;
-
-    min-height:
-        38px;
-
-    padding:
-        8px 13px;
-
-    color:
-        rgba(255,255,255,0.84);
-
-    background:
-        rgba(5,20,27,0.92);
-
-    border:
-        1px solid rgba(255,255,255,0.10);
-
-    border-radius:
-        9px;
-
-    cursor:
-        pointer;
-
-    box-shadow:
-        0 12px 30px rgba(0,0,0,0.30);
-
-    backdrop-filter:
-        blur(15px);
-
-    -webkit-backdrop-filter:
-        blur(15px);
-
-    z-index:
-        5500;
-
-    transition:
-        all .18s ease;
-}
-
-
-#hide-presentation-btn:hover {
-
-    color:
-        #ffffff;
-
-    background:
-        rgba(72,224,130,0.12);
-
-    border-color:
-        rgba(72,224,130,0.24);
-
-    transform:
-        translateY(-1px);
-}
-
-
-#hide-presentation-btn:active {
-
-    transform:
-        scale(.95);
-}
-
-
-/* =========================================================
-   38. STUDENT BOOK UNIT SYSTEM
-   ========================================================= */
-
-.unit-item {
-
-    position:
-        relative;
-
-    width:
-        100%;
-}
-
-
-.lesson-dropdown {
-
-    display:
-        none;
-
-    position:
-        absolute;
-
-    left:
-        calc(100% + 20px);
-
-    top:
-        0;
-
-    min-width:
-        165px;
-
-    padding:
-        8px;
-
-    flex-direction:
-        column;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(13,40,51,0.985),
-            rgba(5,22,30,0.985)
-        );
-
-    border:
-        1px solid rgba(255,255,255,0.09);
-
-    border-radius:
-        14px;
-
-    box-shadow:
-        0 20px 55px rgba(0,0,0,0.46);
-
-    backdrop-filter:
-        blur(22px);
-
-    -webkit-backdrop-filter:
-        blur(22px);
-
-    z-index:
-        5000;
-}
-
-
-/* lower units */
-
-.unit-item:nth-child(9) .lesson-dropdown,
-.unit-item:nth-child(10) .lesson-dropdown {
-
-    top:
-        -80px;
-}
-
-
-.unit-item:nth-child(11) .lesson-dropdown,
-.unit-item:nth-child(12) .lesson-dropdown {
-
-    top:
-        -150px;
-}
-
-
-.unit-item > .lesson-dropdown.show {
-
-    display:
-        flex;
-
-    animation:
-        dropdownIn .18s ease-out;
-}
-
-
-.lesson-dropdown a {
-
-    position:
-        relative;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    min-height:
-        38px;
-
-    padding:
-        0 14px;
-
-    color:
-        rgba(255,255,255,0.72);
-
-    text-decoration:
-        none;
-
-    font-size:
-        12px;
-
-    font-weight:
-        500;
-
-    border-radius:
-        9px;
-
-    transition:
-        all .18s ease;
-}
-
-
-.lesson-dropdown a::before {
-
-    content:
-        "";
-
-    width:
-        5px;
-
-    height:
-        5px;
-
-    margin-right:
-        9px;
-
-    flex-shrink:
-        0;
-
-    border-radius:
-        50%;
-
-    background:
-        rgba(72,224,130,0.30);
-
-    transition:
-        all .18s ease;
-}
-
-
-.lesson-dropdown a:hover {
-
-    padding-left:
-        18px;
-
-    color:
-        #ffffff;
-
-    background:
-        linear-gradient(
-            90deg,
-            rgba(72,224,130,0.12),
-            rgba(72,224,130,0.03)
-        );
-
-    transform:
-        translateX(2px);
-}
-
-
-.lesson-dropdown a:hover::before {
-
-    background:
-        #48e082;
-
-    box-shadow:
-        0 0 8px
-        rgba(72,224,130,0.7);
-}
-
-
-#students-book-dropdown {
-
-    overflow:
-        visible;
-}
-
-
-#students-book-dropdown .unit-item {
-
-    overflow:
-        visible;
-}
-
-
-/* =========================================================
-   39. TOUCH
-   ========================================================= */
-
-.control-icon,
-.dropdown-content a,
-.lesson-dropdown a,
-#prev-btn,
-#next-btn,
-.edit-tool-btn {
-
-    -webkit-tap-highlight-color:
-        transparent;
-
-    touch-action:
-        manipulation;
-}
-
-
-@media (hover:none) and (pointer:coarse) {
-
-    .control-icon:hover {
-
-        transform:
-            none;
-
-        background:
-            transparent;
-
-        box-shadow:
-            none;
-    }
-
-
-    .edit-tool-btn:hover {
-
-        transform:
-            none;
-
-        box-shadow:
-            none;
-    }
-
-
-    .dropdown-content a:hover,
-    .lesson-dropdown a:hover {
-
-        transform:
-            none;
-
-        padding-left:
-            13px;
-    }
-
-
-    #prev-btn:hover,
-    #next-btn:hover {
-
-        transform:
-            translateY(-50%);
-    }
-
-
-    .edit-tool-btn {
-
-        min-width:
-            44px;
-
-        min-height:
-            44px;
-    }
-
-
-    .dropdown-content a,
-    .lesson-dropdown a {
-
-        min-height:
-            42px;
-    }
-
-
-    .size-option {
-
-        width:
-            42px;
-
-        height:
-            42px;
-    }
-}
-
-
-/* =========================================================
-   40. SELECTION
-   ========================================================= */
-
-::selection {
-
-    background:
-        rgba(72,224,130,0.25);
-
-    color:
-        #ffffff;
-}
-
-
-/* =========================================================
-   41. ACCESSIBILITY
-   ========================================================= */
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible {
-
-    outline:
-        2px solid
-        rgba(72,224,130,0.72);
-
-    outline-offset:
-        2px;
-}
-
-
-/* =========================================================
-   42. MOBILE
-   ========================================================= */
-
-@media (max-width: 700px) {
-
-    #audio-list-container,
-    #video-list-container,
-    #presentation-list-container,
-    #presentations-unit-container {
-
-        left:
-            100px;
-
-        max-width:
-            calc(100vw - 120px);
-    }
-
-
-    #slide-audio {
-
-        left:
-            100px;
-
-        width:
-            calc(100vw - 120px);
-
-        bottom:
-            18px;
-    }
-
-
-    #slide-video {
-
-        max-width:
-            90%;
-
-        max-height:
-            70%;
-    }
-
-
-    #presentation-viewer {
-
-        left:
-            calc(50% + 40px);
-
-        width:
-            calc(100% - 110px);
-
-        height:
-            88%;
-    }
-}
-
-
-/* =========================================================
-   43. LARGE SCREENS
-   ========================================================= */
-
-@media (min-width: 1400px) {
-
-    .control-bar {
-
-        width:
-            94px;
-    }
-
-
-    .slide-container {
-
-        left:
-            94px;
-
-        width:
-            calc(100% - 94px);
-    }
-
-
-    #prev-btn {
-
-        left:
-            112px;
-    }
-
-
-    #audio-list-container,
-    #video-list-container,
-    #presentation-list-container,
-    #presentations-unit-container {
-
-        left:
-            118px;
-    }
-}
-
-
-/* =========================================================
-   44. MEDIUM SCREENS
-   ========================================================= */
-
-@media (max-width: 1100px) {
-
-    .control-bar {
-
-        width:
-            78px;
-    }
-
-
-    .slide-container {
-
-        left:
-            78px;
-
-        width:
-            calc(100% - 78px);
-    }
-
-
-    .control-icon {
-
-        width:
-            44px;
-
-        height:
-            44px;
-
-        margin:
-            9px 0;
-    }
-
-
-    .control-label {
-
-        font-size:
-            9px;
-    }
-
-
-    #prev-btn {
-
-        left:
-            94px;
-    }
-
-
-    #audio-list-container,
-    #video-list-container,
-    #presentation-list-container,
-    #presentations-unit-container {
-
-        left:
-            98px;
-    }
-
-
-    #whiteboard {
-
-        left:
-            105px;
-
-        width:
-            calc(95% - 75px);
-    }
-}
-
-
-/* =========================================================
-   45. TABLET
-   ========================================================= */
-
-@media (max-width: 850px) {
-
-    .control-bar {
-
-        width:
-            70px;
-
-        padding-top:
-            10px;
-    }
-
-
-    .slide-container {
-
-        left:
-            70px;
-
-        width:
-            calc(100% - 70px);
-    }
-
-
-    .control-icon {
-
-        width:
-            42px;
-
-        height:
-            42px;
-
-        margin:
-            8px 0;
-    }
-
-
-    .dropdown-content {
-
-        left:
-            66px;
-
-        min-width:
-            150px;
-    }
-
-
-    #prev-btn {
-
-        left:
-            84px;
-
-        width:
-            40px;
-
-        height:
-            60px;
-    }
-
-
-    #next-btn {
-
-        right:
-            12px;
-
-        width:
-            40px;
-
-        height:
-            60px;
-    }
-
-
-    #audio-list-container,
-    #video-list-container,
-    #presentation-list-container,
-    #presentations-unit-container {
-
-        left:
-            86px;
-    }
-
-
-    #whiteboard {
-
-        left:
-            88px;
-
-        width:
-            calc(100% - 100px);
-    }
-
-
-    #students-book-dropdown .lesson-dropdown {
-
-        left:
-            calc(100% + 66px);
-    }
-}
-
-
-/* =========================================================
-   46. PHONE
-   ========================================================= */
 
 @media (max-width: 600px) {
 
-    body {
-
-        overflow:
-            hidden;
+    .sidebar {
+        width: 65px;
+        min-width: 65px;
+        padding: 8px;
     }
 
-
-    .control-bar {
-
-        width:
-            62px;
-
-        padding-top:
-            7px;
-
-        box-shadow:
-            5px 0 20px rgba(0,0,0,0.25);
+    .sidebar .dropdown-btn span {
+        display: none;
     }
 
-
-    .slide-container {
-
-        left:
-            62px;
-
-        width:
-            calc(100% - 62px);
+    .sidebar .dropdown-btn,
+    .sidebar .control-btn {
+        justify-content: center;
+        padding: 8px;
     }
-
-
-    .control-icon {
-
-        width:
-            38px;
-
-        height:
-            38px;
-
-        margin:
-            6px 0;
-
-        padding:
-            5px;
-
-        border-radius:
-            10px;
-    }
-
-
-    .control-label {
-
-        display:
-            none;
-    }
-
 
     .dropdown-content {
-
-        left:
-            58px;
-
-        min-width:
-            145px;
-
-        max-height:
-            70vh;
-
-        overflow-y:
-            auto;
+        position: fixed;
+        left: 65px;
+        top: 10px;
+        width: 200px;
+        max-height: 80vh;
+        overflow-y: auto;
     }
 
-
-    .dropdown-content a {
-
-        min-height:
-            40px;
-
-        font-size:
-            12px;
+    .viewer-header {
+        padding: 0 15px;
     }
 
-
-    #prev-btn,
-    #next-btn {
-
-        width:
-            36px;
-
-        height:
-            54px;
-
-        font-size:
-            24px;
-
-        border-radius:
-            10px;
+    .viewer-header h1 {
+        font-size: 17px;
     }
 
-
-    #prev-btn {
-
-        left:
-            72px;
+    .viewer-area {
+        padding: 8px;
     }
 
-
-    #next-btn {
-
-        right:
-            8px;
+    .lesson-cards-container {
+        padding: 12px;
+        gap: 10px;
     }
 
-
-    #audio-list-container,
-    #video-list-container,
-    #presentation-list-container,
-    #presentations-unit-container {
-
-        left:
-            72px;
-
-        max-width:
-            calc(100vw - 82px);
+    .lesson-card-front {
+        padding: 10px;
     }
 
-
-    #slide-audio {
-
-        left:
-            70px;
-
-        width:
-            calc(100vw - 80px);
-
-        bottom:
-            12px;
-    }
-
-
-    #slide-video {
-
-        left:
-            calc(50% + 31px);
-
-        max-width:
-            calc(100vw - 82px);
-
-        max-height:
-            65vh;
-    }
-
-
-    #presentation-viewer {
-
-        left:
-            calc(50% + 31px);
-
-        width:
-            calc(100vw - 78px);
-
-        height:
-            85vh;
-
-        border-radius:
-            12px;
-    }
-
-
-    #hide-presentation-btn {
-
-        top:
-            8px;
-
-        right:
-            8px;
-
-        min-width:
-            38px;
-
-        min-height:
-            34px;
-
-        padding:
-            6px 10px;
-    }
-
-
-    #whiteboard {
-
-        left:
-            70px;
-
-        top:
-            2%;
-
-        width:
-            calc(100% - 78px);
-
-        height:
-            82vh;
-
-        border-radius:
-            10px;
-    }
-
-
-    #edit-tray {
-
-        left:
-            calc(50% + 31px);
-
-        bottom:
-            8px;
-
-        max-width:
-            calc(100vw - 76px);
-
-        padding:
-            7px 8px;
-
-        border-radius:
-            12px;
-    }
-
-
-    .edit-tool-btn {
-
-        width:
-            40px;
-
-        height:
-            40px;
-
-        flex:
-            0 0 40px;
-
-        font-size:
-            19px;
-    }
-
-
-    #pencil-size-menu {
-
-        left:
-            calc(50% + 31px);
-
-        bottom:
-            59px;
-    }
-
-
-    .text-box {
-
-        font-size:
-            17px;
-
-        min-width:
-            65px;
-    }
-
-
-    #students-book-dropdown .lesson-dropdown {
-
-        left:
-            calc(100% + 58px);
-    }
-}
-
-
-/* =========================================================
-   47. VERY SMALL PHONES
-   ========================================================= */
-
-@media (max-width: 420px) {
-
-    .control-bar {
-
-        width:
-            56px;
-    }
-
-
-    .slide-container {
-
-        left:
-            56px;
-
-        width:
-            calc(100% - 56px);
-    }
-
-
-    .control-icon {
-
-        width:
-            34px;
-
-        height:
-            34px;
-
-        margin:
-            5px 0;
-    }
-
-
-    .dropdown-content {
-
-        left:
-            52px;
-
-        min-width:
-            135px;
-    }
-
-
-    #prev-btn {
-
-        left:
-            64px;
-    }
-
-
-    #next-btn {
-
-        right:
-            5px;
-    }
-
-
-    #audio-list-container,
-    #video-list-container,
-    #presentation-list-container,
-    #presentations-unit-container {
-
-        left:
-            64px;
-    }
-
-
-    #slide-audio {
-
-        left:
-            62px;
-
-        width:
-            calc(100vw - 70px);
-    }
-
-
-    #whiteboard {
-
-        left:
-            62px;
-
-        width:
-            calc(100% - 70px);
-    }
-
-
-    #edit-tray {
-
-        left:
-            calc(50% + 28px);
-
-        max-width:
-            calc(100vw - 68px);
-    }
-
-
-    #pencil-size-menu {
-
-        left:
-            calc(50% + 28px);
-    }
-
-
-    #students-book-dropdown .lesson-dropdown {
-
-        left:
-            calc(100% + 52px);
-    }
-}
-
-
-/* =========================================================
-   48. TOUCH SCROLLING
-   ========================================================= */
-
-.dropdown-content,
-#audio-list-container,
-#video-list-container,
-#presentation-list-container,
-#presentations-unit-container {
-
-    -webkit-overflow-scrolling:
-        touch;
-}
-
-
-/* =========================================================
-   49. REDUCED MOTION
-   ========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-    *,
-    *::before,
-    *::after {
-
-        animation-duration:
-            0.01ms !important;
-
-        animation-iteration-count:
-            1 !important;
-
-        transition-duration:
-            0.01ms !important;
-    }
-}
-
-/* =========================================================
-   LESSON CARDS — RESPONSIVE
-   ========================================================= */
-
-@media (max-width: 1100px) {
-
-    #lesson-cards-container {
-
-        grid-template-columns:
-            repeat(2, minmax(220px, 1fr));
-
-        grid-template-rows:
-            repeat(4, minmax(230px, 1fr));
-
-        gap:
-            18px;
-
-        padding:
-            30px;
-    }
-
-    .lesson-card {
-
-        min-height:
-            230px;
-    }
-}
-
-
-@media (max-width: 700px) {
-
-    #lesson-cards-container {
-
-        grid-template-columns:
-            repeat(2, minmax(145px, 1fr));
-
-        grid-template-rows:
-            repeat(4, minmax(190px, 1fr));
-
-        gap:
-            12px;
-
-        padding:
-            18px;
-    }
-
-    .lesson-card {
-
-        min-height:
-            190px;
-
-        padding:
-            18px;
-
-        border-radius:
-            16px;
-    }
-
-    .lesson-card h3 {
-
-        font-size:
-            16px;
+    .lesson-card-front h3 {
+        font-size: 14px;
     }
 
     .lesson-card-number {
-
-        font-size:
-            10px;
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+        margin-bottom: 8px;
     }
 
-    .lesson-card-add {
+    .lesson-card-open {
+        display: none;
+    }
 
-        width:
-            36px;
+    .lesson-card.expanded {
+        width: calc(100vw - 90px);
+        height: calc(100vh - 40px);
+        left: calc(50% + 32px);
+    }
 
-        height:
-            36px;
+    .lesson-card-content {
+        padding: 45px 18px 20px;
+    }
 
-        right:
-            10px;
+    .navigation-btn {
+        width: 35px;
+        height: 50px;
+        font-size: 20px;
+    }
 
-        bottom:
-            10px;
+    .audio-player-wrapper {
+        left: 75px;
+        right: 10px;
+        bottom: 10px;
+    }
 
-        font-size:
-            21px;
+    .audio-player-wrapper audio {
+        width: 100%;
+    }
+
+    .edit-tray {
+        left: 75px;
+        right: 10px;
+        bottom: 10px;
+        max-width: none;
+        overflow-x: auto;
     }
 }
 
 
-@media (max-width: 420px) {
+/* ============================================================
+   CARD BACKDROP
+============================================================ */
 
-    #lesson-cards-container {
-
-        grid-template-columns:
-            1fr;
-
-        grid-template-rows:
-            repeat(8, minmax(170px, 1fr));
-
-        gap:
-            12px;
-
-        padding:
-            14px;
-    }
-
-    .lesson-card {
-
-        min-height:
-            170px;
-    }
+.lesson-card.expanded::before {
+    content: "";
+    position: fixed;
+    inset: -100vh -100vw;
+    background: rgba(0,0,0,0.72);
+    z-index: -1;
+    pointer-events: none;
 }
