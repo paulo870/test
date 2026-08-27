@@ -2,28 +2,26 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
+
+    <title>Poliglota</title>
 
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Poliglota</title>
-
     <link
         rel="stylesheet"
         href="css/style.css"
     >
-
 </head>
 
 <body>
 
-<!-- =====================================================
+<!-- =========================================================
      TEACHER PASSWORD PROTECTION
-===================================================== -->
+     ========================================================= -->
 
 <div id="password-screen">
 
@@ -74,28 +72,91 @@
 </div>
 
 
-<!-- =====================================================
-     MAIN CONTROL BAR
-===================================================== -->
+<!-- =========================================================
+     TEACHER ACCESS LOGIC
+     ========================================================= -->
+
+<script>
+
+function checkTeacherPassword() {
+
+    const password =
+        document.getElementById("teacher-password").value;
+
+    const error =
+        document.getElementById("password-error");
+
+    const correctPassword =
+        "angola";
+
+    if (password === correctPassword) {
+
+        document.getElementById(
+            "password-screen"
+        ).style.display = "none";
+
+        sessionStorage.setItem(
+            "poliglotaTeacherAccess",
+            "true"
+        );
+
+    } else {
+
+        error.textContent =
+            "Incorrect password.";
+
+    }
+
+}
+
+
+document
+    .getElementById("teacher-login-form")
+    .addEventListener(
+        "submit",
+        function(event) {
+
+            event.preventDefault();
+
+            checkTeacherPassword();
+
+        }
+    );
+
+
+window.addEventListener(
+    "load",
+    function() {
+
+        if (
+            sessionStorage.getItem(
+                "poliglotaTeacherAccess"
+            ) === "true"
+        ) {
+
+            document.getElementById(
+                "password-screen"
+            ).style.display = "none";
+
+        }
+
+    }
+);
+
+</script>
+
+
+<!-- =========================================================
+     VERTICAL CONTROL BAR
+     ========================================================= -->
 
 <div class="control-bar">
 
-    <button
-        id="lesson-upload-btn"
-        class="lesson-upload-btn"
-        type="button"
-        title="Upload class material"
-        aria-label="Upload class material"
-    >
-        <span class="upload-icon">↥</span>
-        <span class="upload-label">UPLOAD</span>
-    </button>
-
+    <!-- HOME -->
 
     <a
         href="#"
         id="home-btn"
-        title="Home"
     >
         <img
             src="images/control-panel-icons/home-icon.png"
@@ -105,9 +166,9 @@
     </a>
 
 
-    <!-- =================================================
-         STUDENTS BOOK
-    ================================================= -->
+    <!-- =====================================================
+         STUDENT BOOK
+         ===================================================== -->
 
     <div class="dropdown">
 
@@ -122,159 +183,426 @@
             id="students-book-dropdown"
         >
 
+            <!-- UNIT 1 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="1">Unit 1</a>
+
+                <a
+                    href="#"
+                    data-unit="1"
+                >
+                    Unit 1
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="1" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="1" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="1" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="1" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="1" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="1" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="1" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="1" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="1" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="1" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
 
+            <!-- UNIT 2 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="2">Unit 2</a>
+
+                <a href="#" data-unit="2">
+                    Unit 2
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="2" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="2" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="2" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="2" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="2" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="2" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="2" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="2" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="2" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="2" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
 
+            <!-- UNIT 3 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="3">Unit 3</a>
+
+                <a href="#" data-unit="3">
+                    Unit 3
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="3" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="3" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="3" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="3" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="3" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="3" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="3" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="3" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="3" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="3" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
 
+            <!-- UNIT 4 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="4">Unit 4</a>
+
+                <a href="#" data-unit="4">
+                    Unit 4
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="4" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="4" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="4" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="4" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="4" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="4" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="4" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="4" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="4" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="4" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
 
+            <!-- UNIT 5 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="5">Unit 5</a>
+
+                <a href="#" data-unit="5">
+                    Unit 5
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="5" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="5" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="5" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="5" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="5" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="5" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="5" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="5" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="5" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="5" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
 
+            <!-- UNIT 6 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="6">Unit 6</a>
+
+                <a href="#" data-unit="6">
+                    Unit 6
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="6" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="6" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="6" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="6" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="6" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="6" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="6" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="6" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="6" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="6" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
 
+            <!-- UNIT 7 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="7">Unit 7</a>
+
+                <a href="#" data-unit="7">
+                    Unit 7
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="7" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="7" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="7" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="7" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="7" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="7" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="7" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="7" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="7" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="7" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
 
+            <!-- UNIT 8 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="8">Unit 8</a>
+
+                <a href="#" data-unit="8">
+                    Unit 8
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="8" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="8" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="8" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="8" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="8" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="8" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="8" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="8" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="8" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="8" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
 
+            <!-- UNIT 9 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="9">Unit 9</a>
+
+                <a href="#" data-unit="9">
+                    Unit 9
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="9" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="9" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="9" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="9" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="9" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="9" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="9" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="9" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="9" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="9" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
 
+            <!-- UNIT 10 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="10">Unit 10</a>
+
+                <a href="#" data-unit="10">
+                    Unit 10
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="10" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="10" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="10" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="10" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="10" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="10" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="10" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="10" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="10" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="10" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
 
+            <!-- UNIT 11 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="11">Unit 11</a>
+
+                <a href="#" data-unit="11">
+                    Unit 11
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="11" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="11" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="11" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="11" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="11" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="11" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="11" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="11" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="11" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="11" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
 
+            <!-- UNIT 12 -->
+
             <div class="unit-item">
-                <a href="#" data-unit="12">Unit 12</a>
+
+                <a href="#" data-unit="12">
+                    Unit 12
+                </a>
 
                 <div class="lesson-dropdown">
-                    <a href="#" data-unit="12" data-lesson="1">Lesson 1</a>
-                    <a href="#" data-unit="12" data-lesson="2">Lesson 2</a>
-                    <a href="#" data-unit="12" data-lesson="3">Lesson 3</a>
-                    <a href="#" data-unit="12" data-lesson="4">Lesson 4</a>
-                    <a href="#" data-unit="12" data-lesson="5">Lesson 5</a>
+
+                    <a href="#" data-unit="12" data-lesson="1">
+                        Lesson 1
+                    </a>
+
+                    <a href="#" data-unit="12" data-lesson="2">
+                        Lesson 2
+                    </a>
+
+                    <a href="#" data-unit="12" data-lesson="3">
+                        Lesson 3
+                    </a>
+
+                    <a href="#" data-unit="12" data-lesson="4">
+                        Lesson 4
+                    </a>
+
+                    <a href="#" data-unit="12" data-lesson="5">
+                        Lesson 5
+                    </a>
+
                 </div>
+
             </div>
 
         </div>
@@ -282,9 +610,9 @@
     </div>
 
 
-    <!-- =================================================
+    <!-- =====================================================
          ACTIVITY BOOK
-    ================================================= -->
+         ===================================================== -->
 
     <div class="dropdown">
 
@@ -317,7 +645,14 @@
     </div>
 
 
-    <a href="#" id="audio-btn">
+    <!-- =====================================================
+         AUDIO
+         ===================================================== -->
+
+    <a
+        href="#"
+        id="audio-btn"
+    >
         <img
             src="images/control-panel-icons/audio-icon.png"
             alt="Audios"
@@ -326,7 +661,14 @@
     </a>
 
 
-    <a href="#" id="video-btn">
+    <!-- =====================================================
+         VIDEO
+         ===================================================== -->
+
+    <a
+        href="#"
+        id="video-btn"
+    >
         <img
             src="images/control-panel-icons/video-icon.png"
             alt="Videos"
@@ -335,7 +677,14 @@
     </a>
 
 
-    <a href="#" id="edit-btn">
+    <!-- =====================================================
+         EDIT
+         ===================================================== -->
+
+    <a
+        href="#"
+        id="edit-btn"
+    >
         <img
             src="images/control-panel-icons/edit-icon.png"
             alt="Edit"
@@ -344,7 +693,14 @@
     </a>
 
 
-    <a href="#" id="whiteboard-btn">
+    <!-- =====================================================
+         WHITEBOARD
+         ===================================================== -->
+
+    <a
+        href="#"
+        id="whiteboard-btn"
+    >
         <img
             src="images/control-panel-icons/whiteboard-icon.png"
             alt="Whiteboard"
@@ -353,11 +709,13 @@
     </a>
 
 
+    <!-- =====================================================
+         GAMES
+         ===================================================== -->
+
     <a
         href="https://play.poliglotaangola.com"
         id="games-btn"
-        target="_blank"
-        rel="noopener noreferrer"
     >
         <img
             src="images/control-panel-icons/games-icon.png"
@@ -366,59 +724,30 @@
         >
     </a>
 
+
+    <!-- LOGO -->
+
+    <div class="control-logo">
+
+        <img
+            src="images/logo.png"
+            alt="Logo"
+        >
+
+    </div>
+
 </div>
 
 
-<!-- =====================================================
-     LESSON AREA
-===================================================== -->
+<!-- =========================================================
+     MAIN SLIDE VIEW
+     ========================================================= -->
 
-<div class="slide-container">
+<div
+    class="slide-container"
+    id="main-slide-view"
+>
 
-    <section
-        id="lesson-content-view"
-        aria-live="polite"
-    >
-
-        <div class="lesson-content-header">
-
-            <div>
-
-                <span class="lesson-content-kicker">
-                    CLASS MATERIAL
-                </span>
-
-                <h1 id="lesson-content-title">
-                    Select a lesson
-                </h1>
-
-                <p id="lesson-content-subtitle">
-                    Choose a lesson from the Students Book.
-                </p>
-
-            </div>
-
-
-            <button
-                id="lesson-content-refresh"
-                type="button"
-                title="Refresh lesson materials"
-            >
-                ↻
-            </button>
-
-        </div>
-
-
-        <div
-            id="lesson-cards"
-            class="lesson-cards"
-        ></div>
-
-    </section>
-
-
-    <!-- Legacy slide system remains available -->
     <div class="slide-wrapper">
 
         <img
@@ -427,174 +756,167 @@
             style="display:none;"
         >
 
-        <canvas id="edit-canvas"></canvas>
+        <canvas
+            id="edit-canvas"
+        ></canvas>
 
     </div>
 
 
-    <button id="prev-btn">
+    <button
+        id="prev-btn"
+        aria-label="Previous page"
+    >
         &#9664;
     </button>
 
-    <button id="next-btn">
+
+    <button
+        id="next-btn"
+        aria-label="Next page"
+    >
         &#9654;
     </button>
 
 </div>
 
 
-<!-- =====================================================
-     EXPANDED CARD OVERLAY
-===================================================== -->
+<!-- =========================================================
+     LESSON CONTENT VIEW
+     ========================================================= -->
 
 <div
-    id="lesson-focus-overlay"
-    class="lesson-focus-overlay"
+    id="lesson-content-view"
     aria-hidden="true"
 >
 
-    <button
-        id="lesson-focus-close"
-        class="lesson-focus-close"
-        type="button"
-        aria-label="Close"
-    >
-        ×
-    </button>
+    <div class="lesson-content-header">
+
+        <div>
+
+            <span
+                class="lesson-content-kicker"
+                id="lesson-content-kicker"
+            >
+                LESSON
+            </span>
+
+            <h1 id="lesson-content-title">
+                Lesson
+            </h1>
+
+            <p id="lesson-content-description">
+                Select a lesson part to begin.
+            </p>
+
+        </div>
+
+
+        <button
+            id="lesson-content-refresh"
+            type="button"
+            title="Return to lesson"
+            aria-label="Return to lesson"
+        >
+            ↻
+        </button>
+
+    </div>
+
 
     <div
-        id="lesson-focus-card"
-        class="lesson-focus-card"
+        class="lesson-cards"
+        id="lesson-cards"
     ></div>
 
 </div>
 
 
-<!-- =====================================================
-     TEACHER UPLOAD MODAL
-===================================================== -->
+<!-- =========================================================
+     EXPANDED LESSON PART
+     ========================================================= -->
 
 <div
-    id="lesson-upload-modal"
-    class="lesson-upload-modal"
+    class="lesson-focus-overlay"
+    id="lesson-focus-overlay"
     aria-hidden="true"
 >
 
-    <div class="lesson-upload-dialog">
+    <button
+        class="lesson-focus-close"
+        id="lesson-focus-close"
+        type="button"
+        aria-label="Close lesson part"
+    >
+        ×
+    </button>
 
-        <button
-            id="lesson-upload-close"
-            class="lesson-upload-close"
-            type="button"
-            aria-label="Close"
+
+    <div
+        class="lesson-focus-card"
+        id="lesson-focus-card"
+        role="dialog"
+        aria-modal="true"
+    >
+
+        <div
+            class="focus-type"
+            id="focus-type"
         >
-            ×
-        </button>
+            LESSON PART
+        </div>
 
 
-        <span class="lesson-content-kicker">
-            TEACHER MATERIAL
-        </span>
-
-
-        <h2>
-            Upload class material
+        <h2 id="focus-title">
+            Lesson Part
         </h2>
 
 
-        <p id="upload-lesson-label">
-            Select a lesson first.
-        </p>
-
-
-        <label>
-
-            Title
-
-            <input
-                id="upload-title"
-                type="text"
-                placeholder="e.g. Greetings practice"
-            >
-
-        </label>
-
-
-        <label>
-
-            Description
-            <span>(optional)</span>
-
-            <textarea
-                id="upload-description"
-                rows="3"
-                placeholder="What should students focus on?"
-            ></textarea>
-
-        </label>
-
-
-        <label>
-
-            File
-
-            <input
-                id="lesson-file-input"
-                type="file"
-                accept="image/*,audio/*,video/*,application/pdf,.pdf"
-            >
-
-        </label>
+        <p
+            class="focus-description"
+            id="focus-description"
+        ></p>
 
 
         <div
-            id="upload-progress"
-            class="upload-progress"
-            aria-live="polite"
+            class="focus-media"
+            id="focus-media"
         ></div>
-
-
-        <button
-            id="lesson-upload-submit"
-            class="lesson-upload-submit"
-            type="button"
-        >
-            Upload material
-        </button>
-
-
-        <p class="upload-note">
-            Teachers can upload materials.
-            Deletion is intentionally unavailable here
-            and must be done by the owner in Supabase.
-        </p>
 
     </div>
 
 </div>
 
 
-<!-- =====================================================
+<!-- =========================================================
      WHITEBOARD
-===================================================== -->
+     ========================================================= -->
 
 <div id="whiteboard">
 
-    <canvas id="whiteboard-canvas"></canvas>
+    <canvas
+        id="whiteboard-canvas"
+    ></canvas>
 
 </div>
 
 
-<!-- =====================================================
-     LEGACY AUDIO
-===================================================== -->
+<!-- =========================================================
+     AUDIO LIST
+     ========================================================= -->
 
-<div id="audio-list-container"></div>
+<div
+    id="audio-list-container"
+></div>
+
+
+<!-- =========================================================
+     AUDIO PLAYER
+     ========================================================= -->
 
 <audio
     id="slide-audio"
     controls
-    preload="metadata"
     style="display:none;"
 >
 
@@ -609,24 +931,22 @@
 </audio>
 
 
-<!-- =====================================================
-     LEGACY VIDEO
-===================================================== -->
+<button
+    id="hide-audio-btn"
+    style="display:none;"
+>
+    Hide Player
+</button>
+
+
+<!-- =========================================================
+     VIDEO PLAYER
+     ========================================================= -->
 
 <video
     id="slide-video"
     controls
-    playsinline
-    style="
-        display:none;
-        max-width:80%;
-        max-height:70%;
-        position:fixed;
-        top:50%;
-        left:50%;
-        transform:translate(-50%,-50%);
-        z-index:2000;
-    "
+    style="display:none;"
 >
 
     <source
@@ -642,32 +962,21 @@
 
 <button
     id="hide-video-btn"
-    type="button"
     style="display:none;"
 >
     Hide Video
 </button>
 
 
-<button
-    id="hide-audio-btn"
-    type="button"
-    style="display:none;"
->
-    Hide Player
-</button>
-
-
-<!-- =====================================================
+<!-- =========================================================
      EDIT TRAY
-===================================================== -->
+     ========================================================= -->
 
 <div id="edit-tray">
 
     <button
         class="edit-tool-btn"
         id="pencil-tool"
-        type="button"
     >
         ✏️
     </button>
@@ -696,7 +1005,6 @@
     <button
         class="edit-tool-btn"
         id="pen-tool"
-        type="button"
     >
         🖊️
     </button>
@@ -705,7 +1013,6 @@
     <button
         class="edit-tool-btn"
         id="eraser-tool"
-        type="button"
     >
         🧽
     </button>
@@ -714,7 +1021,6 @@
     <button
         class="edit-tool-btn"
         id="highlight-tool"
-        type="button"
     >
         🖍️
     </button>
@@ -723,7 +1029,6 @@
     <button
         class="edit-tool-btn"
         id="text-tool"
-        type="button"
     >
         🔤
     </button>
@@ -732,7 +1037,6 @@
     <button
         class="edit-tool-btn"
         id="clear-tool"
-        type="button"
     >
         🗑️
     </button>
@@ -740,13 +1044,12 @@
 </div>
 
 
-<!-- =====================================================
-     SUPABASE
-===================================================== -->
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- =========================================================
+     SCRIPT
+     ========================================================= -->
 
 <script src="js/script.js"></script>
 
 </body>
+
 </html>
