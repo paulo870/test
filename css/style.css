@@ -3949,3 +3949,98 @@ body.lesson-focus-open{overflow:hidden}
 @media (prefers-reduced-motion:reduce){
     .lesson-material-card,.lesson-focus-card,#lesson-content-view{animation:none!important;transition:none!important}
 }
+// ============================================================
+// LESSON MENU
+// ============================================================
+
+const lessonDropdownLinks =
+    document.querySelectorAll(
+        ".lesson-dropdown a"
+    );
+
+
+lessonDropdownLinks.forEach(
+    link => {
+
+        link.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+
+                const unit =
+                    parseInt(
+                        link.getAttribute(
+                            "data-unit"
+                        ),
+                        10
+                    );
+
+
+                const lesson =
+                    parseInt(
+                        link.getAttribute(
+                            "data-lesson"
+                        ),
+                        10
+                    );
+
+
+                console.log(
+                    "Opening lesson:",
+                    unit,
+                    lesson
+                );
+
+
+                // ------------------------------------------------
+                // NEW BEHAVIOUR:
+                // DO NOT LOAD THE PAGE IMAGE.
+                // OPEN THE LESSON CARD VIEW.
+                // ------------------------------------------------
+
+                showLessonView(
+                    unit,
+                    lesson
+                );
+
+
+                // Close menus
+
+                document
+                    .querySelectorAll(
+                        ".lesson-dropdown"
+                    )
+                    .forEach(
+                        menu => {
+
+                            menu.classList.remove(
+                                "show"
+                            );
+
+                        }
+                    );
+
+
+                document
+                    .querySelectorAll(
+                        ".dropdown"
+                    )
+                    .forEach(
+                        dropdown => {
+
+                            dropdown.classList.remove(
+                                "show"
+                            );
+
+                        }
+                    );
+
+            }
+        );
+
+    }
+);
