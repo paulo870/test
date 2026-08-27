@@ -1,466 +1,3735 @@
-/* ============================================================
-   POLIGLOTA LESSON CARDS
-   ============================================================ */
+-----------------------------------------------------------------------------------------------------------------------------
+/* =========================================================
+   ACADEMIA POLIGLOTA
+   INTERACTIVE BOOK PLATFORM
+   PREMIUM PROFESSIONAL UI
+   ========================================================= */
 
-.lesson-content-wrapper {
-    width: min(1100px, 90%);
-    height: 82%;
-    margin: auto;
 
-    display: grid;
-    grid-template-columns:
-        repeat(auto-fit, minmax(260px, 1fr));
+/* =========================================================
+   01. GLOBAL
+   ========================================================= */
 
-    gap: 24px;
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
 
-    overflow-y: auto;
-    padding: 35px;
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+
+    font-family:
+        Inter,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    color: #ffffff;
+
+    background: #07151d;
+
+    overflow: hidden;
+
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+body {
+    position: relative;
+
+    background-image:
+        linear-gradient(
+            135deg,
+            rgba(3, 15, 22, 0.82),
+            rgba(7, 30, 40, 0.66)
+        ),
+        url('../images/background.jpg');
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    background-attachment: fixed;
+}
+
+
+/* =========================================================
+   02. BACKGROUND ATMOSPHERE
+   ========================================================= */
+
+body::after {
+    content: "";
+
+    position: fixed;
+    inset: 0;
+
+    pointer-events: none;
+
+    background:
+        radial-gradient(
+            circle at 15% 10%,
+            rgba(37, 125, 152, 0.16),
+            transparent 30%
+        ),
+
+        radial-gradient(
+            circle at 85% 90%,
+            rgba(72, 224, 130, 0.055),
+            transparent 30%
+        );
+
+    z-index: -2;
+}
+
+
+body::before {
+    content: "";
+
+    position: fixed;
+    inset: 0;
+
+    pointer-events: none;
+
+    background-image:
+        linear-gradient(
+            rgba(255,255,255,0.018) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,0.018) 1px,
+            transparent 1px
+        );
+
+    background-size: 48px 48px;
+
+    mask-image:
+        linear-gradient(
+            to bottom,
+            rgba(0,0,0,0.75),
+            transparent
+        );
+
+    -webkit-mask-image:
+        linear-gradient(
+            to bottom,
+            rgba(0,0,0,0.75),
+            transparent
+        );
+
+    z-index: -1;
+}
+
+
+/* =========================================================
+   03. DESIGN VARIABLES
+   ========================================================= */
+
+:root {
+
+    --navy-1: #06131b;
+    --navy-2: #081c25;
+    --navy-3: #0b2732;
+
+    --teal: #17647d;
+    --teal-light: #287f99;
+
+    --green: #48e082;
+    --green-soft: rgba(72,224,130,0.12);
+    --green-border: rgba(72,224,130,0.24);
+
+    --white: #ffffff;
+    --text: rgba(255,255,255,0.92);
+    --text-soft: rgba(255,255,255,0.70);
+    --text-muted: rgba(255,255,255,0.48);
+
+    --border: rgba(255,255,255,0.085);
+    --border-light: rgba(255,255,255,0.13);
+
+    --shadow:
+        0 18px 50px rgba(0,0,0,0.38);
+
+    --shadow-heavy:
+        0 30px 90px rgba(0,0,0,0.58);
+
+    --glass:
+        rgba(8,27,36,0.94);
+}
+
+
+/* =========================================================
+   04. CONTROL BAR
+   ========================================================= */
+
+.control-bar {
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 90px;
+    height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+
+    padding-top: 15px;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(11,43,55,0.98),
+            rgba(5,24,32,0.99)
+        );
+
+    border-right:
+        1px solid rgba(255,255,255,0.08);
+
+    box-shadow:
+        8px 0 35px rgba(0,0,0,0.28),
+        inset -1px 0 rgba(255,255,255,0.025);
+
+    backdrop-filter:
+        blur(20px);
+
+    -webkit-backdrop-filter:
+        blur(20px);
+
+    z-index: 1000;
+
+    overflow: visible;
+}
+
+
+/* subtle light at top of sidebar */
+
+.control-bar::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 130px;
+
+    background:
+        radial-gradient(
+            ellipse at top center,
+            rgba(72,224,130,0.08),
+            transparent 70%
+        );
+
+    pointer-events: none;
+}
+
+
+/* illuminated edge */
+
+.control-bar::after {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    right: -1px;
+
+    width: 1px;
+    height: 100%;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(72,224,130,0.45),
+            transparent 30%,
+            transparent 70%,
+            rgba(72,224,130,0.15)
+        );
+
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   CONTROL BAR LOGO
+   SAME SIZE AS CONTROL ICONS
+   ========================================================= */
+
+
+/* =========================================================
+   06. CONTROL ITEMS
+   ========================================================= */
+
+.control-item {
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    width: 100%;
+}
+
+
+/* =========================================================
+   07. CONTROL ICONS
+   ========================================================= */
+
+.control-icon {
+
+    position: relative;
+
+    width: 50px;
+    height: 50px;
+
+    margin: 9px 0;
+
+    padding: 7px;
 
     box-sizing: border-box;
 
-    perspective: 1200px;
+    object-fit: contain;
+
+    border-radius: 13px;
+
+    border:
+        1px solid transparent;
+
+    opacity: 0.82;
+
+    cursor: pointer;
+
+    transition:
+        transform .20s ease,
+        background-color .20s ease,
+        border-color .20s ease,
+        box-shadow .20s ease,
+        filter .20s ease,
+        opacity .20s ease;
 }
 
 
-.lesson-card-wrapper {
-    min-height: 250px;
-    perspective: 1200px;
+.control-icon:hover {
+
+    transform:
+        translateY(-2px)
+        scale(1.035);
+
+    opacity: 1;
+
+    background:
+        rgba(255,255,255,0.055);
+
+    border-color:
+        rgba(255,255,255,0.08);
+
+    box-shadow:
+        0 8px 24px rgba(0,0,0,0.24),
+        0 0 15px rgba(72,224,130,0.05);
+
+    filter:
+        brightness(1.08);
 }
 
 
-.lesson-card {
-    height: 100%;
+.control-icon:active {
 
-    min-height: 250px;
+    transform:
+        scale(0.93);
+
+    transition:
+        transform .06s ease;
+}
+
+
+/* =========================================================
+   08. CONTROL LABELS
+   ========================================================= */
+
+.control-label {
+
+    color:
+        rgba(255,255,255,0.55);
+
+    font-size:
+        9px;
+
+    font-weight:
+        600;
+
+    letter-spacing:
+        0.45px;
+
+    text-transform:
+        uppercase;
+
+    margin-top:
+        -5px;
+
+    margin-bottom:
+        8px;
+
+    text-align:
+        center;
+
+    user-select:
+        none;
+
+    transition:
+        color .2s ease;
+}
+
+
+.control-item:hover .control-label {
+
+    color:
+        rgba(255,255,255,0.88);
+}
+
+
+/* =========================================================
+   09. DROPDOWN CONTAINERS
+   ========================================================= */
+
+.dropdown {
+    position: relative;
+
+    display: flex;
+    justify-content: center;
+}
+
+
+.dropdown-content {
+
+    position: absolute;
+
+    left: 84px;
+    top: 2px;
+
+    min-width: 180px;
+
+    display: none;
+    flex-direction: column;
+
+    padding: 8px;
 
     background:
         linear-gradient(
             145deg,
-            #ffffff,
-            #f1f1f1
+            rgba(13,40,51,0.985),
+            rgba(5,22,30,0.985)
         );
 
-    border-radius: 18px;
+    border:
+        1px solid rgba(255,255,255,0.09);
 
-    padding: 24px;
-
-    box-sizing: border-box;
-
-    display: flex;
-    flex-direction: column;
-
-    cursor: pointer;
-
-    border: 1px solid rgba(0,0,0,0.08);
+    border-radius:
+        14px;
 
     box-shadow:
-        0 12px 30px rgba(0,0,0,0.12);
+        0 20px 55px rgba(0,0,0,0.46),
+        0 0 25px rgba(0,0,0,0.16),
+        inset 0 1px 0 rgba(255,255,255,0.04);
 
-    transform:
-        rotateX(0deg)
-        rotateY(0deg)
-        translateZ(0);
+    backdrop-filter:
+        blur(22px);
+
+    -webkit-backdrop-filter:
+        blur(22px);
+
+    z-index:
+        3000;
+
+    overflow:
+        visible;
+
+    animation:
+        dropdownIn .18s ease-out;
+}
+
+
+@keyframes dropdownIn {
+
+    from {
+        opacity: 0;
+        transform:
+            translateX(-7px)
+            scale(.98);
+    }
+
+    to {
+        opacity: 1;
+        transform:
+            translateX(0)
+            scale(1);
+    }
+}
+
+
+.dropdown.show .dropdown-content {
+    display: flex;
+}
+
+
+/* =========================================================
+   10. DROPDOWN LINKS
+   ========================================================= */
+
+.dropdown-content a {
+
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    min-height:
+        40px;
+
+    box-sizing:
+        border-box;
+
+    padding:
+        0 13px;
+
+    color:
+        rgba(255,255,255,0.72);
+
+    text-decoration:
+        none;
+
+    font-size:
+        12px;
+
+    font-weight:
+        500;
+
+    letter-spacing:
+        .15px;
+
+    border-radius:
+        9px;
 
     transition:
-        transform .35s ease,
-        box-shadow .35s ease;
-
-    transform-style: preserve-3d;
+        background-color .18s ease,
+        color .18s ease,
+        padding-left .18s ease,
+        transform .18s ease;
 }
 
 
-.lesson-card:hover {
-    transform:
-        rotateX(3deg)
-        rotateY(-3deg)
-        translateY(-8px)
-        translateZ(12px);
+.dropdown-content a::before {
 
-    box-shadow:
-        0 25px 45px rgba(0,0,0,0.18);
-}
+    content: "";
 
+    width:
+        5px;
 
-.lesson-card-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+    height:
+        5px;
 
-    margin-bottom: 20px;
-}
+    margin-right:
+        10px;
 
+    flex-shrink:
+        0;
 
-.lesson-card-number {
-    width: 42px;
-    height: 42px;
-
-    border-radius: 50%;
-
-    background: #181818;
-    color: white;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-weight: 700;
-    font-size: 13px;
-
-    flex-shrink: 0;
-}
-
-
-.lesson-card-header h2 {
-    margin: 0;
-
-    font-size: 20px;
-    color: #111;
-}
-
-
-.lesson-card-body {
-    flex: 1;
-
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-
-    color: #333;
-}
-
-
-.lesson-text {
-    font-size: 17px;
-    line-height: 1.7;
-}
-
-
-.lesson-card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    margin-top: 20px;
-    padding-top: 15px;
-
-    border-top: 1px solid #ddd;
-
-    color: #777;
-    font-size: 12px;
-}
-
-
-.card-arrow {
-    font-size: 20px;
-    color: #111;
-}
-
-
-.vocabulary-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-
-.vocabulary-item {
-    padding: 13px 15px;
-
-    border-radius: 10px;
-
-    background: #f7f7f7;
-
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-
-.vocabulary-item strong {
-    color: #111;
-    font-size: 17px;
-}
-
-
-.vocabulary-item span {
-    color: #666;
-    font-size: 14px;
-}
-
-
-.lesson-example {
-    padding: 22px;
-
-    border-radius: 12px;
-
-    background: #f4f4f4;
-
-    border-left: 4px solid #181818;
-}
-
-
-.example-label,
-.activity-label {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1px;
-
-    margin-bottom: 10px;
-}
-
-
-.example-text {
-    font-size: 18px;
-    line-height: 1.6;
-}
-
-
-.lesson-question {
-    display: flex;
-    gap: 18px;
-    align-items: center;
-}
-
-
-.question-icon {
-    width: 50px;
-    height: 50px;
-
-    border-radius: 50%;
-
-    background: #181818;
-    color: white;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 25px;
-    font-weight: 700;
-
-    flex-shrink: 0;
-}
-
-
-.question-text {
-    font-size: 17px;
-    line-height: 1.6;
-}
-
-
-.lesson-media {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-
-    gap: 15px;
-
-    text-align: center;
-}
-
-
-.media-icon {
-    font-size: 38px;
-}
-
-
-.lesson-media audio {
-    width: 100%;
-}
-
-
-.lesson-media video {
-    width: 100%;
-    max-height: 250px;
-
-    border-radius: 10px;
-}
-
-
-.lesson-card-image {
-    width: 100%;
-    max-height: 240px;
-
-    object-fit: contain;
-
-    border-radius: 12px;
-}
-
-
-.lesson-empty {
-    grid-column: 1 / -1;
-
-    text-align: center;
-
-    padding: 60px;
-
-    color: #555;
-}
-
-
-/* ============================================================
-   EXPANDED CARD
-   ============================================================ */
-
-#lesson-focus-overlay {
-    position: fixed;
-
-    inset: 0;
-
-    z-index: 5000;
+    border-radius:
+        50%;
 
     background:
-        rgba(0,0,0,0.82);
+        rgba(72,224,130,0.30);
 
-    display: none;
-
-    align-items: center;
-    justify-content: center;
-
-    padding: 40px;
-
-    box-sizing: border-box;
+    transition:
+        background-color .18s ease,
+        box-shadow .18s ease;
 }
 
 
-#lesson-focus-overlay.active {
-    display: flex;
+.dropdown-content a:hover {
+
+    padding-left:
+        17px;
+
+    color:
+        #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(72,224,130,0.12),
+            rgba(72,224,130,0.025)
+        );
+
+    transform:
+        translateX(2px);
 }
 
 
-#lesson-focus-content {
-    width: min(900px, 95%);
-    max-height: 90vh;
+.dropdown-content a:hover::before {
 
-    overflow-y: auto;
-
-    display: flex;
-    justify-content: center;
-}
-
-
-#lesson-focus-content .lesson-card-wrapper {
-    width: 100%;
-    min-height: 500px;
-}
-
-
-#lesson-focus-content .lesson-card {
-    min-height: 500px;
-
-    cursor: default;
-
-    transform: none;
+    background:
+        #48e082;
 
     box-shadow:
-        0 35px 90px rgba(0,0,0,0.45);
+        0 0 8px rgba(72,224,130,0.7);
 }
 
 
-#lesson-focus-content .lesson-card:hover {
-    transform: none;
+/* =========================================================
+   11. SLIDE CONTAINER
+   ========================================================= */
+
+.slide-container {
+
+    position: absolute;
+
+    left: 90px;
+    top: 0;
+
+    width:
+        calc(100% - 90px);
+
+    height:
+        100vh;
+
+    overflow:
+        auto;
+
+    background-image:
+        linear-gradient(
+            rgba(4,17,24,0.12),
+            rgba(4,17,24,0.12)
+        ),
+        url('../images/background.jpg');
+
+    background-size:
+        cover;
+
+    background-position:
+        center;
+
+    background-repeat:
+        no-repeat;
+
+    scrollbar-width:
+        thin;
+
+    scrollbar-color:
+        rgba(72,224,130,0.30)
+        rgba(0,0,0,0.12);
 }
 
 
-#lesson-focus-content .lesson-card-body {
-    font-size: 20px;
+/* =========================================================
+   12. SCROLLBAR
+   ========================================================= */
+
+.slide-container::-webkit-scrollbar {
+    width:
+        8px;
+
+    height:
+        8px;
 }
 
 
-#lesson-focus-content .lesson-card-header h2 {
-    font-size: 30px;
+.slide-container::-webkit-scrollbar-track {
+    background:
+        rgba(0,0,0,0.10);
 }
 
 
-#lesson-focus-close {
-    position: fixed;
+.slide-container::-webkit-scrollbar-thumb {
 
-    top: 25px;
-    right: 30px;
+    background:
+        rgba(30,96,122,0.70);
 
-    z-index: 5002;
+    border-radius:
+        10px;
 
-    width: 48px;
-    height: 48px;
+    border:
+        2px solid transparent;
 
-    border: none;
-    border-radius: 50%;
+    background-clip:
+        padding-box;
+}
 
-    background: white;
-    color: #111;
 
-    font-size: 30px;
+.slide-container::-webkit-scrollbar-thumb:hover {
 
-    cursor: pointer;
+    background:
+        rgba(72,224,130,0.60);
+
+    background-clip:
+        padding-box;
+}
+
+
+/* =========================================================
+   13. SLIDE WRAPPER
+   ========================================================= */
+
+.slide-wrapper {
+
+    position:
+        relative;
+
+    display:
+        flex;
+
+    justify-content:
+        center;
+
+    align-items:
+        center;
+
+    min-width:
+        100%;
+
+    min-height:
+        100%;
+
+    box-sizing:
+        border-box;
+}
+
+
+/* =========================================================
+   14. SLIDE IMAGE
+   ========================================================= */
+
+#slide-image {
+
+    position:
+        relative;
+
+    display:
+        block;
+
+    transform-origin:
+        top left;
+
+    z-index:
+        1;
+
+    border-radius:
+        3px;
 
     box-shadow:
-        0 8px 25px rgba(0,0,0,0.25);
+        0 25px 70px rgba(0,0,0,0.36);
 }
 
 
-body.lesson-focus-open {
-    overflow: hidden;
+/* =========================================================
+   15. NAVIGATION BUTTONS
+   ========================================================= */
+
+#prev-btn,
+#next-btn {
+
+    position:
+        fixed;
+
+    top:
+        50%;
+
+    transform:
+        translateY(-50%);
+
+    width:
+        46px;
+
+    height:
+        70px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    padding:
+        0;
+
+    font-size:
+        28px;
+
+    line-height:
+        1;
+
+    color:
+        rgba(255,255,255,0.70);
+
+    background:
+        rgba(6,21,28,0.74);
+
+    border:
+        1px solid rgba(255,255,255,0.085);
+
+    border-radius:
+        12px;
+
+    cursor:
+        pointer;
+
+    backdrop-filter:
+        blur(15px);
+
+    -webkit-backdrop-filter:
+        blur(15px);
+
+    box-shadow:
+        0 12px 35px rgba(0,0,0,0.30);
+
+    z-index:
+        1001;
+
+    transition:
+        background-color .20s ease,
+        color .20s ease,
+        transform .20s ease,
+        border-color .20s ease,
+        box-shadow .20s ease;
 }
 
 
-/* ============================================================
-   MOBILE
-   ============================================================ */
+#prev-btn {
+    left:
+        108px;
+}
+
+
+#next-btn {
+    right:
+        20px;
+}
+
+
+#prev-btn:hover,
+#next-btn:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        rgba(23,100,125,0.90);
+
+    border-color:
+        rgba(72,224,130,0.17);
+
+    box-shadow:
+        0 15px 40px rgba(0,0,0,0.34),
+        0 0 18px rgba(72,224,130,0.07);
+}
+
+
+#prev-btn:hover {
+
+    transform:
+        translateY(-50%)
+        translateX(-2px);
+}
+
+
+#next-btn:hover {
+
+    transform:
+        translateY(-50%)
+        translateX(2px);
+}
+
+
+#prev-btn:active,
+#next-btn:active {
+
+    transform:
+        translateY(-50%)
+        scale(.94);
+}
+
+
+/* =========================================================
+   16. AUDIO LIST
+   ========================================================= */
+
+#audio-list-container {
+
+    position:
+        fixed;
+
+    top:
+        58px;
+
+    left:
+        112px;
+
+    display:
+        none;
+
+    flex-direction:
+        column;
+
+    min-width:
+        200px;
+
+    max-width:
+        290px;
+
+    gap:
+        7px;
+
+    padding:
+        10px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(13,40,51,0.985),
+            rgba(5,22,30,0.985)
+        );
+
+    border:
+        1px solid rgba(255,255,255,0.09);
+
+    border-radius:
+        15px;
+
+    box-shadow:
+        0 22px 60px rgba(0,0,0,0.46),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+
+    backdrop-filter:
+        blur(22px);
+
+    -webkit-backdrop-filter:
+        blur(22px);
+
+    z-index:
+        4000;
+
+    overflow:
+        hidden;
+
+    animation:
+        mediaPanelIn .20s ease-out;
+}
+
+
+@keyframes mediaPanelIn {
+
+    from {
+        opacity: 0;
+
+        transform:
+            translateY(-7px)
+            scale(.98);
+    }
+
+    to {
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+}
+
+
+/* =========================================================
+   17. AUDIO BUTTONS
+   ========================================================= */
+
+#audio-list-container button {
+
+    position:
+        relative;
+
+    width:
+        100%;
+
+    min-height:
+        39px;
+
+    padding:
+        8px 12px;
+
+    box-sizing:
+        border-box;
+
+    font-family:
+        inherit;
+
+    font-size:
+        12px;
+
+    font-weight:
+        500;
+
+    text-align:
+        left;
+
+    color:
+        rgba(255,255,255,0.72);
+
+    background:
+        rgba(255,255,255,0.035);
+
+    border:
+        1px solid rgba(255,255,255,0.06);
+
+    border-radius:
+        9px;
+
+    cursor:
+        pointer;
+
+    transition:
+        background .18s ease,
+        border-color .18s ease,
+        transform .18s ease,
+        color .18s ease;
+}
+
+
+#audio-list-container button:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(30,96,122,0.40),
+            rgba(72,224,130,0.07)
+        );
+
+    border-color:
+        rgba(72,224,130,0.20);
+
+    transform:
+        translateX(3px);
+}
+
+
+#audio-list-container button:active {
+
+    transform:
+        scale(.98);
+}
+
+
+/* =========================================================
+   18. AUDIO PLAYER
+   ========================================================= */
+
+#slide-audio {
+
+    position:
+        fixed;
+
+    left:
+        112px;
+
+    bottom:
+        30px;
+
+    width:
+        min(430px, calc(100vw - 140px));
+
+    z-index:
+        4000;
+
+    padding:
+        7px;
+
+    box-sizing:
+        border-box;
+
+    border-radius:
+        14px;
+
+    background:
+        rgba(5,20,27,0.93);
+
+    border:
+        1px solid rgba(255,255,255,0.09);
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,0.42);
+
+    backdrop-filter:
+        blur(20px);
+
+    -webkit-backdrop-filter:
+        blur(20px);
+
+    accent-color:
+        #48e082;
+}
+
+
+/* =========================================================
+   19. AUDIO BUTTON
+   ========================================================= */
+
+#audio-btn {
+
+    position:
+        relative;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    border-radius:
+        13px;
+
+    transition:
+        background .20s ease,
+        box-shadow .20s ease;
+}
+
+
+#audio-btn:hover {
+
+    background:
+        rgba(255,255,255,0.06);
+}
+
+
+#audio-btn.active {
+
+    background:
+        rgba(72,224,130,0.10);
+
+    box-shadow:
+        inset 0 0 0 1px
+        rgba(72,224,130,0.18),
+        0 0 18px
+        rgba(72,224,130,0.07);
+}
+
+
+#audio-btn.active::after {
+
+    content: "";
+
+    position:
+        absolute;
+
+    right:
+        5px;
+
+    top:
+        5px;
+
+    width:
+        6px;
+
+    height:
+        6px;
+
+    border-radius:
+        50%;
+
+    background:
+        #48e082;
+
+    box-shadow:
+        0 0 9px
+        rgba(72,224,130,0.8);
+}
+
+
+/* =========================================================
+   20. HIDE AUDIO BUTTON
+   ========================================================= */
+
+#hide-audio-btn {
+
+    min-height:
+        34px;
+
+    padding:
+        7px 12px;
+
+    margin-top:
+        6px;
+
+    font-family:
+        inherit;
+
+    font-size:
+        11px;
+
+    font-weight:
+        500;
+
+    color:
+        rgba(255,255,255,0.70);
+
+    background:
+        rgba(255,255,255,0.045);
+
+    border:
+        1px solid rgba(255,255,255,0.07);
+
+    border-radius:
+        8px;
+
+    cursor:
+        pointer;
+
+    transition:
+        all .18s ease;
+}
+
+
+#hide-audio-btn:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        rgba(72,224,130,0.10);
+
+    border-color:
+        rgba(72,224,130,0.20);
+}
+
+
+/* =========================================================
+   21. VIDEO LIST
+   ========================================================= */
+
+#video-list-container {
+
+    position:
+        fixed;
+
+    top:
+        58px;
+
+    left:
+        112px;
+
+    display:
+        none;
+
+    flex-direction:
+        column;
+
+    min-width:
+        220px;
+
+    max-width:
+        300px;
+
+    gap:
+        7px;
+
+    padding:
+        10px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(13,40,51,0.985),
+            rgba(5,22,30,0.985)
+        );
+
+    border:
+        1px solid rgba(255,255,255,0.09);
+
+    border-radius:
+        15px;
+
+    box-shadow:
+        0 22px 60px rgba(0,0,0,0.48);
+
+    backdrop-filter:
+        blur(22px);
+
+    -webkit-backdrop-filter:
+        blur(22px);
+
+    z-index:
+        4000;
+
+    overflow:
+        hidden;
+
+    animation:
+        mediaPanelIn .20s ease-out;
+}
+
+
+/* =========================================================
+   22. VIDEO BUTTONS
+   ========================================================= */
+
+#video-list-container button {
+
+    width:
+        100%;
+
+    min-height:
+        40px;
+
+    padding:
+        9px 13px;
+
+    font-family:
+        inherit;
+
+    font-size:
+        12px;
+
+    font-weight:
+        500;
+
+    text-align:
+        left;
+
+    color:
+        rgba(255,255,255,0.72);
+
+    background:
+        rgba(255,255,255,0.035);
+
+    border:
+        1px solid rgba(255,255,255,0.06);
+
+    border-radius:
+        9px;
+
+    cursor:
+        pointer;
+
+    transition:
+        all .18s ease;
+}
+
+
+#video-list-container button:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(30,96,122,0.40),
+            rgba(72,224,130,0.07)
+        );
+
+    border-color:
+        rgba(72,224,130,0.20);
+
+    transform:
+        translateX(3px);
+}
+
+
+#video-list-container button:active {
+
+    transform:
+        scale(.98);
+}
+
+
+/* =========================================================
+   23. VIDEO PLAYER
+   ========================================================= */
+
+#slide-video {
+
+    position:
+        fixed;
+
+    top:
+        50%;
+
+    left:
+        50%;
+
+    max-width:
+        80%;
+
+    max-height:
+        70%;
+
+    transform:
+        translate(-50%, -50%);
+
+    padding:
+        4px;
+
+    box-sizing:
+        border-box;
+
+    background:
+        #030b10;
+
+    border:
+        1px solid rgba(255,255,255,0.11);
+
+    border-radius:
+        15px;
+
+    box-shadow:
+        0 30px 90px rgba(0,0,0,0.65);
+
+    z-index:
+        4000;
+}
+
+
+#slide-video::backdrop {
+
+    background:
+        rgba(1,7,11,0.84);
+}
+
+
+/* =========================================================
+   24. HIDE VIDEO
+   ========================================================= */
+
+#hide-video-btn {
+
+    min-height:
+        34px;
+
+    padding:
+        7px 12px;
+
+    font-family:
+        inherit;
+
+    font-size:
+        11px;
+
+    font-weight:
+        500;
+
+    color:
+        rgba(255,255,255,0.75);
+
+    background:
+        rgba(5,20,27,0.94);
+
+    border:
+        1px solid rgba(255,255,255,0.08);
+
+    border-radius:
+        8px;
+
+    cursor:
+        pointer;
+
+    transition:
+        all .18s ease;
+}
+
+
+#hide-video-btn:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        rgba(72,224,130,0.10);
+
+    border-color:
+        rgba(72,224,130,0.20);
+}
+
+
+/* =========================================================
+   25. EDIT TRAY
+   ========================================================= */
+
+#edit-tray {
+
+    position:
+        fixed;
+
+    left:
+        50%;
+
+    bottom:
+        18px;
+
+    transform:
+        translateX(-50%);
+
+    display:
+        none;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    gap:
+        6px;
+
+    padding:
+        8px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(11,35,45,0.97),
+            rgba(5,20,27,0.97)
+        );
+
+    border:
+        1px solid rgba(255,255,255,0.10);
+
+    border-radius:
+        15px;
+
+    box-shadow:
+        0 24px 65px rgba(0,0,0,0.48),
+        inset 0 1px 0
+        rgba(255,255,255,0.04);
+
+    backdrop-filter:
+        blur(22px);
+
+    -webkit-backdrop-filter:
+        blur(22px);
+
+    z-index:
+        5000;
+
+    animation:
+        editTrayIn .22s ease-out;
+}
+
+
+@keyframes editTrayIn {
+
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateX(-50%)
+            translateY(8px)
+            scale(.97);
+    }
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateX(-50%)
+            translateY(0)
+            scale(1);
+    }
+}
+
+
+/* =========================================================
+   26. EDIT TOOLS
+   ========================================================= */
+
+.edit-tool-btn {
+
+    position:
+        relative;
+
+    width:
+        46px;
+
+    height:
+        46px;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    padding:
+        0;
+
+    font-family:
+        inherit;
+
+    font-size:
+        22px;
+
+    color:
+        rgba(255,255,255,0.78);
+
+    background:
+        rgba(255,255,255,0.035);
+
+    border:
+        1px solid rgba(255,255,255,0.07);
+
+    border-radius:
+        11px;
+
+    cursor:
+        pointer;
+
+    user-select:
+        none;
+
+    -webkit-tap-highlight-color:
+        transparent;
+
+    transition:
+        all .18s ease;
+}
+
+
+.edit-tool-btn:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        rgba(255,255,255,0.075);
+
+    border-color:
+        rgba(255,255,255,0.13);
+
+    transform:
+        translateY(-2px);
+
+    box-shadow:
+        0 8px 20px rgba(0,0,0,0.23);
+}
+
+
+.edit-tool-btn.active,
+.active-tool {
+
+    color:
+        #ffffff;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(72,224,130,0.20),
+            rgba(72,224,130,0.055)
+        );
+
+    border-color:
+        rgba(72,224,130,0.30);
+
+    box-shadow:
+        0 0 0 1px
+        rgba(72,224,130,0.05),
+        0 0 18px
+        rgba(72,224,130,0.09);
+}
+
+
+.edit-tool-btn.active::after,
+.active-tool::after {
+
+    content: "";
+
+    position:
+        absolute;
+
+    left:
+        50%;
+
+    bottom:
+        4px;
+
+    width:
+        5px;
+
+    height:
+        5px;
+
+    transform:
+        translateX(-50%);
+
+    border-radius:
+        50%;
+
+    background:
+        #48e082;
+
+    box-shadow:
+        0 0 8px
+        rgba(72,224,130,0.75);
+}
+
+
+.edit-tool-btn:active {
+
+    transform:
+        translateY(1px)
+        scale(.95);
+}
+
+
+/* =========================================================
+   27. CLEAR TOOL
+   ========================================================= */
+
+#clear-tool:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        rgba(220,70,70,0.12);
+
+    border-color:
+        rgba(255,100,100,0.20);
+}
+
+
+#clear-tool img {
+
+    width:
+        23px;
+
+    height:
+        23px;
+
+    object-fit:
+        contain;
+}
+
+
+/* =========================================================
+   28. WHITEBOARD
+   ========================================================= */
+
+#whiteboard {
+
+    position:
+        fixed;
+
+    top:
+        3%;
+
+    left:
+        130px;
+
+    width:
+        calc(95% - 90px);
+
+    height:
+        80vh;
+
+    box-sizing:
+        border-box;
+
+    display:
+        none;
+
+    background:
+        #ffffff;
+
+    border:
+        1px solid rgba(255,255,255,0.18);
+
+    border-radius:
+        15px;
+
+    box-shadow:
+        0 30px 90px rgba(0,0,0,0.52),
+        0 0 0 5px rgba(5,20,27,0.68);
+
+    overflow:
+        hidden;
+
+    z-index:
+        3000;
+}
+
+
+#whiteboard::before {
+
+    content:
+        "";
+
+    position:
+        absolute;
+
+    inset:
+        0;
+
+    pointer-events:
+        none;
+
+    border:
+        1px solid rgba(0,0,0,0.10);
+
+    border-radius:
+        inherit;
+
+    z-index:
+        5;
+}
+
+
+#whiteboard-canvas {
+
+    width:
+        100%;
+
+    height:
+        100%;
+
+    display:
+        block;
+
+    cursor:
+        crosshair;
+
+    background:
+        #ffffff;
+
+    touch-action:
+        none;
+}
+
+
+/* =========================================================
+   29. PENCIL MENU
+   ========================================================= */
+
+#pencil-size-menu {
+
+    position:
+        absolute;
+
+    left:
+        50%;
+
+    bottom:
+        70px;
+
+    transform:
+        translateX(-50%);
+
+    display:
+        none;
+
+    flex-direction:
+        row;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    gap:
+        9px;
+
+    padding:
+        8px 10px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(11,35,45,0.97),
+            rgba(5,20,27,0.97)
+        );
+
+    border:
+        1px solid rgba(255,255,255,0.09);
+
+    border-radius:
+        12px;
+
+    box-shadow:
+        0 18px 45px rgba(0,0,0,0.40);
+
+    backdrop-filter:
+        blur(20px);
+
+    -webkit-backdrop-filter:
+        blur(20px);
+
+    z-index:
+        5100;
+
+    animation:
+        sizeMenuIn .18s ease-out;
+}
+
+
+@keyframes sizeMenuIn {
+
+    from {
+        opacity:
+            0;
+
+        transform:
+            translateX(-50%)
+            translateY(6px)
+            scale(.96);
+    }
+
+    to {
+        opacity:
+            1;
+
+        transform:
+            translateX(-50%)
+            translateY(0)
+            scale(1);
+    }
+}
+
+
+.size-option {
+
+    position:
+        relative;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    width:
+        38px;
+
+    height:
+        38px;
+
+    color:
+        #ffffff;
+
+    background:
+        rgba(255,255,255,0.04);
+
+    border:
+        1px solid rgba(255,255,255,0.07);
+
+    border-radius:
+        9px;
+
+    cursor:
+        pointer;
+
+    transition:
+        all .18s ease;
+}
+
+
+.size-option::after {
+
+    content:
+        "";
+
+    display:
+        block;
+
+    border-radius:
+        50%;
+
+    background:
+        #ffffff;
+}
+
+
+.size-option[data-size="2"]::after {
+
+    width:
+        5px;
+
+    height:
+        5px;
+}
+
+
+.size-option[data-size="5"]::after {
+
+    width:
+        10px;
+
+    height:
+        10px;
+}
+
+
+.size-option[data-size="10"]::after {
+
+    width:
+        17px;
+
+    height:
+        17px;
+}
+
+
+.size-option:hover {
+
+    transform:
+        translateY(-2px);
+
+    background:
+        rgba(255,255,255,0.08);
+
+    border-color:
+        rgba(72,224,130,0.24);
+}
+
+
+.size-option.active {
+
+    background:
+        rgba(72,224,130,0.11);
+
+    border-color:
+        rgba(72,224,130,0.32);
+
+    box-shadow:
+        0 0 14px
+        rgba(72,224,130,0.08);
+}
+
+
+/* =========================================================
+   30. SLIDE EDIT CANVAS
+   ========================================================= */
+
+#edit-canvas {
+
+    position:
+        absolute;
+
+    z-index:
+        2;
+
+    pointer-events:
+        auto;
+}
+
+
+.slide-textbox {
+
+    position:
+        absolute;
+
+    z-index:
+        999999;
+
+    pointer-events:
+        auto;
+}
+
+
+/* =========================================================
+   31. TEXT BOX
+   ========================================================= */
+
+.text-box {
+
+    position:
+        absolute;
+
+    min-width:
+        80px;
+
+    min-height:
+        24px;
+
+    padding:
+        4px 6px;
+
+    font-family:
+        inherit;
+
+    font-size:
+        20px;
+
+    color:
+        #111111;
+
+    background:
+        rgba(255,255,255,0.97);
+
+    border:
+        1px solid rgba(30,96,122,0.42);
+
+    border-radius:
+        6px;
+
+    outline:
+        none;
+
+    box-shadow:
+        0 7px 18px rgba(0,0,0,0.13);
+
+    z-index:
+        1000;
+
+    transition:
+        border-color .15s ease,
+        box-shadow .15s ease;
+}
+
+
+.text-box:focus {
+
+    border-color:
+        #48e082;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(72,224,130,0.14),
+        0 8px 22px
+        rgba(0,0,0,0.15);
+}
+
+
+/* =========================================================
+   32. TEXT TOOLBAR
+   ========================================================= */
+
+.text-box-toolbar {
+
+    position:
+        absolute;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    gap:
+        4px;
+
+    padding:
+        5px 6px;
+
+    background:
+        rgba(7,24,32,0.97);
+
+    border:
+        1px solid rgba(255,255,255,0.09);
+
+    border-radius:
+        9px;
+
+    box-shadow:
+        0 15px 35px rgba(0,0,0,0.34);
+
+    backdrop-filter:
+        blur(16px);
+
+    -webkit-backdrop-filter:
+        blur(16px);
+
+    font-size:
+        13px;
+
+    z-index:
+        1100;
+}
+
+
+.text-box-toolbar button {
+
+    min-width:
+        28px;
+
+    height:
+        28px;
+
+    padding:
+        2px 6px;
+
+    color:
+        rgba(255,255,255,0.78);
+
+    background:
+        rgba(255,255,255,0.045);
+
+    border:
+        1px solid rgba(255,255,255,0.07);
+
+    border-radius:
+        6px;
+
+    cursor:
+        pointer;
+
+    transition:
+        all .16s ease;
+}
+
+
+.text-box-toolbar button:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        rgba(72,224,130,0.11);
+
+    border-color:
+        rgba(72,224,130,0.20);
+}
+
+
+.text-box-toolbar input[type="color"] {
+
+    width:
+        27px;
+
+    height:
+        27px;
+
+    padding:
+        2px;
+
+    border:
+        1px solid rgba(255,255,255,0.10);
+
+    border-radius:
+        6px;
+
+    background:
+        rgba(255,255,255,0.04);
+
+    cursor:
+        pointer;
+}
+
+
+.text-box-toolbar input,
+.text-box-toolbar select {
+
+    font-family:
+        inherit;
+
+    color:
+        rgba(255,255,255,0.86);
+
+    background:
+        rgba(255,255,255,0.05);
+
+    border:
+        1px solid rgba(255,255,255,0.07);
+
+    border-radius:
+        6px;
+
+    outline:
+        none;
+}
+
+
+/* =========================================================
+   33. PRESENTATION LIST
+   ========================================================= */
+
+#presentation-list-container {
+
+    position:
+        fixed;
+
+    top:
+        58px;
+
+    left:
+        112px;
+
+    display:
+        none;
+
+    flex-direction:
+        column;
+
+    min-width:
+        210px;
+
+    max-width:
+        300px;
+
+    gap:
+        7px;
+
+    padding:
+        10px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(13,40,51,0.985),
+            rgba(5,22,30,0.985)
+        );
+
+    border:
+        1px solid rgba(255,255,255,0.09);
+
+    border-radius:
+        15px;
+
+    box-shadow:
+        0 22px 60px rgba(0,0,0,0.46);
+
+    backdrop-filter:
+        blur(22px);
+
+    -webkit-backdrop-filter:
+        blur(22px);
+
+    z-index:
+        4000;
+
+    max-height:
+        70vh;
+
+    overflow-y:
+        auto;
+
+    scrollbar-width:
+        thin;
+
+    scrollbar-color:
+        rgba(72,224,130,0.30)
+        transparent;
+
+    animation:
+        mediaPanelIn .20s ease-out;
+}
+
+
+/* =========================================================
+   34. PRESENTATION BUTTONS
+   ========================================================= */
+
+#presentation-list-container button {
+
+    position:
+        relative;
+
+    width:
+        100%;
+
+    min-height:
+        40px;
+
+    padding:
+        9px 13px;
+
+    font-family:
+        inherit;
+
+    font-size:
+        12px;
+
+    font-weight:
+        500;
+
+    text-align:
+        left;
+
+    color:
+        rgba(255,255,255,0.72);
+
+    background:
+        rgba(255,255,255,0.035);
+
+    border:
+        1px solid rgba(255,255,255,0.06);
+
+    border-radius:
+        9px;
+
+    cursor:
+        pointer;
+
+    transition:
+        all .18s ease;
+}
+
+
+#presentation-list-container button:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(30,96,122,0.40),
+            rgba(72,224,130,0.07)
+        );
+
+    border-color:
+        rgba(72,224,130,0.21);
+
+    transform:
+        translateX(3px);
+}
+
+
+#presentation-list-container button:active {
+
+    transform:
+        scale(.98);
+}
+
+
+/* =========================================================
+   35. PRESENTATION UNIT LIST
+   ========================================================= */
+
+#presentations-unit-container {
+
+    position:
+        fixed;
+
+    top:
+        58px;
+
+    left:
+        112px;
+
+    display:
+        none;
+
+    flex-direction:
+        column;
+
+    min-width:
+        165px;
+
+    gap:
+        7px;
+
+    padding:
+        10px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(13,40,51,0.985),
+            rgba(5,22,30,0.985)
+        );
+
+    border:
+        1px solid rgba(255,255,255,0.09);
+
+    border-radius:
+        15px;
+
+    box-shadow:
+        0 22px 60px rgba(0,0,0,0.46);
+
+    backdrop-filter:
+        blur(22px);
+
+    -webkit-backdrop-filter:
+        blur(22px);
+
+    z-index:
+        4000;
+
+    animation:
+        mediaPanelIn .20s ease-out;
+}
+
+
+#presentations-unit-container button {
+
+    width:
+        100%;
+
+    min-height:
+        38px;
+
+    padding:
+        8px 12px;
+
+    font-family:
+        inherit;
+
+    font-size:
+        12px;
+
+    font-weight:
+        500;
+
+    text-align:
+        left;
+
+    color:
+        rgba(255,255,255,0.72);
+
+    background:
+        rgba(255,255,255,0.035);
+
+    border:
+        1px solid rgba(255,255,255,0.06);
+
+    border-radius:
+        9px;
+
+    cursor:
+        pointer;
+
+    transition:
+        all .18s ease;
+}
+
+
+#presentations-unit-container button:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(30,96,122,0.40),
+            rgba(72,224,130,0.07)
+        );
+
+    border-color:
+        rgba(72,224,130,0.21);
+
+    transform:
+        translateX(3px);
+}
+
+
+/* =========================================================
+   36. PRESENTATION VIEWER
+   ========================================================= */
+
+#presentation-viewer {
+
+    position:
+        fixed;
+
+    top:
+        50%;
+
+    left:
+        50%;
+
+    transform:
+        translate(-50%,-50%);
+
+    width:
+        90%;
+
+    height:
+        90%;
+
+    display:
+        none;
+
+    background:
+        #030b10;
+
+    border:
+        1px solid rgba(255,255,255,0.11);
+
+    border-radius:
+        18px;
+
+    overflow:
+        hidden;
+
+    box-shadow:
+        0 35px 100px rgba(0,0,0,0.68);
+
+    z-index:
+        5000;
+
+    animation:
+        viewerIn .22s ease-out;
+}
+
+
+@keyframes viewerIn {
+
+    from {
+
+        opacity:
+            0;
+
+        transform:
+            translate(-50%,-50%)
+            scale(.97);
+    }
+
+    to {
+
+        opacity:
+            1;
+
+        transform:
+            translate(-50%,-50%)
+            scale(1);
+    }
+}
+
+
+#presentation-frame {
+
+    width:
+        100%;
+
+    height:
+        100%;
+
+    display:
+        block;
+
+    border:
+        none;
+
+    background:
+        #ffffff;
+}
+
+
+/* =========================================================
+   37. PRESENTATION CLOSE
+   ========================================================= */
+
+#hide-presentation-btn {
+
+    position:
+        fixed;
+
+    top:
+        20px;
+
+    right:
+        20px;
+
+    display:
+        none;
+
+    min-width:
+        42px;
+
+    min-height:
+        38px;
+
+    padding:
+        8px 13px;
+
+    color:
+        rgba(255,255,255,0.84);
+
+    background:
+        rgba(5,20,27,0.92);
+
+    border:
+        1px solid rgba(255,255,255,0.10);
+
+    border-radius:
+        9px;
+
+    cursor:
+        pointer;
+
+    box-shadow:
+        0 12px 30px rgba(0,0,0,0.30);
+
+    backdrop-filter:
+        blur(15px);
+
+    -webkit-backdrop-filter:
+        blur(15px);
+
+    z-index:
+        5500;
+
+    transition:
+        all .18s ease;
+}
+
+
+#hide-presentation-btn:hover {
+
+    color:
+        #ffffff;
+
+    background:
+        rgba(72,224,130,0.12);
+
+    border-color:
+        rgba(72,224,130,0.24);
+
+    transform:
+        translateY(-1px);
+}
+
+
+#hide-presentation-btn:active {
+
+    transform:
+        scale(.95);
+}
+
+
+/* =========================================================
+   38. STUDENT BOOK UNIT SYSTEM
+   ========================================================= */
+
+.unit-item {
+
+    position:
+        relative;
+
+    width:
+        100%;
+}
+
+
+.lesson-dropdown {
+
+    display:
+        none;
+
+    position:
+        absolute;
+
+    left:
+        calc(100% + 20px);
+
+    top:
+        0;
+
+    min-width:
+        165px;
+
+    padding:
+        8px;
+
+    flex-direction:
+        column;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(13,40,51,0.985),
+            rgba(5,22,30,0.985)
+        );
+
+    border:
+        1px solid rgba(255,255,255,0.09);
+
+    border-radius:
+        14px;
+
+    box-shadow:
+        0 20px 55px rgba(0,0,0,0.46);
+
+    backdrop-filter:
+        blur(22px);
+
+    -webkit-backdrop-filter:
+        blur(22px);
+
+    z-index:
+        5000;
+}
+
+
+/* lower units */
+
+.unit-item:nth-child(9) .lesson-dropdown,
+.unit-item:nth-child(10) .lesson-dropdown {
+
+    top:
+        -80px;
+}
+
+
+.unit-item:nth-child(11) .lesson-dropdown,
+.unit-item:nth-child(12) .lesson-dropdown {
+
+    top:
+        -150px;
+}
+
+
+.unit-item > .lesson-dropdown.show {
+
+    display:
+        flex;
+
+    animation:
+        dropdownIn .18s ease-out;
+}
+
+
+.lesson-dropdown a {
+
+    position:
+        relative;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    min-height:
+        38px;
+
+    padding:
+        0 14px;
+
+    color:
+        rgba(255,255,255,0.72);
+
+    text-decoration:
+        none;
+
+    font-size:
+        12px;
+
+    font-weight:
+        500;
+
+    border-radius:
+        9px;
+
+    transition:
+        all .18s ease;
+}
+
+
+.lesson-dropdown a::before {
+
+    content:
+        "";
+
+    width:
+        5px;
+
+    height:
+        5px;
+
+    margin-right:
+        9px;
+
+    flex-shrink:
+        0;
+
+    border-radius:
+        50%;
+
+    background:
+        rgba(72,224,130,0.30);
+
+    transition:
+        all .18s ease;
+}
+
+
+.lesson-dropdown a:hover {
+
+    padding-left:
+        18px;
+
+    color:
+        #ffffff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(72,224,130,0.12),
+            rgba(72,224,130,0.03)
+        );
+
+    transform:
+        translateX(2px);
+}
+
+
+.lesson-dropdown a:hover::before {
+
+    background:
+        #48e082;
+
+    box-shadow:
+        0 0 8px
+        rgba(72,224,130,0.7);
+}
+
+
+#students-book-dropdown {
+
+    overflow:
+        visible;
+}
+
+
+#students-book-dropdown .unit-item {
+
+    overflow:
+        visible;
+}
+
+
+/* =========================================================
+   39. TOUCH
+   ========================================================= */
+
+.control-icon,
+.dropdown-content a,
+.lesson-dropdown a,
+#prev-btn,
+#next-btn,
+.edit-tool-btn {
+
+    -webkit-tap-highlight-color:
+        transparent;
+
+    touch-action:
+        manipulation;
+}
+
+
+@media (hover:none) and (pointer:coarse) {
+
+    .control-icon:hover {
+
+        transform:
+            none;
+
+        background:
+            transparent;
+
+        box-shadow:
+            none;
+    }
+
+
+    .edit-tool-btn:hover {
+
+        transform:
+            none;
+
+        box-shadow:
+            none;
+    }
+
+
+    .dropdown-content a:hover,
+    .lesson-dropdown a:hover {
+
+        transform:
+            none;
+
+        padding-left:
+            13px;
+    }
+
+
+    #prev-btn:hover,
+    #next-btn:hover {
+
+        transform:
+            translateY(-50%);
+    }
+
+
+    .edit-tool-btn {
+
+        min-width:
+            44px;
+
+        min-height:
+            44px;
+    }
+
+
+    .dropdown-content a,
+    .lesson-dropdown a {
+
+        min-height:
+            42px;
+    }
+
+
+    .size-option {
+
+        width:
+            42px;
+
+        height:
+            42px;
+    }
+}
+
+
+/* =========================================================
+   40. SELECTION
+   ========================================================= */
+
+::selection {
+
+    background:
+        rgba(72,224,130,0.25);
+
+    color:
+        #ffffff;
+}
+
+
+/* =========================================================
+   41. ACCESSIBILITY
+   ========================================================= */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+
+    outline:
+        2px solid
+        rgba(72,224,130,0.72);
+
+    outline-offset:
+        2px;
+}
+
+
+/* =========================================================
+   42. MOBILE
+   ========================================================= */
 
 @media (max-width: 700px) {
 
-    .lesson-content-wrapper {
-        width: 100%;
-        height: 85%;
+    #audio-list-container,
+    #video-list-container,
+    #presentation-list-container,
+    #presentations-unit-container {
 
-        grid-template-columns: 1fr;
+        left:
+            100px;
 
-        padding: 20px 45px 20px 20px;
-
-        gap: 18px;
+        max-width:
+            calc(100vw - 120px);
     }
 
 
-    .lesson-card {
-        min-height: 220px;
-        padding: 20px;
+    #slide-audio {
+
+        left:
+            100px;
+
+        width:
+            calc(100vw - 120px);
+
+        bottom:
+            18px;
     }
 
 
-    .lesson-card-header h2 {
-        font-size: 18px;
+    #slide-video {
+
+        max-width:
+            90%;
+
+        max-height:
+            70%;
     }
 
 
-    .lesson-text {
-        font-size: 15px;
+    #presentation-viewer {
+
+        left:
+            calc(50% + 40px);
+
+        width:
+            calc(100% - 110px);
+
+        height:
+            88%;
     }
-
-
-    #lesson-focus-overlay {
-        padding: 15px;
-    }
-
-
-    #lesson-focus-content {
-        width: 100%;
-        max-height: 92vh;
-    }
-
-
-    #lesson-focus-content .lesson-card {
-        min-height: 450px;
-    }
-
-
-    #lesson-focus-content .lesson-card-header h2 {
-        font-size: 24px;
-    }
-
-
-    #lesson-focus-close {
-        top: 12px;
-        right: 12px;
-    }
-
 }
+
+
+/* =========================================================
+   43. LARGE SCREENS
+   ========================================================= */
+
+@media (min-width: 1400px) {
+
+    .control-bar {
+
+        width:
+            94px;
+    }
+
+
+    .slide-container {
+
+        left:
+            94px;
+
+        width:
+            calc(100% - 94px);
+    }
+
+
+    #prev-btn {
+
+        left:
+            112px;
+    }
+
+
+    #audio-list-container,
+    #video-list-container,
+    #presentation-list-container,
+    #presentations-unit-container {
+
+        left:
+            118px;
+    }
+}
+
+
+/* =========================================================
+   44. MEDIUM SCREENS
+   ========================================================= */
+
+@media (max-width: 1100px) {
+
+    .control-bar {
+
+        width:
+            78px;
+    }
+
+
+    .slide-container {
+
+        left:
+            78px;
+
+        width:
+            calc(100% - 78px);
+    }
+
+
+    .control-icon {
+
+        width:
+            44px;
+
+        height:
+            44px;
+
+        margin:
+            9px 0;
+    }
+
+
+    .control-label {
+
+        font-size:
+            9px;
+    }
+
+
+    #prev-btn {
+
+        left:
+            94px;
+    }
+
+
+    #audio-list-container,
+    #video-list-container,
+    #presentation-list-container,
+    #presentations-unit-container {
+
+        left:
+            98px;
+    }
+
+
+    #whiteboard {
+
+        left:
+            105px;
+
+        width:
+            calc(95% - 75px);
+    }
+}
+
+
+/* =========================================================
+   45. TABLET
+   ========================================================= */
+
+@media (max-width: 850px) {
+
+    .control-bar {
+
+        width:
+            70px;
+
+        padding-top:
+            10px;
+    }
+
+
+    .slide-container {
+
+        left:
+            70px;
+
+        width:
+            calc(100% - 70px);
+    }
+
+
+    .control-icon {
+
+        width:
+            42px;
+
+        height:
+            42px;
+
+        margin:
+            8px 0;
+    }
+
+
+    .dropdown-content {
+
+        left:
+            66px;
+
+        min-width:
+            150px;
+    }
+
+
+    #prev-btn {
+
+        left:
+            84px;
+
+        width:
+            40px;
+
+        height:
+            60px;
+    }
+
+
+    #next-btn {
+
+        right:
+            12px;
+
+        width:
+            40px;
+
+        height:
+            60px;
+    }
+
+
+    #audio-list-container,
+    #video-list-container,
+    #presentation-list-container,
+    #presentations-unit-container {
+
+        left:
+            86px;
+    }
+
+
+    #whiteboard {
+
+        left:
+            88px;
+
+        width:
+            calc(100% - 100px);
+    }
+
+
+    #students-book-dropdown .lesson-dropdown {
+
+        left:
+            calc(100% + 66px);
+    }
+}
+
+
+/* =========================================================
+   46. PHONE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    body {
+
+        overflow:
+            hidden;
+    }
+
+
+    .control-bar {
+
+        width:
+            62px;
+
+        padding-top:
+            7px;
+
+        box-shadow:
+            5px 0 20px rgba(0,0,0,0.25);
+    }
+
+
+    .slide-container {
+
+        left:
+            62px;
+
+        width:
+            calc(100% - 62px);
+    }
+
+
+    .control-icon {
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        margin:
+            6px 0;
+
+        padding:
+            5px;
+
+        border-radius:
+            10px;
+    }
+
+
+    .control-label {
+
+        display:
+            none;
+    }
+
+
+    .dropdown-content {
+
+        left:
+            58px;
+
+        min-width:
+            145px;
+
+        max-height:
+            70vh;
+
+        overflow-y:
+            auto;
+    }
+
+
+    .dropdown-content a {
+
+        min-height:
+            40px;
+
+        font-size:
+            12px;
+    }
+
+
+    #prev-btn,
+    #next-btn {
+
+        width:
+            36px;
+
+        height:
+            54px;
+
+        font-size:
+            24px;
+
+        border-radius:
+            10px;
+    }
+
+
+    #prev-btn {
+
+        left:
+            72px;
+    }
+
+
+    #next-btn {
+
+        right:
+            8px;
+    }
+
+
+    #audio-list-container,
+    #video-list-container,
+    #presentation-list-container,
+    #presentations-unit-container {
+
+        left:
+            72px;
+
+        max-width:
+            calc(100vw - 82px);
+    }
+
+
+    #slide-audio {
+
+        left:
+            70px;
+
+        width:
+            calc(100vw - 80px);
+
+        bottom:
+            12px;
+    }
+
+
+    #slide-video {
+
+        left:
+            calc(50% + 31px);
+
+        max-width:
+            calc(100vw - 82px);
+
+        max-height:
+            65vh;
+    }
+
+
+    #presentation-viewer {
+
+        left:
+            calc(50% + 31px);
+
+        width:
+            calc(100vw - 78px);
+
+        height:
+            85vh;
+
+        border-radius:
+            12px;
+    }
+
+
+    #hide-presentation-btn {
+
+        top:
+            8px;
+
+        right:
+            8px;
+
+        min-width:
+            38px;
+
+        min-height:
+            34px;
+
+        padding:
+            6px 10px;
+    }
+
+
+    #whiteboard {
+
+        left:
+            70px;
+
+        top:
+            2%;
+
+        width:
+            calc(100% - 78px);
+
+        height:
+            82vh;
+
+        border-radius:
+            10px;
+    }
+
+
+    #edit-tray {
+
+        left:
+            calc(50% + 31px);
+
+        bottom:
+            8px;
+
+        max-width:
+            calc(100vw - 76px);
+
+        padding:
+            7px 8px;
+
+        border-radius:
+            12px;
+    }
+
+
+    .edit-tool-btn {
+
+        width:
+            40px;
+
+        height:
+            40px;
+
+        flex:
+            0 0 40px;
+
+        font-size:
+            19px;
+    }
+
+
+    #pencil-size-menu {
+
+        left:
+            calc(50% + 31px);
+
+        bottom:
+            59px;
+    }
+
+
+    .text-box {
+
+        font-size:
+            17px;
+
+        min-width:
+            65px;
+    }
+
+
+    #students-book-dropdown .lesson-dropdown {
+
+        left:
+            calc(100% + 58px);
+    }
+}
+
+
+/* =========================================================
+   47. VERY SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+    .control-bar {
+
+        width:
+            56px;
+    }
+
+
+    .slide-container {
+
+        left:
+            56px;
+
+        width:
+            calc(100% - 56px);
+    }
+
+
+    .control-icon {
+
+        width:
+            34px;
+
+        height:
+            34px;
+
+        margin:
+            5px 0;
+    }
+
+
+    .dropdown-content {
+
+        left:
+            52px;
+
+        min-width:
+            135px;
+    }
+
+
+    #prev-btn {
+
+        left:
+            64px;
+    }
+
+
+    #next-btn {
+
+        right:
+            5px;
+    }
+
+
+    #audio-list-container,
+    #video-list-container,
+    #presentation-list-container,
+    #presentations-unit-container {
+
+        left:
+            64px;
+    }
+
+
+    #slide-audio {
+
+        left:
+            62px;
+
+        width:
+            calc(100vw - 70px);
+    }
+
+
+    #whiteboard {
+
+        left:
+            62px;
+
+        width:
+            calc(100% - 70px);
+    }
+
+
+    #edit-tray {
+
+        left:
+            calc(50% + 28px);
+
+        max-width:
+            calc(100vw - 68px);
+    }
+
+
+    #pencil-size-menu {
+
+        left:
+            calc(50% + 28px);
+    }
+
+
+    #students-book-dropdown .lesson-dropdown {
+
+        left:
+            calc(100% + 52px);
+    }
+}
+
+
+/* =========================================================
+   48. TOUCH SCROLLING
+   ========================================================= */
+
+.dropdown-content,
+#audio-list-container,
+#video-list-container,
+#presentation-list-container,
+#presentations-unit-container {
+
+    -webkit-overflow-scrolling:
+        touch;
+}
+
+
+/* =========================================================
+   49. REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+
+        animation-duration:
+            0.01ms !important;
+
+        animation-iteration-count:
+            1 !important;
+
+        transition-duration:
+            0.01ms !important;
+    }
+}
+
+
+/* =========================================================
+   50. END
+   ========================================================= */
