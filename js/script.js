@@ -1,38 +1,34 @@
 /* =========================================================
    ACADEMIA POLIGLOTA
    INTERACTIVE BOOK PLATFORM
-   LESSON CARD ENGINE + SUPABASE MEDIA
-   ========================================================= */
+   =========================================================
 
-/*
-   IMPORTANT
+   LESSON SYSTEM
 
-   This version changes the lesson experience from:
+   Lesson
+      ↓
+   Content Cards
+      ↓
+   Click / Tap
+      ↓
+   Expanded Card
+      ↓
+   Text / Image / Audio / Video / PDF
 
-       IMAGE / SLIDE
+   Supabase:
+      lessons
+      lesson_cards
+      lesson_media
 
-   to:
-
-       LESSON
-          ↓
-       3D CONTENT CARDS
-          ↓
-       CLICK / TAP
-          ↓
-       CARD EXPANDS
-          ↓
-       TEXT / AUDIO / VIDEO / IMAGE
-
-   Supabase is used for media storage and lesson data.
-
-   The code also keeps compatibility with the existing
-   presentation / whiteboard / audio / video controls.
-*/
+   Teachers:
+      CAN upload
+      CANNOT delete
+========================================================= */
 
 
 /* =========================================================
-   01. SUPABASE CONFIGURATION
-   ========================================================= */
+   01. SUPABASE
+========================================================= */
 
 const SUPABASE_URL =
     "https://kioqhgkpfqdhjqidrlwf.supabase.co";
@@ -43,28 +39,25 @@ const SUPABASE_ANON_KEY =
 let supabaseClient = null;
 
 if (
-    typeof window.supabase !== "undefined" &&
+    window.supabase &&
     SUPABASE_URL &&
     SUPABASE_ANON_KEY
 ) {
-    supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY
-    );
+
+    supabaseClient =
+        window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
+
 }
 
 
 /* =========================================================
-   02. APPLICATION STATE
-   ========================================================= */
+   02. STATE
+========================================================= */
 
 const state = {
-
-    currentSlide: 0,
-
-    currentLesson: null,
-
-    currentCard: null,
 
     lessons: [],
 
@@ -72,19 +65,19 @@ const state = {
 
     media: [],
 
-    units: [],
-
-    currentUnit: null,
+    currentLesson: null,
 
     currentLessonId: null,
 
-    isCardOpen: false,
+    currentCard: null,
 
-    audioPlaying: false,
+    currentCardElement: null,
 
-    videoPlaying: false,
+    currentUnit: null,
 
-    zoom: 1,
+    currentSlide: 0,
+
+    cardOpen: false,
 
     drawing: false,
 
@@ -98,11 +91,8 @@ const state = {
 
 
 /* =========================================================
-   03. LOCAL FALLBACK LESSON DATA
-
-   This allows the application to continue working even
-   before Supabase has been configured completely.
-   ========================================================= */
+   03. LOCAL FALLBACK
+========================================================= */
 
 const localLessons = [
 
@@ -112,6 +102,8 @@ const localLessons = [
         title: "Introduction",
 
         unit: "Unit 1",
+
+        lesson_number: 1,
 
         description:
             "Introduction to the lesson.",
@@ -142,7 +134,7 @@ const localLessons = [
                 subtitle: "Vocabulary",
 
                 content:
-                    "Learn the most important vocabulary from this lesson. Tap the card to see the complete explanation."
+                    "Learn the most important vocabulary from this lesson."
 
             },
 
@@ -163,7 +155,6 @@ const localLessons = [
             },
 
             {
-
                 id: "card-4",
 
                 type: "video",
@@ -187,8 +178,8 @@ const localLessons = [
 
 
 /* =========================================================
-   04. DOM HELPERS
-   ========================================================= */
+   04. HELPERS
+========================================================= */
 
 function $(selector) {
 
@@ -206,45 +197,121 @@ function $all(selector) {
 }
 
 
-function createElement(tag, className, content = "") {
+function escapeHTML(value) {
 
-    const element =
-        document.createElement(tag);
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
-    if (className) {
+}
 
-        element.className =
-            className;
+
+function sanitizeLessonHTML(html) {
+
+    const temp =
+        document.createElement("div");
+
+    temp.innerHTML =
+        String(html || "");
+
+    temp.querySelectorAll(
+        "script, iframe, object, embed, form"
+    ).forEach(
+        element => element.remove()
+    );
+
+    temp.querySelectorAll("*").forEach(
+        element => {
+
+            Array.from(
+                element.attributes
+            ).forEach(
+                attribute => {
+
+                    if (
+                        /^on/i.test(attribute.name)
+                    ) {
+
+                        element.removeAttribute(
+                            attribute.name
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+    return temp.innerHTML;
+
+}
+
+
+function normalizeUnit(unit) {
+
+    if (
+        unit === null ||
+        unit === undefined
+    ) {
+
+        return "";
 
     }
 
-    if (content !== "") {
+    return String(unit)
+        .replace(/^unit\s*/i, "")
+        .trim();
 
-        element.innerHTML =
-            content;
+}
+
+
+function getLessonNumber(lesson) {
+
+    if (
+        lesson.lesson_number !==
+        undefined &&
+        lesson.lesson_number !== null
+    ) {
+
+        return Number(
+            lesson.lesson_number
+        );
 
     }
 
-    return element;
+    const match =
+        String(lesson.title || "")
+            .match(
+                /lesson\s*(\d+)/i
+            );
+
+    return match
+        ? Number(match[1])
+        : 0;
 
 }
 
 
 /* =========================================================
    05. INITIALIZATION
-   ========================================================= */
+========================================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
 
-        initializeApplication();
+        initializePassword();
 
         initializeExistingControls();
 
-        initializeLessonSystem();
+        initializeLessonInterface();
 
-        initializeMediaUpload();
+        initializeUploadSystem();
 
         initializeWhiteboard();
 
@@ -252,79 +319,239 @@ document.addEventListener(
 
         await loadLessons();
 
+        await loadMedia();
+
     }
 );
 
 
 /* =========================================================
-   06. INITIALIZE APPLICATION
-   ========================================================= */
+   06. PASSWORD
+========================================================= */
 
-function initializeApplication() {
+function initializePassword() {
 
-    document.body.classList.add(
-        "poliglota-app-ready"
+    const form =
+        $("#teacher-login-form");
+
+    const screen =
+        $("#password-screen");
+
+    const input =
+        $("#teacher-password");
+
+    const error =
+        $("#password-error");
+
+    if (
+        !form ||
+        !screen
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        sessionStorage.getItem(
+            "poliglotaTeacherAccess"
+        ) === "true"
+    ) {
+
+        screen.style.display =
+            "none";
+
+    }
+
+
+    form.addEventListener(
+        "submit",
+        event => {
+
+            event.preventDefault();
+
+            const password =
+                input
+                    ? input.value
+                    : "";
+
+            if (
+                password === "angola"
+            ) {
+
+                sessionStorage.setItem(
+                    "poliglotaTeacherAccess",
+                    "true"
+                );
+
+                screen.style.display =
+                    "none";
+
+                if (error) {
+                    error.textContent = "";
+                }
+
+            } else {
+
+                if (error) {
+
+                    error.textContent =
+                        "Incorrect password.";
+
+                }
+
+                if (input) {
+
+                    input.focus();
+
+                    input.select();
+
+                }
+
+            }
+
+        }
     );
 
 }
 
 
 /* =========================================================
-   07. LESSON SYSTEM
-   ========================================================= */
+   07. LESSON INTERFACE
+========================================================= */
 
-function initializeLessonSystem() {
+function initializeLessonInterface() {
 
-    /*
-       Find an existing lesson container.
+    const refresh =
+        $("#lesson-content-refresh");
 
-       If it doesn't exist in the HTML, create it.
-    */
+    if (refresh) {
 
-    let lessonContainer =
-        document.querySelector(
-            "#lesson-content"
+        refresh.addEventListener(
+            "click",
+            async () => {
+
+                await loadLessons();
+
+                await loadMedia();
+
+                if (
+                    state.currentLessonId
+                ) {
+
+                    openLesson(
+                        state.currentLessonId
+                    );
+
+                }
+
+            }
         );
-
-    if (!lessonContainer) {
-
-        lessonContainer =
-            document.createElement("div");
-
-        lessonContainer.id =
-            "lesson-content";
-
-        lessonContainer.className =
-            "lesson-content";
-
-        const slideContainer =
-            document.querySelector(
-                ".slide-container"
-            );
-
-        if (slideContainer) {
-
-            slideContainer.appendChild(
-                lessonContainer
-            );
-
-        } else {
-
-            document.body.appendChild(
-                lessonContainer
-            );
-
-        }
 
     }
 
-    /*
-       Delegated click handler for cards.
-    */
 
-    lessonContainer.addEventListener(
+    const close =
+        $("#lesson-focus-close");
+
+    if (close) {
+
+        close.addEventListener(
+            "click",
+            closeFocusedCard
+        );
+
+    }
+
+
+    const overlay =
+        $("#lesson-focus-overlay");
+
+    if (overlay) {
+
+        overlay.addEventListener(
+            "click",
+            event => {
+
+                if (
+                    event.target === overlay
+                ) {
+
+                    closeFocusedCard();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    document.addEventListener(
         "click",
-        handleCardClick
+        event => {
+
+            const card =
+                event.target.closest(
+                    ".lesson-card"
+                );
+
+            if (!card) {
+                return;
+            }
+
+            if (
+                event.target.closest(
+                    "button, a, audio, video, input, textarea, select"
+                )
+            ) {
+
+                return;
+
+            }
+
+            const cardId =
+                card.dataset.cardId;
+
+            const found =
+                state.cards.find(
+                    item =>
+                        String(item.id) ===
+                        String(cardId)
+                );
+
+            if (found) {
+
+                openLessonCard(
+                    found,
+                    card
+                );
+
+            }
+
+        }
+    );
+
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            const closeButton =
+                event.target.closest(
+                    ".lesson-card-close"
+                );
+
+            if (!closeButton) {
+                return;
+            }
+
+            event.stopPropagation();
+
+            closeFocusedCard();
+
+        }
     );
 
 }
@@ -332,25 +559,21 @@ function initializeLessonSystem() {
 
 /* =========================================================
    08. LOAD LESSONS
-   ========================================================= */
+========================================================= */
 
 async function loadLessons() {
-
-    /*
-       First try Supabase.
-
-       If Supabase isn't ready or the tables don't exist,
-       fall back to local lessons.
-    */
 
     if (!supabaseClient) {
 
         state.lessons =
             localLessons;
 
-        renderLessonList();
+        renderLessonNavigation();
 
-        if (state.lessons.length) {
+        if (
+            state.lessons.length &&
+            !state.currentLessonId
+        ) {
 
             openLesson(
                 state.lessons[0].id
@@ -362,31 +585,29 @@ async function loadLessons() {
 
     }
 
+
     try {
 
-        const {
-            data,
-            error
-        } = await supabaseClient
-            .from("lessons")
-            .select(`
-                *,
-                lesson_cards (
-                    *
-                )
-            `)
-            .order(
-                "position",
-                {
-                    ascending: true
-                }
-            );
+        const result =
+            await supabaseClient
+                .from("lessons")
+                .select(`
+                    *,
+                    lesson_cards (*)
+                `)
+                .order(
+                    "position",
+                    {
+                        ascending: true
+                    }
+                );
 
-        if (error) {
+
+        if (result.error) {
 
             console.warn(
-                "Supabase lessons unavailable:",
-                error
+                "Supabase lesson loading failed:",
+                result.error
             );
 
             state.lessons =
@@ -395,14 +616,16 @@ async function loadLessons() {
         } else {
 
             state.lessons =
-                normalizeLessons(data);
+                normalizeLessons(
+                    result.data
+                );
 
         }
 
     } catch (error) {
 
         console.error(
-            "Error loading lessons:",
+            "Lesson loading error:",
             error
         );
 
@@ -411,9 +634,40 @@ async function loadLessons() {
 
     }
 
-    renderLessonList();
 
-    if (state.lessons.length) {
+    renderLessonNavigation();
+
+
+    if (
+        state.currentLessonId
+    ) {
+
+        const exists =
+            state.lessons.some(
+                lesson =>
+                    String(lesson.id) ===
+                    String(
+                        state.currentLessonId
+                    )
+            );
+
+        if (exists) {
+
+            openLesson(
+                state.currentLessonId
+            );
+
+            return;
+
+        }
+
+    }
+
+
+    const restored =
+        restoreLastLesson();
+
+    if (!restored && state.lessons.length) {
 
         openLesson(
             state.lessons[0].id
@@ -425,8 +679,8 @@ async function loadLessons() {
 
 
 /* =========================================================
-   09. NORMALIZE SUPABASE LESSONS
-   ========================================================= */
+   09. NORMALIZE LESSONS
+========================================================= */
 
 function normalizeLessons(data) {
 
@@ -436,10 +690,33 @@ function normalizeLessons(data) {
 
     }
 
+
     return data.map(
         lesson => {
 
+            const cards =
+                Array.isArray(
+                    lesson.lesson_cards
+                )
+                    ? [...lesson.lesson_cards]
+                    : [];
+
+
+            cards.sort(
+                (a, b) => {
+
+                    return (
+                        Number(a.position || 0) -
+                        Number(b.position || 0)
+                    );
+
+                }
+            );
+
+
             return {
+
+                ...lesson,
 
                 id:
                     lesson.id,
@@ -450,34 +727,19 @@ function normalizeLessons(data) {
 
                 unit:
                     lesson.unit ||
+                    lesson.unit_name ||
                     "",
+
+                lesson_number:
+                    getLessonNumber(
+                        lesson
+                    ),
 
                 description:
                     lesson.description ||
                     "",
 
-                cards:
-                    Array.isArray(
-                        lesson.lesson_cards
-                    )
-                        ?
-                        lesson.lesson_cards
-                            .sort(
-                                (
-                                    a,
-                                    b
-                                ) =>
-                                    (
-                                        a.position ||
-                                        0
-                                    ) -
-                                    (
-                                        b.position ||
-                                        0
-                                    )
-                            )
-                        :
-                        []
+                cards
 
             };
 
@@ -488,39 +750,175 @@ function normalizeLessons(data) {
 
 
 /* =========================================================
-   10. RENDER LESSON LIST
-   ========================================================= */
+   10. RENDER NAVIGATION
+========================================================= */
 
-function renderLessonList() {
+function renderLessonNavigation() {
 
-    const containers = [
+    const links =
+        $all(
+            "#students-book-dropdown a[data-lesson]"
+        );
 
-        "#students-book-dropdown",
 
-        "#presentation-list-container",
+    links.forEach(
+        link => {
 
-        "#presentations-unit-container"
-
-    ];
-
-    containers.forEach(
-        selector => {
-
-            const container =
-                document.querySelector(
-                    selector
+            const unit =
+                normalizeUnit(
+                    link.dataset.unit
                 );
 
-            if (!container) {
+            const number =
+                Number(
+                    link.dataset.lesson
+                );
 
-                return;
+
+            const lesson =
+                state.lessons.find(
+                    item => {
+
+                        return (
+                            normalizeUnit(
+                                item.unit
+                            ) === unit &&
+                            getLessonNumber(
+                                item
+                            ) === number
+                        );
+
+                    }
+                );
+
+
+            if (lesson) {
+
+                link.dataset.lessonId =
+                    lesson.id;
+
+                link.classList.remove(
+                    "lesson-unavailable"
+                );
+
+                link.title =
+                    lesson.title;
+
+            } else {
+
+                link.classList.add(
+                    "lesson-unavailable"
+                );
 
             }
 
-            /*
-               Don't destroy existing controls that may
-               belong to the original application.
-            */
+        }
+    );
+
+
+    links.forEach(
+        link => {
+
+            link.onclick =
+                event => {
+
+                    event.preventDefault();
+
+                    const id =
+                        link.dataset.lessonId;
+
+                    if (!id) {
+
+                        showUploadStatus(
+                            "This lesson has not been created yet."
+                        );
+
+                        return;
+
+                    }
+
+                    openLesson(id);
+
+                };
+
+        }
+    );
+
+
+    $all(
+        "#students-book-dropdown .unit-item > a"
+    ).forEach(
+        unitLink => {
+
+            unitLink.onclick =
+                event => {
+
+                    event.preventDefault();
+
+                    event.stopPropagation();
+
+                    const unit =
+                        normalizeUnit(
+                            unitLink.dataset.unit
+                        );
+
+                    const parent =
+                        unitLink.closest(
+                            ".unit-item"
+                        );
+
+                    if (parent) {
+
+                        parent.classList.toggle(
+                            "unit-open"
+                        );
+
+                    }
+
+                    state.currentUnit =
+                        unit;
+
+                };
+
+        }
+    );
+
+
+    $all(
+        "#activity-book-dropdown a[data-unit]"
+    ).forEach(
+        link => {
+
+            link.onclick =
+                event => {
+
+                    event.preventDefault();
+
+                    const unit =
+                        normalizeUnit(
+                            link.dataset.unit
+                        );
+
+                    state.currentUnit =
+                        unit;
+
+                    const lesson =
+                        state.lessons.find(
+                            item =>
+                                normalizeUnit(
+                                    item.unit
+                                ) === unit
+                        );
+
+                    if (lesson) {
+
+                        openLesson(
+                            lesson.id
+                        );
+
+                    }
+
+                };
 
         }
     );
@@ -530,9 +928,9 @@ function renderLessonList() {
 
 /* =========================================================
    11. OPEN LESSON
-   ========================================================= */
+========================================================= */
 
-async function openLesson(lessonId) {
+function openLesson(lessonId) {
 
     const lesson =
         state.lessons.find(
@@ -540,6 +938,7 @@ async function openLesson(lessonId) {
                 String(item.id) ===
                 String(lessonId)
         );
+
 
     if (!lesson) {
 
@@ -552,20 +951,39 @@ async function openLesson(lessonId) {
 
     }
 
+
     state.currentLesson =
         lesson;
 
     state.currentLessonId =
         lesson.id;
 
+    state.currentUnit =
+        normalizeUnit(
+            lesson.unit
+        );
+
     state.cards =
-        lesson.cards || [];
+        Array.isArray(
+            lesson.cards
+        )
+            ? lesson.cards
+            : [];
 
     state.currentCard =
         null;
 
-    state.isCardOpen =
+    state.currentCardElement =
+        null;
+
+    state.cardOpen =
         false;
+
+
+    closeFocusedCard(
+        false
+    );
+
 
     hideLegacySlide();
 
@@ -573,212 +991,166 @@ async function openLesson(lessonId) {
 
     saveCurrentLessonLocally();
 
+    updateNavigationButtons();
+
 }
 
 
 /* =========================================================
    12. RENDER LESSON
-   ========================================================= */
+========================================================= */
 
 function renderLesson() {
 
-    const container =
-        document.querySelector(
-            "#lesson-content"
-        );
+    const title =
+        $("#lesson-content-title");
 
-    if (!container) {
+    const subtitle =
+        $("#lesson-content-subtitle");
+
+    const cardsContainer =
+        $("#lesson-cards");
+
+
+    if (
+        !cardsContainer
+    ) {
 
         return;
 
     }
 
-    container.innerHTML = "";
 
-    container.classList.add(
-        "lesson-card-mode"
-    );
+    if (title) {
 
-
-    /* -----------------------------------------------------
-       LESSON HEADER
-       ----------------------------------------------------- */
-
-    const header =
-        document.createElement("div");
-
-    header.className =
-        "lesson-header";
-
-
-    const unit =
-        document.createElement("div");
-
-    unit.className =
-        "lesson-unit";
-
-    unit.textContent =
-        state.currentLesson.unit ||
-        "LESSON";
-
-
-    const title =
-        document.createElement("h1");
-
-    title.className =
-        "lesson-title";
-
-    title.textContent =
-        state.currentLesson.title ||
-        "Lesson";
-
-
-    const description =
-        document.createElement("p");
-
-    description.className =
-        "lesson-description";
-
-    description.textContent =
-        state.currentLesson.description ||
-        "Explore the lesson cards below.";
-
-
-    header.appendChild(unit);
-
-    header.appendChild(title);
-
-    if (
-        state.currentLesson.description
-    ) {
-
-        header.appendChild(
-            description
-        );
+        title.textContent =
+            state.currentLesson.title ||
+            "Lesson";
 
     }
 
 
-    /* -----------------------------------------------------
-       CARD GRID
-       ----------------------------------------------------- */
+    if (subtitle) {
 
-    const grid =
-        document.createElement("div");
+        const unit =
+            state.currentLesson.unit
+                ? `${state.currentLesson.unit} • `
+                : "";
 
-    grid.className =
-        "lesson-card-grid";
+        subtitle.textContent =
+            `${unit}${state.currentLesson.description || "Explore the lesson cards below."}`;
+
+    }
+
+
+    cardsContainer.innerHTML =
+        "";
 
 
     if (!state.cards.length) {
 
-        const empty =
-            document.createElement("div");
+        cardsContainer.innerHTML = `
 
-        empty.className =
-            "lesson-empty";
+            <div class="lesson-empty">
 
-        empty.innerHTML = `
-            <div class="lesson-empty-icon">
-                +
+                <div class="lesson-empty-icon">
+                    +
+                </div>
+
+                <h3>
+                    No lesson content yet
+                </h3>
+
+                <p>
+                    Teacher materials can be uploaded
+                    using the UPLOAD button.
+                </p>
+
             </div>
 
-            <h3>
-                No lesson content yet
-            </h3>
-
-            <p>
-                Add lesson cards from Supabase.
-            </p>
         `;
 
-        grid.appendChild(
-            empty
-        );
-
-    } else {
-
-        state.cards.forEach(
-            (card, index) => {
-
-                grid.appendChild(
-                    createLessonCard(
-                        card,
-                        index
-                    )
-                );
-
-            }
-        );
+        return;
 
     }
 
 
-    container.appendChild(
-        header
-    );
+    state.cards.forEach(
+        (card, index) => {
 
-    container.appendChild(
-        grid
+            cardsContainer.appendChild(
+                createLessonCardElement(
+                    card,
+                    index
+                )
+            );
+
+        }
     );
 
 }
 
 
 /* =========================================================
-   13. CREATE 3D CARD
-   ========================================================= */
+   13. CREATE CARD DOM ELEMENT
+========================================================= */
 
-function createLessonCard(
+function createLessonCardElement(
     card,
     index
 ) {
 
     const wrapper =
-        document.createElement("article");
+        document.createElement(
+            "article"
+        );
 
     wrapper.className =
         "lesson-card-wrapper";
 
 
-    const element =
-        document.createElement("div");
+    const cardElement =
+        document.createElement(
+            "div"
+        );
 
-    element.className =
+    cardElement.className =
         "lesson-card";
 
-    element.dataset.cardId =
+    cardElement.dataset.cardId =
         card.id || index;
 
-    element.dataset.cardType =
+    cardElement.dataset.cardType =
         card.type || "text";
 
 
-    /* -----------------------------------------------------
-       CARD FRONT
-       ----------------------------------------------------- */
-
     const front =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     front.className =
         "lesson-card-front";
 
 
     const icon =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     icon.className =
         "lesson-card-icon";
 
-    icon.innerHTML =
+    icon.textContent =
         getCardIcon(
             card.type
         );
 
 
     const title =
-        document.createElement("h2");
+        document.createElement(
+            "h2"
+        );
 
     title.className =
         "lesson-card-title";
@@ -789,7 +1161,9 @@ function createLessonCard(
 
 
     const subtitle =
-        document.createElement("p");
+        document.createElement(
+            "p"
+        );
 
     subtitle.className =
         "lesson-card-subtitle";
@@ -802,53 +1176,47 @@ function createLessonCard(
 
 
     const hint =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     hint.className =
         "lesson-card-hint";
 
     hint.innerHTML =
-        "Tap to explore <span>→</span>";
+        `Tap to explore <span>→</span>`;
 
 
-    front.appendChild(
-        icon
-    );
+    front.appendChild(icon);
 
-    front.appendChild(
-        title
-    );
+    front.appendChild(title);
 
-    front.appendChild(
-        subtitle
-    );
+    front.appendChild(subtitle);
 
-    front.appendChild(
-        hint
-    );
+    front.appendChild(hint);
 
-
-    /* -----------------------------------------------------
-       CARD BACK / EXPANDED CONTENT
-       ----------------------------------------------------- */
 
     const back =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     back.className =
         "lesson-card-back";
 
 
     const close =
-        document.createElement("button");
-
-    close.className =
-        "lesson-card-close";
+        document.createElement(
+            "button"
+        );
 
     close.type =
         "button";
 
-    close.innerHTML =
+    close.className =
+        "lesson-card-close";
+
+    close.textContent =
         "×";
 
     close.setAttribute(
@@ -858,7 +1226,9 @@ function createLessonCard(
 
 
     const expandedTitle =
-        document.createElement("h2");
+        document.createElement(
+            "h2"
+        );
 
     expandedTitle.className =
         "lesson-card-expanded-title";
@@ -869,10 +1239,13 @@ function createLessonCard(
 
 
     const content =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     content.className =
         "lesson-card-content";
+
 
     renderCardContent(
         content,
@@ -893,62 +1266,17 @@ function createLessonCard(
     );
 
 
-    element.appendChild(
+    cardElement.appendChild(
         front
     );
 
-    element.appendChild(
+    cardElement.appendChild(
         back
     );
 
 
     wrapper.appendChild(
-        element
-    );
-
-
-    /*
-       Close button.
-    */
-
-    close.addEventListener(
-        "click",
-        event => {
-
-            event.stopPropagation();
-
-            closeLessonCard(
-                element
-            );
-
-        }
-    );
-
-
-    /*
-       Card click.
-    */
-
-    element.addEventListener(
-        "click",
-        event => {
-
-            if (
-                event.target.closest(
-                    ".lesson-card-close"
-                )
-            ) {
-
-                return;
-
-            }
-
-            openLessonCard(
-                element,
-                card
-            );
-
-        }
+        cardElement
     );
 
 
@@ -958,8 +1286,8 @@ function createLessonCard(
 
 
 /* =========================================================
-   14. CARD ICONS
-   ========================================================= */
+   14. CARD ICON
+========================================================= */
 
 function getCardIcon(type) {
 
@@ -969,6 +1297,7 @@ function getCardIcon(type) {
     ) {
 
         case "audio":
+        case "listening":
             return "🎧";
 
         case "video":
@@ -977,8 +1306,10 @@ function getCardIcon(type) {
         case "image":
             return "▣";
 
-        case "text":
-        case "explanation":
+        case "pdf":
+            return "PDF";
+
+        case "grammar":
             return "Aa";
 
         case "question":
@@ -987,14 +1318,12 @@ function getCardIcon(type) {
         case "exercise":
             return "✓";
 
-        case "grammar":
-            return "Aa";
-
-        case "listening":
-            return "♫";
-
         case "speaking":
             return "◉";
+
+        case "text":
+        case "explanation":
+            return "Aa";
 
         default:
             return "◆";
@@ -1006,7 +1335,7 @@ function getCardIcon(type) {
 
 /* =========================================================
    15. CARD TYPE LABEL
-   ========================================================= */
+========================================================= */
 
 function getCardTypeLabel(type) {
 
@@ -1024,8 +1353,11 @@ function getCardTypeLabel(type) {
         case "image":
             return "Visual";
 
-        case "text":
-            return "Explanation";
+        case "pdf":
+            return "Document";
+
+        case "grammar":
+            return "Grammar";
 
         case "question":
             return "Question";
@@ -1033,14 +1365,15 @@ function getCardTypeLabel(type) {
         case "exercise":
             return "Practice";
 
-        case "grammar":
-            return "Grammar";
-
         case "listening":
             return "Listening";
 
         case "speaking":
             return "Speaking";
+
+        case "text":
+        case "explanation":
+            return "Explanation";
 
         default:
             return "Explore";
@@ -1052,7 +1385,7 @@ function getCardTypeLabel(type) {
 
 /* =========================================================
    16. RENDER CARD CONTENT
-   ========================================================= */
+========================================================= */
 
 function renderCardContent(
     container,
@@ -1065,9 +1398,7 @@ function renderCardContent(
         ).toLowerCase();
 
 
-    /*
-       TEXT
-    */
+    /* TEXT */
 
     if (
         type === "text" ||
@@ -1085,8 +1416,7 @@ function renderCardContent(
 
         text.innerHTML =
             sanitizeLessonHTML(
-                card.content ||
-                ""
+                card.content || ""
             );
 
         container.appendChild(
@@ -1098,9 +1428,7 @@ function renderCardContent(
     }
 
 
-    /*
-       IMAGE
-    */
+    /* IMAGE */
 
     if (
         type === "image"
@@ -1132,11 +1460,17 @@ function renderCardContent(
                 image
             );
 
+        } else {
+
+            showMissingMedia(
+                container,
+                "Image"
+            );
+
         }
 
-        if (
-            card.content
-        ) {
+
+        if (card.content) {
 
             appendDescription(
                 container,
@@ -1150,9 +1484,7 @@ function renderCardContent(
     }
 
 
-    /*
-       AUDIO
-    */
+    /* AUDIO */
 
     if (
         type === "audio" ||
@@ -1193,9 +1525,8 @@ function renderCardContent(
 
         }
 
-        if (
-            card.content
-        ) {
+
+        if (card.content) {
 
             appendDescription(
                 container,
@@ -1209,9 +1540,7 @@ function renderCardContent(
     }
 
 
-    /*
-       VIDEO
-    */
+    /* VIDEO */
 
     if (
         type === "video"
@@ -1254,9 +1583,8 @@ function renderCardContent(
 
         }
 
-        if (
-            card.content
-        ) {
+
+        if (card.content) {
 
             appendDescription(
                 container,
@@ -1270,13 +1598,67 @@ function renderCardContent(
     }
 
 
-    /*
-       DEFAULT
-    */
+    /* PDF */
 
     if (
-        card.content
+        type === "pdf"
     ) {
+
+        if (
+            card.media_url
+        ) {
+
+            const link =
+                document.createElement(
+                    "a"
+                );
+
+            link.className =
+                "lesson-pdf-link";
+
+            link.href =
+                card.media_url;
+
+            link.target =
+                "_blank";
+
+            link.rel =
+                "noopener noreferrer";
+
+            link.textContent =
+                "Open lesson document";
+
+            container.appendChild(
+                link
+            );
+
+        } else {
+
+            showMissingMedia(
+                container,
+                "Document"
+            );
+
+        }
+
+
+        if (card.content) {
+
+            appendDescription(
+                container,
+                card.content
+            );
+
+        }
+
+        return;
+
+    }
+
+
+    /* DEFAULT */
+
+    if (card.content) {
 
         appendDescription(
             container,
@@ -1290,7 +1672,7 @@ function renderCardContent(
 
 /* =========================================================
    17. DESCRIPTION
-   ========================================================= */
+========================================================= */
 
 function appendDescription(
     container,
@@ -1319,7 +1701,7 @@ function appendDescription(
 
 /* =========================================================
    18. MISSING MEDIA
-   ========================================================= */
+========================================================= */
 
 function showMissingMedia(
     container,
@@ -1335,13 +1717,17 @@ function showMissingMedia(
         "lesson-media-missing";
 
     message.innerHTML = `
+
         <strong>
-            ${mediaType}
+            ${escapeHTML(mediaType)}
         </strong>
 
         <span>
-            No ${mediaType.toLowerCase()} has been uploaded yet.
+            No ${escapeHTML(
+                mediaType.toLowerCase()
+            )} has been uploaded yet.
         </span>
+
     `;
 
     container.appendChild(
@@ -1353,38 +1739,129 @@ function showMissingMedia(
 
 /* =========================================================
    19. OPEN CARD
-   ========================================================= */
+========================================================= */
 
 function openLessonCard(
-    element,
-    card
+    card,
+    element
 ) {
 
+    if (!card) {
+        return;
+    }
+
+
+    state.currentCard =
+        card;
+
+    state.currentCardElement =
+        element;
+
+    state.cardOpen =
+        true;
+
+
     /*
-       Close other cards first.
+       The requested behavior is a true focused card.
+       We use the overlay rather than relying solely on
+       CSS expansion inside the grid.
     */
 
-    $all(
-        ".lesson-card.is-expanded"
-    ).forEach(
-        other => {
+    const overlay =
+        $("#lesson-focus-overlay");
 
-            if (
-                other !== element
-            ) {
+    const focusCard =
+        $("#lesson-focus-card");
 
-                other.classList.remove(
-                    "is-expanded"
-                );
 
-            }
+    if (
+        !overlay ||
+        !focusCard
+    ) {
 
-        }
+        return;
+
+    }
+
+
+    focusCard.innerHTML =
+        "";
+
+
+    const close =
+        document.createElement(
+            "button"
+        );
+
+    close.type =
+        "button";
+
+    close.className =
+        "lesson-card-close";
+
+    close.textContent =
+        "×";
+
+    close.setAttribute(
+        "aria-label",
+        "Close"
     );
 
 
-    element.classList.add(
-        "is-expanded"
+    const title =
+        document.createElement(
+            "h2"
+        );
+
+    title.className =
+        "lesson-card-expanded-title";
+
+    title.textContent =
+        card.title ||
+        "Lesson content";
+
+
+    const content =
+        document.createElement(
+            "div"
+        );
+
+    content.className =
+        "lesson-card-content";
+
+
+    renderCardContent(
+        content,
+        card
+    );
+
+
+    focusCard.appendChild(
+        close
+    );
+
+    focusCard.appendChild(
+        title
+    );
+
+    focusCard.appendChild(
+        content
+    );
+
+
+    close.addEventListener(
+        "click",
+        closeFocusedCard
+    );
+
+
+    overlay.classList.add(
+        "is-visible"
+    );
+
+    overlay.setAttribute(
+        "aria-hidden",
+        "false"
     );
 
 
@@ -1393,27 +1870,12 @@ function openLessonCard(
     );
 
 
-    state.currentCard =
-        card;
-
-    state.isCardOpen =
-        true;
-
-
     /*
-       Focus expanded card.
+       Prevent background scrolling.
     */
 
-    setTimeout(
-        () => {
-
-            element.scrollIntoView({
-                behavior: "smooth",
-                block: "center"
-            });
-
-        },
-        50
+    document.documentElement.classList.add(
+        "lesson-focus-active"
     );
 
 }
@@ -1421,45 +1883,48 @@ function openLessonCard(
 
 /* =========================================================
    20. CLOSE CARD
-   ========================================================= */
+========================================================= */
 
-function closeLessonCard(
-    element
+function closeFocusedCard(
+    updateState = true
 ) {
 
-    element.classList.remove(
-        "is-expanded"
-    );
+    const overlay =
+        $("#lesson-focus-overlay");
 
-    state.currentCard =
-        null;
+    if (overlay) {
 
-    state.isCardOpen =
-        false;
+        overlay.classList.remove(
+            "is-visible"
+        );
+
+        overlay.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+    }
+
 
     document.body.classList.remove(
         "lesson-card-open"
     );
 
-}
+    document.documentElement.classList.remove(
+        "lesson-focus-active"
+    );
 
 
-/* =========================================================
-   21. CARD CLICK FALLBACK
-   ========================================================= */
+    if (updateState) {
 
-function handleCardClick(
-    event
-) {
+        state.currentCard =
+            null;
 
-    const card =
-        event.target.closest(
-            ".lesson-card"
-        );
+        state.currentCardElement =
+            null;
 
-    if (!card) {
-
-        return;
+        state.cardOpen =
+            false;
 
     }
 
@@ -1467,15 +1932,13 @@ function handleCardClick(
 
 
 /* =========================================================
-   22. HIDE ORIGINAL SLIDE
-   ========================================================= */
+   21. LEGACY SLIDE
+========================================================= */
 
 function hideLegacySlide() {
 
     const image =
-        document.querySelector(
-            "#slide-image"
-        );
+        $("#slide-image");
 
     if (image) {
 
@@ -1483,6 +1946,7 @@ function hideLegacySlide() {
             "none";
 
     }
+
 
     const wrapper =
         document.querySelector(
@@ -1501,75 +1965,40 @@ function hideLegacySlide() {
 
 
 /* =========================================================
-   23. SANITIZE CONTENT
-   ========================================================= */
-
-function sanitizeLessonHTML(
-    html
-) {
-
-    /*
-       Basic protection.
-
-       Text supplied by teachers should preferably be
-       stored as plain text.
-
-       This permits basic formatting while removing
-       dangerous script / iframe elements.
-    */
-
-    const temp =
-        document.createElement(
-            "div"
-        );
-
-    temp.innerHTML =
-        String(
-            html || ""
-        );
-
-    temp.querySelectorAll(
-        "script, iframe, object, embed"
-    ).forEach(
-        element =>
-            element.remove()
-    );
-
-    return temp.innerHTML;
-
-}
-
-
-/* =========================================================
-   24. SUPABASE MEDIA
-   ========================================================= */
+   22. MEDIA
+========================================================= */
 
 async function loadMedia() {
 
     if (!supabaseClient) {
 
+        state.media = [];
+
         return [];
 
     }
+
 
     try {
 
         const {
             data,
             error
-        } = await supabaseClient
-            .from("lesson_media")
-            .select("*")
-            .order(
-                "created_at",
-                {
-                    ascending: false
-                }
-            );
+        } =
+            await supabaseClient
+                .from("lesson_media")
+                .select("*")
+                .order(
+                    "created_at",
+                    {
+                        ascending: false
+                    }
+                );
+
 
         if (error) {
 
-            console.error(
+            console.warn(
                 "Could not load media:",
                 error
             );
@@ -1577,6 +2006,7 @@ async function loadMedia() {
             return [];
 
         }
+
 
         state.media =
             data || [];
@@ -1598,25 +2028,197 @@ async function loadMedia() {
 
 
 /* =========================================================
-   25. UPLOAD SYSTEM
-   ========================================================= */
+   23. TEACHER UPLOAD SYSTEM
+========================================================= */
 
-function initializeMediaUpload() {
+function initializeUploadSystem() {
 
-    const uploadButton =
-        document.querySelector(
-            "#upload-media-btn"
+    const button =
+        $("#lesson-upload-btn");
+
+    const modal =
+        $("#lesson-upload-modal");
+
+    const close =
+        $("#lesson-upload-close");
+
+    const submit =
+        $("#lesson-upload-submit");
+
+    const input =
+        $("#lesson-file-input");
+
+
+    if (button) {
+
+        button.addEventListener(
+            "click",
+            openUploadModal
         );
 
-    const fileInput =
-        document.querySelector(
-            "#media-upload-input"
+    }
+
+
+    if (close) {
+
+        close.addEventListener(
+            "click",
+            closeUploadModal
         );
+
+    }
+
+
+    if (modal) {
+
+        modal.addEventListener(
+            "click",
+            event => {
+
+                if (
+                    event.target === modal
+                ) {
+
+                    closeUploadModal();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    if (submit) {
+
+        submit.addEventListener(
+            "click",
+            handleUploadSubmit
+        );
+
+    }
+
+
+    if (input) {
+
+        input.addEventListener(
+            "change",
+            updateUploadFileLabel
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   24. OPEN UPLOAD MODAL
+========================================================= */
+
+function openUploadModal() {
+
+    const modal =
+        $("#lesson-upload-modal");
+
+    const label =
+        $("#upload-lesson-label");
+
+
+    if (!modal) {
+        return;
+    }
 
 
     if (
-        !uploadButton ||
-        !fileInput
+        !state.currentLesson
+    ) {
+
+        if (label) {
+
+            label.textContent =
+                "Please select a lesson first.";
+
+        }
+
+    } else {
+
+        if (label) {
+
+            label.textContent =
+                `${state.currentLesson.unit || ""} • ${state.currentLesson.title}`;
+
+        }
+
+    }
+
+
+    modal.classList.add(
+        "is-visible"
+    );
+
+    modal.setAttribute(
+        "aria-hidden",
+        "false"
+    );
+
+
+    const title =
+        $("#upload-title");
+
+    if (title) {
+
+        setTimeout(
+            () => title.focus(),
+            100
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   25. CLOSE UPLOAD MODAL
+========================================================= */
+
+function closeUploadModal() {
+
+    const modal =
+        $("#lesson-upload-modal");
+
+    if (!modal) {
+        return;
+    }
+
+
+    modal.classList.remove(
+        "is-visible"
+    );
+
+    modal.setAttribute(
+        "aria-hidden",
+        "true"
+    );
+
+}
+
+
+/* =========================================================
+   26. FILE LABEL
+========================================================= */
+
+function updateUploadFileLabel() {
+
+    const input =
+        $("#lesson-file-input");
+
+    const progress =
+        $("#upload-progress");
+
+
+    if (
+        !input ||
+        !progress
     ) {
 
         return;
@@ -1624,62 +2226,238 @@ function initializeMediaUpload() {
     }
 
 
-    uploadButton.addEventListener(
-        "click",
-        () => {
-
-            fileInput.click();
-
-        }
-    );
+    const file =
+        input.files?.[0];
 
 
-    fileInput.addEventListener(
-        "change",
-        async event => {
+    if (!file) {
 
-            const files =
-                Array.from(
-                    event.target.files || []
-                );
+        progress.textContent =
+            "";
 
-            if (!files.length) {
+        return;
 
-                return;
+    }
 
-            }
 
-            for (
-                const file of files
-            ) {
-
-                await uploadMedia(
-                    file
-                );
-
-            }
-
-            fileInput.value =
-                "";
-
-        }
-    );
+    progress.textContent =
+        `${file.name} • ${formatFileSize(file.size)}`;
 
 }
 
 
 /* =========================================================
-   26. UPLOAD MEDIA
-   ========================================================= */
+   27. HANDLE UPLOAD
+========================================================= */
 
-async function uploadMedia(
-    file
-) {
+async function handleUploadSubmit() {
+
+    if (
+        !state.currentLesson
+    ) {
+
+        showUploadProgress(
+            "Select a lesson first."
+        );
+
+        return;
+
+    }
+
+
+    const titleInput =
+        $("#upload-title");
+
+    const descriptionInput =
+        $("#upload-description");
+
+    const fileInput =
+        $("#lesson-file-input");
+
+
+    const title =
+        titleInput?.value.trim() ||
+        "Teacher Material";
+
+
+    const description =
+        descriptionInput?.value.trim() ||
+        "";
+
+
+    const file =
+        fileInput?.files?.[0];
+
+
+    if (!file) {
+
+        showUploadProgress(
+            "Please select a file."
+        );
+
+        return;
+
+    }
+
+
+    const submit =
+        $("#lesson-upload-submit");
+
+
+    if (submit) {
+
+        submit.disabled =
+            true;
+
+        submit.textContent =
+            "Uploading...";
+
+    }
+
+
+    try {
+
+        const media =
+            await uploadMedia(
+                file
+            );
+
+
+        if (!media) {
+
+            return;
+
+        }
+
+
+        const card =
+            await createLessonCard(
+                state.currentLesson.id,
+                {
+
+                    title,
+
+                    subtitle:
+                        detectMediaType(
+                            file.type
+                        ) === "audio"
+                            ? "Audio"
+                            : detectMediaType(
+                                file.type
+                            ) === "video"
+                                ? "Video"
+                                : detectMediaType(
+                                    file.type
+                                ) === "image"
+                                    ? "Visual"
+                                    : "Document",
+
+                    type:
+                        detectMediaType(
+                            file.type
+                        ),
+
+                    content:
+                        description,
+
+                    media_id:
+                        media.id,
+
+                    media_url:
+                        media.file_url
+
+                }
+            );
+
+
+        if (!card) {
+
+            showUploadProgress(
+                "The file uploaded, but the lesson card could not be created."
+            );
+
+            return;
+
+        }
+
+
+        showUploadProgress(
+            "Material uploaded successfully."
+        );
+
+
+        if (titleInput) {
+            titleInput.value = "";
+        }
+
+        if (descriptionInput) {
+            descriptionInput.value = "";
+        }
+
+        if (fileInput) {
+            fileInput.value = "";
+        }
+
+
+        await loadLessons();
+
+        await loadMedia();
+
+
+        if (
+            state.currentLessonId
+        ) {
+
+            openLesson(
+                state.currentLessonId
+            );
+
+        }
+
+
+        setTimeout(
+            closeUploadModal,
+            1200
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Upload process failed:",
+            error
+        );
+
+        showUploadProgress(
+            `Upload failed: ${error.message}`
+        );
+
+    } finally {
+
+        if (submit) {
+
+            submit.disabled =
+                false;
+
+            submit.textContent =
+                "Upload material";
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   28. UPLOAD MEDIA
+========================================================= */
+
+async function uploadMedia(file) {
 
     if (!supabaseClient) {
 
-        alert(
-            "Supabase is not configured yet."
+        showUploadProgress(
+            "Supabase is not configured."
         );
 
         return null;
@@ -1690,28 +2468,21 @@ async function uploadMedia(
     const allowedTypes = [
 
         "image/jpeg",
-
         "image/png",
-
         "image/webp",
-
         "image/gif",
 
         "audio/mpeg",
-
         "audio/mp3",
-
         "audio/wav",
-
         "audio/ogg",
-
         "audio/webm",
 
         "video/mp4",
-
         "video/webm",
+        "video/ogg",
 
-        "video/ogg"
+        "application/pdf"
 
     ];
 
@@ -1722,7 +2493,7 @@ async function uploadMedia(
         )
     ) {
 
-        alert(
+        showUploadProgress(
             "This file type is not supported."
         );
 
@@ -1730,13 +2501,6 @@ async function uploadMedia(
 
     }
 
-
-    /*
-       Maximum file size.
-
-       Change this according to your
-       Supabase Storage plan.
-    */
 
     const maxSize =
         500 * 1024 * 1024;
@@ -1746,19 +2510,13 @@ async function uploadMedia(
         file.size > maxSize
     ) {
 
-        alert(
+        showUploadProgress(
             "The file is larger than 500 MB."
         );
 
         return null;
 
     }
-
-
-    const extension =
-        getFileExtension(
-            file.name
-        );
 
 
     const safeName =
@@ -1768,10 +2526,10 @@ async function uploadMedia(
 
 
     const path =
-        `${Date.now()}-${safeName}`;
+        `${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}-${safeName}`;
 
 
-    showUploadStatus(
+    showUploadProgress(
         `Uploading ${file.name}...`
     );
 
@@ -1780,26 +2538,26 @@ async function uploadMedia(
 
         const {
             error
-        } = await supabaseClient
-            .storage
-            .from(
-                "lesson-media"
-            )
-            .upload(
-                path,
-                file,
-                {
-                    cacheControl:
-                        "3600",
+        } =
+            await supabaseClient
+                .storage
+                .from("lesson-media")
+                .upload(
+                    path,
+                    file,
+                    {
 
-                    upsert:
-                        false,
+                        cacheControl:
+                            "3600",
 
-                    contentType:
-                        file.type
+                        upsert:
+                            false,
 
-                }
-            );
+                        contentType:
+                            file.type
+
+                    }
+                );
 
 
         if (error) {
@@ -1814,9 +2572,7 @@ async function uploadMedia(
         } =
             supabaseClient
                 .storage
-                .from(
-                    "lesson-media"
-                )
+                .from("lesson-media")
                 .getPublicUrl(
                     path
                 );
@@ -1834,13 +2590,10 @@ async function uploadMedia(
 
         const {
             data,
-            error:
-                databaseError
+            error: databaseError
         } =
             await supabaseClient
-                .from(
-                    "lesson_media"
-                )
+                .from("lesson_media")
                 .insert({
 
                     file_name:
@@ -1868,18 +2621,18 @@ async function uploadMedia(
 
         if (databaseError) {
 
-            /*
-               The storage upload succeeded but
-               database insertion failed.
-            */
-
             console.error(
-                "Media DB error:",
+                "Media database error:",
                 databaseError
             );
 
-            showUploadStatus(
-                "File uploaded, but media record could not be saved."
+            /*
+               Storage succeeded but database
+               record failed.
+            */
+
+            showUploadProgress(
+                "File uploaded, but the media record could not be saved."
             );
 
             return null;
@@ -1892,13 +2645,7 @@ async function uploadMedia(
         );
 
 
-        showUploadStatus(
-            `${file.name} uploaded successfully.`
-        );
-
-
         return data;
-
 
     } catch (error) {
 
@@ -1907,7 +2654,7 @@ async function uploadMedia(
             error
         );
 
-        showUploadStatus(
+        showUploadProgress(
             `Upload failed: ${error.message}`
         );
 
@@ -1919,42 +2666,46 @@ async function uploadMedia(
 
 
 /* =========================================================
-   27. MEDIA TYPE
-   ========================================================= */
+   29. MEDIA TYPE
+========================================================= */
 
-function detectMediaType(
-    mime
-) {
+function detectMediaType(mime) {
 
     if (
-        mime.startsWith(
-            "image/"
-        )
+        mime === "application/pdf"
+    ) {
+
+        return "pdf";
+
+    }
+
+
+    if (
+        mime.startsWith("image/")
     ) {
 
         return "image";
 
     }
 
+
     if (
-        mime.startsWith(
-            "audio/"
-        )
+        mime.startsWith("audio/")
     ) {
 
         return "audio";
 
     }
 
+
     if (
-        mime.startsWith(
-            "video/"
-        )
+        mime.startsWith("video/")
     ) {
 
         return "video";
 
     }
+
 
     return "other";
 
@@ -1962,342 +2713,8 @@ function detectMediaType(
 
 
 /* =========================================================
-   28. DELETE MEDIA
-   ========================================================= */
-
-async function deleteMedia(
-    mediaId
-) {
-
-    if (!supabaseClient) {
-
-        return false;
-
-    }
-
-
-    try {
-
-        const {
-            data: media,
-            error
-        } =
-            await supabaseClient
-                .from(
-                    "lesson_media"
-                )
-                .select("*")
-                .eq(
-                    "id",
-                    mediaId
-                )
-                .single();
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        /*
-           Delete storage file.
-        */
-
-        if (
-            media.file_path
-        ) {
-
-            const {
-                error:
-                    storageError
-            } =
-                await supabaseClient
-                    .storage
-                    .from(
-                        "lesson-media"
-                    )
-                    .remove([
-                        media.file_path
-                    ]);
-
-
-            if (
-                storageError
-            ) {
-
-                console.warn(
-                    "Storage deletion error:",
-                    storageError
-                );
-
-            }
-
-        }
-
-
-        /*
-           Delete database record.
-        */
-
-        const {
-            error:
-                databaseError
-        } =
-            await supabaseClient
-                .from(
-                    "lesson_media"
-                )
-                .delete()
-                .eq(
-                    "id",
-                    mediaId
-                );
-
-
-        if (
-            databaseError
-        ) {
-
-            throw databaseError;
-
-        }
-
-
-        state.media =
-            state.media.filter(
-                item =>
-                    item.id !==
-                    mediaId
-            );
-
-
-        showUploadStatus(
-            "Media deleted."
-        );
-
-
-        return true;
-
-
-    } catch (error) {
-
-        console.error(
-            "Could not delete media:",
-            error
-        );
-
-        showUploadStatus(
-            `Delete failed: ${error.message}`
-        );
-
-        return false;
-
-    }
-
-}
-
-
-/* =========================================================
-   29. FILE NAME HELPERS
-   ========================================================= */
-
-function sanitizeFileName(
-    filename
-) {
-
-    return filename
-        .normalize(
-            "NFD"
-        )
-        .replace(
-            /[\u0300-\u036f]/g,
-            ""
-        )
-        .replace(
-            /[^a-zA-Z0-9._-]/g,
-            "-"
-        )
-        .replace(
-            /-+/g,
-            "-"
-        );
-
-}
-
-
-function getFileExtension(
-    filename
-) {
-
-    const parts =
-        filename.split(".");
-
-    return parts.length > 1
-        ? parts.pop()
-        : "";
-
-}
-
-
-/* =========================================================
-   30. UPLOAD STATUS
-   ========================================================= */
-
-function showUploadStatus(
-    message
-) {
-
-    let status =
-        document.querySelector(
-            "#upload-status"
-        );
-
-
-    if (!status) {
-
-        status =
-            document.createElement(
-                "div"
-            );
-
-        status.id =
-            "upload-status";
-
-        status.className =
-            "upload-status";
-
-        document.body.appendChild(
-            status
-        );
-
-    }
-
-
-    status.textContent =
-        message;
-
-    status.classList.add(
-        "visible"
-    );
-
-
-    clearTimeout(
-        status._timer
-    );
-
-
-    status._timer =
-        setTimeout(
-            () => {
-
-                status.classList.remove(
-                    "visible"
-                );
-
-            },
-            4000
-        );
-
-}
-
-
-/* =========================================================
-   31. ASSIGN MEDIA TO CARD
-   ========================================================= */
-
-async function assignMediaToCard(
-    cardId,
-    mediaId
-) {
-
-    if (!supabaseClient) {
-
-        return false;
-
-    }
-
-
-    try {
-
-        const {
-            data: media,
-            error
-        } =
-            await supabaseClient
-                .from(
-                    "lesson_media"
-                )
-                .select(
-                    "*"
-                )
-                .eq(
-                    "id",
-                    mediaId
-                )
-                .single();
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        const {
-            error:
-                updateError
-        } =
-            await supabaseClient
-                .from(
-                    "lesson_cards"
-                )
-                .update({
-
-                    media_id:
-                        media.id,
-
-                    media_url:
-                        media.file_url
-
-                })
-                .eq(
-                    "id",
-                    cardId
-                );
-
-
-        if (updateError) {
-
-            throw updateError;
-
-        }
-
-
-        await loadLessons();
-
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "Could not assign media:",
-            error
-        );
-
-        return false;
-
-    }
-
-}
-
-
-/* =========================================================
-   32. CREATE LESSON CARD
-   ========================================================= */
+   30. CREATE LESSON CARD
+========================================================= */
 
 async function createLessonCard(
     lessonId,
@@ -2313,14 +2730,16 @@ async function createLessonCard(
 
     try {
 
+        const position =
+            state.cards.length;
+
+
         const {
             data,
             error
         } =
             await supabaseClient
-                .from(
-                    "lesson_cards"
-                )
+                .from("lesson_cards")
                 .insert({
 
                     lesson_id:
@@ -2350,9 +2769,7 @@ async function createLessonCard(
                         cardData.media_url ||
                         null,
 
-                    position:
-                        cardData.position ||
-                        0
+                    position
 
                 })
                 .select()
@@ -2366,15 +2783,12 @@ async function createLessonCard(
         }
 
 
-        await loadLessons();
-
-
         return data;
 
     } catch (error) {
 
         console.error(
-            "Could not create card:",
+            "Could not create lesson card:",
             error
         );
 
@@ -2386,11 +2800,12 @@ async function createLessonCard(
 
 
 /* =========================================================
-   33. DELETE LESSON CARD
-   ========================================================= */
+   31. ASSIGN MEDIA
+========================================================= */
 
-async function deleteLessonCard(
-    cardId
+async function assignMediaToCard(
+    cardId,
+    mediaId
 ) {
 
     if (!supabaseClient) {
@@ -2403,22 +2818,49 @@ async function deleteLessonCard(
     try {
 
         const {
+            data: media,
             error
         } =
             await supabaseClient
-                .from(
-                    "lesson_cards"
+                .from("lesson_media")
+                .select("*")
+                .eq(
+                    "id",
+                    mediaId
                 )
-                .delete()
+                .single();
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        const {
+            error: updateError
+        } =
+            await supabaseClient
+                .from("lesson_cards")
+                .update({
+
+                    media_id:
+                        media.id,
+
+                    media_url:
+                        media.file_url
+
+                })
                 .eq(
                     "id",
                     cardId
                 );
 
 
-        if (error) {
+        if (updateError) {
 
-            throw error;
+            throw updateError;
 
         }
 
@@ -2430,7 +2872,7 @@ async function deleteLessonCard(
     } catch (error) {
 
         console.error(
-            "Could not delete card:",
+            "Could not assign media:",
             error
         );
 
@@ -2442,8 +2884,8 @@ async function deleteLessonCard(
 
 
 /* =========================================================
-   34. UPDATE LESSON CARD
-   ========================================================= */
+   32. UPDATE CARD
+========================================================= */
 
 async function updateLessonCard(
     cardId,
@@ -2463,9 +2905,7 @@ async function updateLessonCard(
             error
         } =
             await supabaseClient
-                .from(
-                    "lesson_cards"
-                )
+                .from("lesson_cards")
                 .update(
                     updates
                 )
@@ -2501,8 +2941,66 @@ async function updateLessonCard(
 
 
 /* =========================================================
-   35. EXISTING CONTROLS
-   ========================================================= */
+   33. DELETE CARD
+=========================================================
+
+   This remains available to the owner/backend API,
+   but NO delete UI is exposed to teachers.
+========================================================= */
+
+async function deleteLessonCard(
+    cardId
+) {
+
+    if (!supabaseClient) {
+
+        return false;
+
+    }
+
+
+    try {
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("lesson_cards")
+                .delete()
+                .eq(
+                    "id",
+                    cardId
+                );
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        await loadLessons();
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Could not delete card:",
+            error
+        );
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   34. EXISTING CONTROLS
+========================================================= */
 
 function initializeExistingControls() {
 
@@ -2512,41 +3010,31 @@ function initializeExistingControls() {
 
     initializeVideo();
 
-    initializePresentation();
-
     initializeDropdowns();
+
+    initializeLegacyButtons();
 
 }
 
 
 /* =========================================================
-   36. NAVIGATION
-   ========================================================= */
+   35. NAVIGATION
+========================================================= */
 
 function initializeNavigation() {
 
     const previous =
-        document.querySelector(
-            "#prev-btn"
-        );
+        $("#prev-btn");
 
     const next =
-        document.querySelector(
-            "#next-btn"
-        );
+        $("#next-btn");
 
 
     if (previous) {
 
         previous.addEventListener(
             "click",
-            () => {
-
-                navigateLesson(
-                    -1
-                );
-
-            }
+            () => navigateLesson(-1)
         );
 
     }
@@ -2556,13 +3044,7 @@ function initializeNavigation() {
 
         next.addEventListener(
             "click",
-            () => {
-
-                navigateLesson(
-                    1
-                );
-
-            }
+            () => navigateLesson(1)
         );
 
     }
@@ -2571,12 +3053,10 @@ function initializeNavigation() {
 
 
 /* =========================================================
-   37. LESSON NAVIGATION
-   ========================================================= */
+   36. LESSON NAVIGATION
+========================================================= */
 
-function navigateLesson(
-    direction
-) {
+function navigateLesson(direction) {
 
     if (
         !state.lessons.length
@@ -2590,9 +3070,22 @@ function navigateLesson(
     const index =
         state.lessons.findIndex(
             lesson =>
-                lesson.id ===
-                state.currentLessonId
+                String(lesson.id) ===
+                String(
+                    state.currentLessonId
+                )
         );
+
+
+    if (index === -1) {
+
+        openLesson(
+            state.lessons[0].id
+        );
+
+        return;
+
+    }
 
 
     let nextIndex =
@@ -2614,54 +3107,58 @@ function navigateLesson(
         state.lessons.length
     ) {
 
-        nextIndex =
-            0;
+        nextIndex = 0;
 
     }
 
 
     openLesson(
-        state.lessons[
-            nextIndex
-        ].id
+        state.lessons[nextIndex].id
     );
 
 }
 
 
 /* =========================================================
-   38. AUDIO
-   ========================================================= */
+   37. NAVIGATION BUTTON STATE
+========================================================= */
 
-function initializeAudio() {
+function updateNavigationButtons() {
 
-    const audio =
-        document.querySelector(
-            "#slide-audio"
-        );
+    const previous =
+        $("#prev-btn");
 
-    const hideButton =
-        document.querySelector(
-            "#hide-audio-btn"
-        );
+    const next =
+        $("#next-btn");
 
 
-    if (
-        hideButton &&
-        audio
-    ) {
+    if (!state.lessons.length) {
 
-        hideButton.addEventListener(
-            "click",
-            () => {
+        if (previous) {
+            previous.disabled = true;
+        }
 
-                audio.pause();
+        if (next) {
+            next.disabled = true;
+        }
 
-                audio.style.display =
-                    "none";
+        return;
 
-            }
-        );
+    }
+
+
+    if (previous) {
+
+        previous.disabled =
+            false;
+
+    }
+
+
+    if (next) {
+
+        next.disabled =
+            false;
 
     }
 
@@ -2669,158 +3166,61 @@ function initializeAudio() {
 
 
 /* =========================================================
-   39. VIDEO
-   ========================================================= */
-
-function initializeVideo() {
-
-    const video =
-        document.querySelector(
-            "#slide-video"
-        );
-
-    const hideButton =
-        document.querySelector(
-            "#hide-video-btn"
-        );
-
-
-    if (
-        hideButton &&
-        video
-    ) {
-
-        hideButton.addEventListener(
-            "click",
-            () => {
-
-                video.pause();
-
-                video.close?.();
-
-                video.style.display =
-                    "none";
-
-            }
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   40. PRESENTATION
-   ========================================================= */
-
-function initializePresentation() {
-
-    const viewer =
-        document.querySelector(
-            "#presentation-viewer"
-        );
-
-    const frame =
-        document.querySelector(
-            "#presentation-frame"
-        );
-
-    const close =
-        document.querySelector(
-            "#hide-presentation-btn"
-        );
-
-
-    if (close) {
-
-        close.addEventListener(
-            "click",
-            () => {
-
-                if (frame) {
-
-                    frame.src =
-                        "about:blank";
-
-                }
-
-                if (viewer) {
-
-                    viewer.style.display =
-                        "none";
-
-                }
-
-                close.style.display =
-                    "none";
-
-            }
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   41. DROPDOWNS
-   ========================================================= */
+   38. DROPDOWNS
+========================================================= */
 
 function initializeDropdowns() {
 
-    $all(
-        ".dropdown"
-    ).forEach(
-        dropdown => {
+    $all(".dropdown")
+        .forEach(
+            dropdown => {
 
-            const icon =
-                dropdown.querySelector(
-                    ".control-icon"
-                );
+                const icon =
+                    dropdown.querySelector(
+                        ".dropdown-btn"
+                    );
 
-            if (!icon) {
-
-                return;
-
-            }
+                if (!icon) {
+                    return;
+                }
 
 
-            icon.addEventListener(
-                "click",
-                event => {
+                icon.addEventListener(
+                    "click",
+                    event => {
 
-                    event.stopPropagation();
+                        event.stopPropagation();
 
 
-                    $all(
-                        ".dropdown.show"
-                    ).forEach(
-                        other => {
+                        $all(
+                            ".dropdown.show"
+                        ).forEach(
+                            other => {
 
-                            if (
-                                other !==
-                                dropdown
-                            ) {
+                                if (
+                                    other !==
+                                    dropdown
+                                ) {
 
-                                other.classList.remove(
-                                    "show"
-                                );
+                                    other.classList.remove(
+                                        "show"
+                                    );
+
+                                }
 
                             }
-
-                        }
-                    );
+                        );
 
 
-                    dropdown.classList.toggle(
-                        "show"
-                    );
+                        dropdown.classList.toggle(
+                            "show"
+                        );
 
-                }
-            );
+                    }
+                );
 
-        }
-    );
+            }
+        );
 
 
     document.addEventListener(
@@ -2843,15 +3243,234 @@ function initializeDropdowns() {
 
 
 /* =========================================================
+   39. AUDIO
+========================================================= */
+
+function initializeAudio() {
+
+    const audio =
+        $("#slide-audio");
+
+    const button =
+        $("#audio-btn");
+
+    const hide =
+        $("#hide-audio-btn");
+
+
+    if (button && audio) {
+
+        button.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                if (
+                    audio.style.display ===
+                    "none"
+                ) {
+
+                    audio.style.display =
+                        "block";
+
+                } else {
+
+                    audio.style.display =
+                        "none";
+
+                    audio.pause();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    if (hide && audio) {
+
+        hide.addEventListener(
+            "click",
+            () => {
+
+                audio.pause();
+
+                audio.style.display =
+                    "none";
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   40. VIDEO
+========================================================= */
+
+function initializeVideo() {
+
+    const video =
+        $("#slide-video");
+
+    const button =
+        $("#video-btn");
+
+    const hide =
+        $("#hide-video-btn");
+
+
+    if (button && video) {
+
+        button.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                if (
+                    video.style.display ===
+                    "none"
+                ) {
+
+                    video.style.display =
+                        "block";
+
+                } else {
+
+                    video.pause();
+
+                    video.style.display =
+                        "none";
+
+                }
+
+            }
+        );
+
+    }
+
+
+    if (hide && video) {
+
+        hide.addEventListener(
+            "click",
+            () => {
+
+                video.pause();
+
+                video.style.display =
+                    "none";
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   41. LEGACY BUTTONS
+========================================================= */
+
+function initializeLegacyButtons() {
+
+    const whiteboard =
+        $("#whiteboard-btn");
+
+    const whiteboardElement =
+        $("#whiteboard");
+
+
+    if (
+        whiteboard &&
+        whiteboardElement
+    ) {
+
+        whiteboard.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                whiteboardElement.classList.toggle(
+                    "visible"
+                );
+
+            }
+        );
+
+    }
+
+
+    const edit =
+        $("#edit-btn");
+
+    const tray =
+        $("#edit-tray");
+
+
+    if (
+        edit &&
+        tray
+    ) {
+
+        edit.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                tray.classList.toggle(
+                    "visible"
+                );
+
+            }
+        );
+
+    }
+
+
+    const home =
+        $("#home-btn");
+
+
+    if (home) {
+
+        home.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                closeFocusedCard();
+
+                window.scrollTo({
+                    top: 0,
+                    behavior: "smooth"
+                });
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================================
    42. WHITEBOARD
-   ========================================================= */
+========================================================= */
 
 function initializeWhiteboard() {
 
     const canvas =
-        document.querySelector(
-            "#whiteboard-canvas"
-        );
+        $("#whiteboard-canvas");
 
     if (!canvas) {
 
@@ -2861,9 +3480,7 @@ function initializeWhiteboard() {
 
 
     const context =
-        canvas.getContext(
-            "2d"
-        );
+        canvas.getContext("2d");
 
 
     function resizeCanvas() {
@@ -2872,23 +3489,25 @@ function initializeWhiteboard() {
             canvas.getBoundingClientRect();
 
         const ratio =
-            window.devicePixelRatio ||
-            1;
+            window.devicePixelRatio || 1;
 
 
         canvas.width =
-            rect.width *
-            ratio;
+            rect.width * ratio;
 
         canvas.height =
-            rect.height *
-            ratio;
+            rect.height * ratio;
 
 
-        context.scale(
+        context.setTransform(
             ratio,
-            ratio
+            0,
+            0,
+            ratio,
+            0,
+            0
         );
+
 
         context.lineCap =
             "round";
@@ -2908,9 +3527,7 @@ function initializeWhiteboard() {
     );
 
 
-    function getPosition(
-        event
-    ) {
+    function getPosition(event) {
 
         const rect =
             canvas.getBoundingClientRect();
@@ -2951,29 +3568,28 @@ function initializeWhiteboard() {
     }
 
 
-    function startDrawing(
-        event
-    ) {
+    function startDrawing(event) {
 
         state.drawing =
             true;
 
 
-        const pos =
-            getPosition(
-                event
-            );
+        const position =
+            getPosition(event);
 
 
         context.beginPath();
 
+
         context.moveTo(
-            pos.x,
-            pos.y
+            position.x,
+            position.y
         );
+
 
         context.strokeStyle =
             state.pencilColor;
+
 
         context.lineWidth =
             state.pencilSize;
@@ -2984,9 +3600,7 @@ function initializeWhiteboard() {
     }
 
 
-    function draw(
-        event
-    ) {
+    function draw(event) {
 
         if (
             !state.drawing
@@ -2997,16 +3611,15 @@ function initializeWhiteboard() {
         }
 
 
-        const pos =
-            getPosition(
-                event
-            );
+        const position =
+            getPosition(event);
 
 
         context.lineTo(
-            pos.x,
-            pos.y
+            position.x,
+            position.y
         );
+
 
         context.stroke();
 
@@ -3070,9 +3683,7 @@ function initializeWhiteboard() {
 
 
     const clear =
-        document.querySelector(
-            "#clear-tool"
-        );
+        $("#clear-tool");
 
 
     if (clear) {
@@ -3098,7 +3709,7 @@ function initializeWhiteboard() {
 
 /* =========================================================
    43. KEYBOARD
-   ========================================================= */
+========================================================= */
 
 function initializeKeyboard() {
 
@@ -3107,18 +3718,21 @@ function initializeKeyboard() {
         event => {
 
             if (
-                event.key ===
-                "Escape"
+                event.key === "Escape"
             ) {
 
-                $all(
-                    ".lesson-card.is-expanded"
-                ).forEach(
-                    card =>
-                        closeLessonCard(
-                            card
-                        )
-                );
+                if (
+                    state.cardOpen
+                ) {
+
+                    closeFocusedCard();
+
+                    return;
+
+                }
+
+
+                closeUploadModal();
 
                 return;
 
@@ -3126,25 +3740,35 @@ function initializeKeyboard() {
 
 
             if (
-                event.key ===
-                "ArrowLeft"
+                event.key === "ArrowLeft"
             ) {
 
-                navigateLesson(
-                    -1
-                );
+                if (
+                    !isTypingTarget(
+                        event.target
+                    )
+                ) {
+
+                    navigateLesson(-1);
+
+                }
 
             }
 
 
             if (
-                event.key ===
-                "ArrowRight"
+                event.key === "ArrowRight"
             ) {
 
-                navigateLesson(
-                    1
-                );
+                if (
+                    !isTypingTarget(
+                        event.target
+                    )
+                ) {
+
+                    navigateLesson(1);
+
+                }
 
             }
 
@@ -3154,9 +3778,30 @@ function initializeKeyboard() {
 }
 
 
+function isTypingTarget(element) {
+
+    if (!element) {
+        return false;
+    }
+
+
+    const tag =
+        element.tagName?.toLowerCase();
+
+
+    return (
+        tag === "input" ||
+        tag === "textarea" ||
+        tag === "select" ||
+        element.isContentEditable
+    );
+
+}
+
+
 /* =========================================================
    44. LOCAL PROGRESS
-   ========================================================= */
+========================================================= */
 
 function saveCurrentLessonLocally() {
 
@@ -3176,12 +3821,10 @@ function saveCurrentLessonLocally() {
             state.currentLessonId
         );
 
-    } catch (
-        error
-    ) {
+    } catch (error) {
 
         console.warn(
-            "Could not save lesson state.",
+            "Could not save lesson:",
             error
         );
 
@@ -3192,7 +3835,7 @@ function saveCurrentLessonLocally() {
 
 /* =========================================================
    45. RESTORE LESSON
-   ========================================================= */
+========================================================= */
 
 function restoreLastLesson() {
 
@@ -3208,31 +3851,26 @@ function restoreLastLesson() {
             id &&
             state.lessons.some(
                 lesson =>
-                    String(
-                        lesson.id
-                    ) ===
+                    String(lesson.id) ===
                     String(id)
             )
         ) {
 
-            openLesson(
-                id
-            );
+            openLesson(id);
 
             return true;
 
         }
 
-    } catch (
-        error
-    ) {
+    } catch (error) {
 
         console.warn(
-            "Could not restore lesson.",
+            "Could not restore lesson:",
             error
         );
 
     }
+
 
     return false;
 
@@ -3240,8 +3878,156 @@ function restoreLastLesson() {
 
 
 /* =========================================================
-   46. SUPABASE AUTH CHECK
-   ========================================================= */
+   46. FILE HELPERS
+========================================================= */
+
+function sanitizeFileName(filename) {
+
+    return filename
+
+        .normalize("NFD")
+
+        .replace(
+            /[\u0300-\u036f]/g,
+            ""
+        )
+
+        .replace(
+            /[^a-zA-Z0-9._-]/g,
+            "-"
+        )
+
+        .replace(
+            /-+/g,
+            "-"
+        );
+
+}
+
+
+function formatFileSize(bytes) {
+
+    if (!bytes) {
+        return "0 KB";
+    }
+
+
+    const units = [
+        "B",
+        "KB",
+        "MB",
+        "GB"
+    ];
+
+
+    const index =
+        Math.floor(
+            Math.log(bytes) /
+            Math.log(1024)
+        );
+
+
+    return (
+        bytes /
+        Math.pow(
+            1024,
+            index
+        )
+    ).toFixed(
+        index === 0 ? 0 : 1
+    ) +
+    " " +
+    units[index];
+
+}
+
+
+/* =========================================================
+   47. UPLOAD STATUS
+========================================================= */
+
+function showUploadProgress(
+    message
+) {
+
+    const progress =
+        $("#upload-progress");
+
+
+    if (progress) {
+
+        progress.textContent =
+            message;
+
+    }
+
+
+    showUploadStatus(
+        message
+    );
+
+}
+
+
+function showUploadStatus(
+    message
+) {
+
+    let status =
+        $("#upload-status");
+
+
+    if (!status) {
+
+        status =
+            document.createElement(
+                "div"
+            );
+
+        status.id =
+            "upload-status";
+
+        status.className =
+            "upload-status";
+
+        document.body.appendChild(
+            status
+        );
+
+    }
+
+
+    status.textContent =
+        message;
+
+    status.classList.add(
+        "visible"
+    );
+
+
+    clearTimeout(
+        status._timer
+    );
+
+
+    status._timer =
+        setTimeout(
+            () => {
+
+                status.classList.remove(
+                    "visible"
+                );
+
+            },
+            4000
+        );
+
+}
+
+
+/* =========================================================
+   48. CURRENT USER
+========================================================= */
 
 async function getCurrentUser() {
 
@@ -3262,12 +4048,12 @@ async function getCurrentUser() {
                 .getUser();
 
 
-        return data?.user ||
-            null;
+        return (
+            data?.user ||
+            null
+        );
 
-    } catch (
-        error
-    ) {
+    } catch (error) {
 
         console.warn(
             "Auth check failed:",
@@ -3282,8 +4068,8 @@ async function getCurrentUser() {
 
 
 /* =========================================================
-   47. EXPORT API
-   ========================================================= */
+   49. PUBLIC API
+========================================================= */
 
 window.PoliglotaLesson = {
 
@@ -3291,11 +4077,14 @@ window.PoliglotaLesson = {
 
     loadLessons,
 
+    loadMedia,
+
     openLesson,
 
     openLessonCard,
 
-    closeLessonCard,
+    closeLessonCard:
+        closeFocusedCard,
 
     createLessonCard,
 
@@ -3305,24 +4094,17 @@ window.PoliglotaLesson = {
 
     uploadMedia,
 
-    deleteMedia,
-
     assignMediaToCard,
-
-    loadMedia,
 
     getCurrentUser
 
 };
 
 
-/* =========================================================
-   48. DEBUG
-   ========================================================= */
-
 window.poliglotaState =
     state;
 
+
 console.log(
-    "Academia Poliglota lesson card system loaded."
+    "Academia Poliglota — Lesson Card System loaded."
 );
