@@ -1,331 +1,252 @@
-const slideImage = document.getElementById("slide-image");
-const slideContainer = document.querySelector(".slide-container");
-const homeBtn = document.getElementById("home-btn");
-const prevBtn = document.getElementById("prev-btn");
-const nextBtn = document.getElementById("next-btn");
-document.addEventListener("DOMContentLoaded", () => {
-    });
-const studentDropdownLinks = document.querySelectorAll(
-    "#students-book-dropdown .unit-item > a"
-);
-const activityDropdownLinks = document.querySelectorAll("#activity-book-dropdown a");
-const dropdownBtns = document.querySelectorAll(".dropdown-btn");
+/* ============================================================
+   PRESENTATION PLUS
+   LESSON CARD VERSION
+============================================================ */
 
-const audioBtn = document.getElementById("audio-btn");
-const audioListContainer = document.getElementById("audio-list-container");
-const audioPlayer = document.getElementById("slide-audio");
-const audioSource = document.getElementById("audio-source");
-const hideAudioBtn = document.getElementById("hide-audio-btn");
 
-// Show audio player and hide button
+/* ============================================================
+   BASIC ELEMENTS
+============================================================ */
+
+const slideImage =
+    document.getElementById("slide-image");
+
+const slideContainer =
+    document.querySelector(".slide-container");
+
+const homeBtn =
+    document.getElementById("home-btn");
+
+const prevBtn =
+    document.getElementById("prev-btn");
+
+const nextBtn =
+    document.getElementById("next-btn");
+
+const lessonCardsContainer =
+    document.getElementById("lesson-cards-container");
+
+const viewerTitle =
+    document.getElementById("viewer-title");
+
+const viewerSubtitle =
+    document.getElementById("viewer-subtitle");
+
+
+/* ============================================================
+   NAVIGATION ELEMENTS
+============================================================ */
+
+const studentDropdownLinks =
+    document.querySelectorAll(
+        "#students-book-dropdown .unit-item > a"
+    );
+
+const activityDropdownLinks =
+    document.querySelectorAll(
+        "#activity-book-dropdown a"
+    );
+
+const dropdownBtns =
+    document.querySelectorAll(".dropdown-btn");
+
+
+/* ============================================================
+   AUDIO
+============================================================ */
+
+const audioBtn =
+    document.getElementById("audio-btn");
+
+const audioListContainer =
+    document.getElementById("audio-list-container");
+
+const audioPlayer =
+    document.getElementById("slide-audio");
+
+const audioSource =
+    document.getElementById("audio-source");
+
+const hideAudioBtn =
+    document.getElementById("hide-audio-btn");
+
+
 function showAudioPlayer() {
-    audioPlayer.style.display = "block";
+
+    audioPlayer.parentElement.style.display = "block";
+
     hideAudioBtn.style.display = "inline-block";
+
 }
 
-// Hide audio player when hide button is clicked
-hideAudioBtn.addEventListener("click", () => {
-    audioPlayer.style.display = "none";
-    hideAudioBtn.style.display = "none";
-});
+
+hideAudioBtn.addEventListener(
+    "click",
+    () => {
+
+        audioPlayer.pause();
+
+        audioPlayer.parentElement.style.display =
+            "none";
+
+        hideAudioBtn.style.display =
+            "none";
+
+    }
+);
+
+
+/* ============================================================
+   MAIN STATE
+============================================================ */
+
 let currentImages = [];
+
 let currentIndex = 0;
+
 let currentScale = 1;
 
-// ==========================
-// SAVE CURRENT PAGE STATE
-// ==========================
-function saveCurrentState(bookType, unit, pageNum) {
-    localStorage.setItem("pptkb1State", JSON.stringify({ bookType, unit, pageNum }));
-}
-// ==========================
-// DROPDOWN TOGGLE
-// ==========================
-dropdownBtns.forEach(btn => {
-    btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const parentDropdown = btn.parentElement;
-        document.querySelectorAll('.dropdown').forEach(d => {
-            if(d !== parentDropdown) d.classList.remove('show');
-        });
-        parentDropdown.classList.toggle('show');
-    });
-});
 
-window.addEventListener("click", (e) => {
+/* ============================================================
+   LESSON STATE
+============================================================ */
 
-    if (
-        e.target.closest(".dropdown") ||
-        e.target.closest(".lesson-dropdown")
-    ) {
-        return;
-    }
-
-    document.querySelectorAll(".dropdown").forEach(d => {
-        d.classList.remove("show");
-    });
-
-    document.querySelectorAll(".lesson-dropdown").forEach(menu => {
-        menu.classList.remove("show");
-    });
-
-});
-
-// ==========================
-// LOAD IMAGE FUNCTION
-// ==========================
-function autoFitImage() {
-    const containerWidth = slideContainer.clientWidth;
-    const containerHeight = slideContainer.clientHeight;
-    const imgWidth = slideImage.naturalWidth;
-    const imgHeight = slideImage.naturalHeight;
-
-    const scaleX = containerWidth / imgWidth;
-    const scaleY = containerHeight / imgHeight;
-
-    currentScale = Math.min(scaleX, scaleY);
-
-    slideImage.style.width = imgWidth * currentScale + "px";
-    slideImage.style.height = imgHeight * currentScale + "px";
-}
-
-function loadImage(src) {
-
-    slideImage.style.display = "none";
-
-    slideImage.onload = function() {
-        slideImage.style.display = "block";
-        autoFitImage();
-        resizeEditCanvas();
-    };
-
-    slideImage.onerror = function() {
-        console.error("Failed to load image:", src);
-        slideImage.style.display = "none";
-    };
-
-    slideImage.src = src;
-}
-
-// ==========================
-// HOME PAGE
-// ==========================
-function loadHome() {
-    currentImages = [];
-    currentIndex = 0;
-    loadImage("images/homepage.jpg");
-    prevBtn.style.display = "none";
-    nextBtn.style.display = "none";
-}
-
-// ==========================
-// STUDENT BOOK
-// ==========================
-function loadStudentUnit(unitNumber) {
-    currentImages = [];
-    currentIndex = 0;
-
-    const folderName = "unit_" + unitNumber;
-    const basePath = `images/student-book-pages/${folderName}/`;
-
-    let pageNumbers = [];
-    switch(unitNumber) {
-        case "1": pageNumbers = [10,11,12,13,14,15,16,17,18]; break;
-        case "2": pageNumbers = [12,13,14,15,16,17]; break;
-        case "3": pageNumbers = [18,19,20,21,22,23,24,25]; break;
-        case "4": pageNumbers = [26,27,28,29,30,31]; break;
-        case "5": pageNumbers = [32,33,34,35,36,37]; break;
-        case "6": pageNumbers = [38,39,40,41,42,43,44,45]; break;
-        case "7": pageNumbers = [46,47,48,49,50,51]; break;
-        case "8": pageNumbers = [52,53,54,55,56,57]; break;
-        case "9": pageNumbers = [58,59,60,61,62,63,64,65]; break;
-        case "10": pageNumbers = [66,67,68,69,70,71]; break;
-        case "11": pageNumbers = [72,73,74,75,76,77]; break;
-        case "12": pageNumbers = [78,79,80,81,82,83,84,85]; break;
-        default: pageNumbers = []; break;
-    }
-
-    pageNumbers.forEach(num => {
-        currentImages.push(basePath + "page" + num + ".jpg");
-    });
-
-    loadImage(currentImages[currentIndex]);
-    prevBtn.style.display = "block";
-    nextBtn.style.display = "block";
-}
-
-// ==========================
-// ACTIVITY BOOK
-// ==========================
-function loadActivityUnit(unitNumber) {
-    currentImages = [];
-    currentIndex = 0;
-
-    const folderName = "unit_" + unitNumber;
-    const basePath = `images/activity-book-pages/${folderName}/`;
-
-    let pageNumbers = [];
-    switch(unitNumber) {
-        case "1": pageNumbers = [106,107]; break;
-        case "2": pageNumbers = [108,109]; break;
-        case "3": pageNumbers = [110,111]; break;
-        case "4": pageNumbers = [112,113]; break;
-        case "5": pageNumbers = [114,115]; break;
-        case "6": pageNumbers = [116,117]; break;
-        case "7": pageNumbers = [118,119]; break;
-        case "8": pageNumbers = [120,121]; break;
-        case "9": pageNumbers = [122,123]; break;
-        case "10": pageNumbers = [124,125]; break;
-        case "11": pageNumbers = [126,127]; break;
-        case "12": pageNumbers = [128,129]; break;
-        default: pageNumbers = []; break;
-    }
-
-    pageNumbers.forEach(num => {
-        currentImages.push(basePath + "page" + num + ".JPG");
-    });
-
-    if (currentImages.length > 1) {
-        prevBtn.style.display = "block";
-        nextBtn.style.display = "block";
-    } else {
-        prevBtn.style.display = "none";
-        nextBtn.style.display = "none";
-    }
-
-    loadImage(currentImages[currentIndex]);
-}
-
-
-
-
-
-
-// ==========================
-// DROPDOWN EVENTS
-// ==========================
-
-studentDropdownLinks.forEach(link => {
-
-    link.addEventListener("click", (e) => {
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        const unit = link.getAttribute("data-unit");
-
-        // Find the lesson submenu belonging to this unit
-        const lessonMenu = link.parentElement.querySelector(".lesson-dropdown");
-
-        if (!lessonMenu) {
-            console.log("No lesson dropdown found for Unit " + unit);
-            return;
-        }
-
-        // Close other lesson menus
-        document.querySelectorAll(".lesson-dropdown").forEach(menu => {
-            if (menu !== lessonMenu) {
-                menu.classList.remove("show");
-            }
-        });
-
-        // Toggle this unit's lesson menu
-        lessonMenu.classList.toggle("show");
-
-    });
-
-});
-// ==========================
-// GET LESSON PAGES
-// ==========================
-
-function getLessonPages(unit, lesson) {
-    // ============================================================
-// LESSON CARD SYSTEM
-// ============================================================
-
-// Number of cards shown in every lesson.
-// This can later come from Supabase.
-const LESSON_CARD_COUNT = 8;
-
-// Current lesson information
 let currentLessonUnit = null;
+
 let currentLessonNumber = null;
 
-// Generate lesson cards dynamically
-function generateLessonCards() {
+let currentLessonCards = [];
 
-    const lessonCards = [];
+let isLessonCardMode = false;
 
-    for (let i = 1; i <= LESSON_CARD_COUNT; i++) {
 
-        lessonCards.push({
+/* ============================================================
+   LESSON CARD COUNT
+============================================================ */
+
+const DEFAULT_LESSON_CARD_COUNT = 8;
+
+
+/* ============================================================
+   GENERATE LESSON CARDS
+============================================================ */
+
+function generateLessonCards(
+    count = DEFAULT_LESSON_CARD_COUNT
+) {
+
+    const cards = [];
+
+    for (let i = 1; i <= count; i++) {
+
+        cards.push({
+
             id: i,
-            title: `Lesson Part ${i}`,
-            type: "empty",
-            content: null
+
+            title:
+                `Lesson Part ${i}`,
+
+            type:
+                "empty",
+
+            content:
+                null
+
         });
 
     }
 
-    return lessonCards;
+    return cards;
+
 }
 
 
-// Current lesson cards
-let currentLessonCards = [];
+/* ============================================================
+   LOAD LESSON
+============================================================ */
 
-
-// Load a lesson
 function loadLessonCards(unit, lesson) {
 
-    currentLessonUnit = unit;
-    currentLessonNumber = lesson;
+    currentLessonUnit =
+        String(unit);
 
-    // Generate the cards
-    currentLessonCards = generateLessonCards();
+    currentLessonNumber =
+        String(lesson);
 
-    console.log(
-        `Loading Unit ${unit}, Lesson ${lesson}`
+    currentLessonCards =
+        generateLessonCards();
+
+    isLessonCardMode = true;
+
+
+    /* -----------------------------------------
+       Hide old image
+    ----------------------------------------- */
+
+    slideImage.style.display =
+        "none";
+
+
+    /* -----------------------------------------
+       Hide navigation
+    ----------------------------------------- */
+
+    prevBtn.style.display =
+        "none";
+
+    nextBtn.style.display =
+        "none";
+
+
+    /* -----------------------------------------
+       Show cards
+    ----------------------------------------- */
+
+    lessonCardsContainer.classList.add(
+        "active"
     );
 
-    console.log(
-        "Generated lesson cards:",
-        currentLessonCards
-    );
+
+    /* -----------------------------------------
+       Header
+    ----------------------------------------- */
+
+    viewerTitle.textContent =
+        `Unit ${unit} — Lesson ${lesson}`;
+
+    viewerSubtitle.textContent =
+        "Choose a lesson part";
+
+
+    /* -----------------------------------------
+       Render
+    ----------------------------------------- */
 
     renderLessonCards();
 
 }
-    // ============================================================
-// RENDER LESSON CARDS
-// ============================================================
+
+
+/* ============================================================
+   RENDER LESSON CARDS
+============================================================ */
 
 function renderLessonCards() {
 
-    const container =
-        document.getElementById("lesson-cards-container");
+    lessonCardsContainer.innerHTML = "";
 
-    if (!container) {
-
-        console.error(
-            "lesson-cards-container was not found."
-        );
-
-        return;
-    }
-
-    // Clear previous lesson
-    container.innerHTML = "";
 
     currentLessonCards.forEach(card => {
 
         const cardElement =
             document.createElement("div");
 
-        cardElement.className = "lesson-card";
+        cardElement.className =
+            "lesson-card";
 
-        cardElement.dataset.cardId = card.id;
+        cardElement.dataset.cardId =
+            card.id;
+
 
         cardElement.innerHTML = `
 
@@ -338,14 +259,15 @@ function renderLessonCards() {
                     </div>
 
                     <h3>
-                        ${card.title}
+                        ${escapeHTML(card.title)}
                     </h3>
 
                     <span class="lesson-card-open">
-                        Open
+                        Press to open
                     </span>
 
                 </div>
+
 
                 <div class="lesson-card-content">
 
@@ -356,6 +278,7 @@ function renderLessonCards() {
                         ×
                     </button>
 
+
                     <div class="lesson-card-expanded-content">
 
                         ${renderLessonCardContent(card)}
@@ -365,1212 +288,3346 @@ function renderLessonCards() {
                 </div>
 
             </div>
+
         `;
 
-        // Open card
-        cardElement.addEventListener("click", () => {
 
-            openLessonCard(cardElement);
+        /* -------------------------------------
+           OPEN
+        ------------------------------------- */
 
-        });
+        cardElement.addEventListener(
+            "click",
+            () => {
 
-        // Close card
-        const closeButton =
-            cardElement.querySelector(
-                ".lesson-card-close"
-            );
+                openLessonCard(
+                    cardElement
+                );
 
-        closeButton.addEventListener("click", (e) => {
-
-            e.stopPropagation();
-
-            closeLessonCard(cardElement);
-
-        });
-
-        container.appendChild(cardElement);
-
-    });
-
-}
-    // ============================================================
-// RENDER LESSON CARDS
-// ============================================================
-
-function renderLessonCards() {
-
-    const container =
-        document.getElementById("lesson-cards-container");
-
-    if (!container) {
-
-        console.error(
-            "lesson-cards-container was not found."
+            }
         );
 
-        return;
-    }
 
-    // Clear previous lesson
-    container.innerHTML = "";
+        /* -------------------------------------
+           CLOSE
+        ------------------------------------- */
 
-    currentLessonCards.forEach(card => {
-
-        const cardElement =
-            document.createElement("div");
-
-        cardElement.className = "lesson-card";
-
-        cardElement.dataset.cardId = card.id;
-
-        cardElement.innerHTML = `
-
-            <div class="lesson-card-inner">
-
-                <div class="lesson-card-front">
-
-                    <div class="lesson-card-number">
-                        ${card.id}
-                    </div>
-
-                    <h3>
-                        ${card.title}
-                    </h3>
-
-                    <span class="lesson-card-open">
-                        Open
-                    </span>
-
-                </div>
-
-                <div class="lesson-card-content">
-
-                    <button
-                        class="lesson-card-close"
-                        type="button"
-                    >
-                        ×
-                    </button>
-
-                    <div class="lesson-card-expanded-content">
-
-                        ${renderLessonCardContent(card)}
-
-                    </div>
-
-                </div>
-
-            </div>
-        `;
-
-        // Open card
-        cardElement.addEventListener("click", () => {
-
-            openLessonCard(cardElement);
-
-        });
-
-        // Close card
         const closeButton =
             cardElement.querySelector(
                 ".lesson-card-close"
             );
 
-        closeButton.addEventListener("click", (e) => {
 
-            e.stopPropagation();
+        closeButton.addEventListener(
+            "click",
+            event => {
 
-            closeLessonCard(cardElement);
+                event.stopPropagation();
 
-        });
+                closeLessonCard(
+                    cardElement
+                );
 
-        container.appendChild(cardElement);
+            }
+        );
+
+
+        lessonCardsContainer.appendChild(
+            cardElement
+        );
 
     });
 
 }
-    // ============================================================
-// OPEN / CLOSE LESSON CARD
-// ============================================================
+
+
+/* ============================================================
+   RENDER CARD CONTENT
+============================================================ */
+
+function renderLessonCardContent(card) {
+
+
+    /* -----------------------------------------
+       EMPTY
+    ----------------------------------------- */
+
+    if (
+        !card.content ||
+        card.type === "empty"
+    ) {
+
+        return `
+
+            <div class="lesson-card-placeholder">
+
+                <div class="placeholder-icon">
+                    +
+                </div>
+
+                <h3>
+                    ${escapeHTML(card.title)}
+                </h3>
+
+                <p>
+                    Lesson content will be loaded here.
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+
+    /* -----------------------------------------
+       TEXT
+    ----------------------------------------- */
+
+    if (card.type === "text") {
+
+        return `
+
+            <div class="lesson-text-content">
+
+                ${card.content}
+
+            </div>
+
+        `;
+
+    }
+
+
+    /* -----------------------------------------
+       AUDIO
+    ----------------------------------------- */
+
+    if (card.type === "audio") {
+
+        return `
+
+            <div class="lesson-audio-content">
+
+                <h2>
+                    ${escapeHTML(card.title)}
+                </h2>
+
+                <audio controls>
+
+                    <source
+                        src="${escapeAttribute(card.content)}"
+                        type="audio/mpeg"
+                    >
+
+                    Your browser does not support audio.
+
+                </audio>
+
+            </div>
+
+        `;
+
+    }
+
+
+    /* -----------------------------------------
+       VIDEO
+    ----------------------------------------- */
+
+    if (card.type === "video") {
+
+        return `
+
+            <div class="lesson-video-content">
+
+                <video
+                    controls
+                    playsinline
+                >
+
+                    <source
+                        src="${escapeAttribute(card.content)}"
+                        type="video/mp4"
+                    >
+
+                    Your browser does not support video.
+
+                </video>
+
+            </div>
+
+        `;
+
+    }
+
+
+    /* -----------------------------------------
+       IMAGE
+    ----------------------------------------- */
+
+    if (card.type === "image") {
+
+        return `
+
+            <div class="lesson-image-content">
+
+                <img
+                    src="${escapeAttribute(card.content)}"
+                    alt="${escapeAttribute(card.title)}"
+                >
+
+            </div>
+
+        `;
+
+    }
+
+
+    return `
+
+        <div class="lesson-card-placeholder">
+
+            <p>
+                Content unavailable.
+            </p>
+
+        </div>
+
+    `;
+
+}
+
+
+/* ============================================================
+   OPEN CARD
+============================================================ */
 
 function openLessonCard(cardElement) {
 
-    // Close any other open card
     document
-        .querySelectorAll(".lesson-card.expanded")
+        .querySelectorAll(
+            ".lesson-card.expanded"
+        )
         .forEach(card => {
 
             if (card !== cardElement) {
 
-                card.classList.remove("expanded");
+                card.classList.remove(
+                    "expanded"
+                );
 
             }
 
         });
 
-    cardElement.classList.add("expanded");
+
+    cardElement.classList.add(
+        "expanded"
+    );
 
 }
 
+
+/* ============================================================
+   CLOSE CARD
+============================================================ */
 
 function closeLessonCard(cardElement) {
 
-    cardElement.classList.remove("expanded");
+    cardElement.classList.remove(
+        "expanded"
+    );
 
 }
 
-    const lessonMap = {
 
-        1: {
-            1: [ 6, 7],
-            2: [8, 9],
-            3: [10],
-            4: [11],
-            5: [106,107]
-        },
+/* ============================================================
+   ESCAPE HTML
+============================================================ */
 
-        2: {
-            1: [12, 13],
-            2: [14,15],
-            3: [16],
-            4: [17],
-            5: [108,109]
-        },
-        3: {
-            1: [18, 19],
-            2: [20,21],
-            3: [22,23],
-            4: [24,25],
-            5: [110,111]
-        },
-       4: {
-            1: [26, 27],
-            2: [28,29],
-            3: [30],
-            4: [31],
-            5: [112,113]
-        },
-       5: {
-            1: [32,33],
-            2: [34,35],
-            3: [36],
-            4: [37],
-            5: [114,115]
-        },
-        6: {
-            1: [38,39],
-            2: [40,41],
-            3: [42,43],
-            4: [44,45],
-            5: [116,117]
-        }, 
-         7: {
-            1: [46,47],
-            2: [48,49],
-            3: [50],
-            4: [51],
-            5: [118,119]
-        },   
-          8: {
-            1: [52,53],
-            2: [54,55],
-            3: [56],
-            4: [57],
-            5: [120,121]
-        },   
-          9: {
-            1: [58,59],
-            2: [60,61],
-            3: [62,63],
-            4: [64,65],
-            5: [122,123]
-        },   
-          10: {
-            1: [66,67],
-            2: [68,69],
-            3: [70],
-            4: [71],
-            5: [124,125]
-        },   
-          11: {
-            1: [72,73],
-            2: [74,75],
-            3: [76],
-            4: [77],
-            5: [126,127]
-        },   
-          12: {
-            1: [78,79],
-            2: [80,81],
-            3: [82,83],
-            4: [84,85],
-            5: [128,129]
-        },     
-    };
+function escapeHTML(value) {
 
-    return lessonMap[unit]?.[lesson] || [];
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        value == null ? "" : String(value);
+
+    return div.innerHTML;
+
 }
-// ==========================
-// LESSON MENU
-// ==========================
-const lessonDropdownLinks = document.querySelectorAll(".lesson-dropdown a");
 
-lessonDropdownLinks.forEach(link => {
 
-    link.addEventListener("click", (e) => {
+function escapeAttribute(value) {
 
-        e.preventDefault();
-        e.stopPropagation();
+    return escapeHTML(value)
+        .replace(/"/g, "&quot;");
 
-        const unit = link.getAttribute("data-unit");
-        const lesson = link.getAttribute("data-lesson");
+}
 
-        console.log("Opening Unit:", unit, "Lesson:", lesson);
 
-        // ==========================
-        // NEW LESSON FOLDER PATH
-        // ==========================
+/* ============================================================
+   SAVE STATE
+============================================================ */
 
-        const lessonPath =
-            `images/student-book-pages/unit_${unit}/lesson_${lesson}/`;
-
-        /*
-         * IMPORTANT:
-         * JavaScript cannot automatically discover the files
-         * inside a folder on Vercel/server hosting.
-         *
-         * Therefore, we define which pages belong to each lesson.
-         */
-
-        // ============================================================
-// OPEN LESSON AS INTERACTIVE CARDS
-// ============================================================
-
-loadLessonCards(unit, lesson);
-
-// Hide image navigation while using lesson cards
-prevBtn.style.display = "none";
-nextBtn.style.display = "none";
-
-// Hide the current slide image
-slideImage.style.display = "none";
-
-// Save lesson state
-saveCurrentState(
-    "student",
+function saveCurrentState(
+    bookType,
     unit,
-    lesson
+    pageNum
+) {
+
+    localStorage.setItem(
+        "pptkb1State",
+        JSON.stringify({
+
+            bookType,
+            unit,
+            pageNum
+
+        })
+    );
+
+}
+
+
+/* ============================================================
+   DROPDOWN TOGGLE
+============================================================ */
+
+dropdownBtns.forEach(btn => {
+
+    btn.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            const parentDropdown =
+                btn.parentElement;
+
+
+            document
+                .querySelectorAll(
+                    ".dropdown"
+                )
+                .forEach(dropdown => {
+
+                    if (
+                        dropdown !==
+                        parentDropdown
+                    ) {
+
+                        dropdown.classList.remove(
+                            "show"
+                        );
+
+                    }
+
+                });
+
+
+            parentDropdown.classList.toggle(
+                "show"
+            );
+
+        }
+    );
+
+});
+
+
+/* ============================================================
+   CLOSE DROPDOWNS
+============================================================ */
+
+window.addEventListener(
+    "click",
+    event => {
+
+        if (
+            event.target.closest(
+                ".dropdown"
+            ) ||
+            event.target.closest(
+                ".lesson-dropdown"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        document
+            .querySelectorAll(
+                ".dropdown"
+            )
+            .forEach(dropdown => {
+
+                dropdown.classList.remove(
+                    "show"
+                );
+
+            });
+
+
+        document
+            .querySelectorAll(
+                ".lesson-dropdown"
+            )
+            .forEach(menu => {
+
+                menu.classList.remove(
+                    "show"
+                );
+
+            });
+
+    }
 );
 
-        // Save current state
-        saveCurrentState(
-            "student",
-            unit,
-            lessonPages[0]
+
+/* ============================================================
+   IMAGE FIT
+============================================================ */
+
+function autoFitImage() {
+
+    if (
+        !slideImage.naturalWidth ||
+        !slideImage.naturalHeight
+    ) {
+
+        return;
+
+    }
+
+
+    const containerWidth =
+        slideContainer.clientWidth;
+
+    const containerHeight =
+        slideContainer.clientHeight;
+
+    const imgWidth =
+        slideImage.naturalWidth;
+
+    const imgHeight =
+        slideImage.naturalHeight;
+
+
+    const scaleX =
+        containerWidth / imgWidth;
+
+    const scaleY =
+        containerHeight / imgHeight;
+
+
+    currentScale =
+        Math.min(
+            scaleX,
+            scaleY
         );
 
-        console.log(
-            "Opening:",
+
+    slideImage.style.width =
+        imgWidth *
+        currentScale +
+        "px";
+
+
+    slideImage.style.height =
+        imgHeight *
+        currentScale +
+        "px";
+
+}
+
+
+/* ============================================================
+   LOAD IMAGE
+============================================================ */
+
+function loadImage(src) {
+
+    if (!src) {
+
+        return;
+
+    }
+
+
+    isLessonCardMode =
+        false;
+
+
+    lessonCardsContainer.classList.remove(
+        "active"
+    );
+
+
+    slideImage.style.display =
+        "none";
+
+
+    slideImage.onload =
+        function() {
+
+            slideImage.style.display =
+                "block";
+
+            autoFitImage();
+
+            resizeEditCanvas();
+
+        };
+
+
+    slideImage.onerror =
+        function() {
+
+            console.error(
+                "Failed to load image:",
+                src
+            );
+
+            slideImage.style.display =
+                "none";
+
+        };
+
+
+    slideImage.src =
+        src;
+
+}
+
+
+/* ============================================================
+   HOME
+============================================================ */
+
+function loadHome() {
+
+    isLessonCardMode =
+        false;
+
+    currentLessonUnit =
+        null;
+
+    currentLessonNumber =
+        null;
+
+
+    lessonCardsContainer.classList.remove(
+        "active"
+    );
+
+
+    currentImages =
+        [];
+
+    currentIndex =
+        0;
+
+
+    viewerTitle.textContent =
+        "Presentation Plus";
+
+    viewerSubtitle.textContent =
+        "Select a lesson to begin";
+
+
+    loadImage(
+        "images/homepage.jpg"
+    );
+
+
+    prevBtn.style.display =
+        "none";
+
+    nextBtn.style.display =
+        "none";
+
+}
+
+
+/* ============================================================
+   STUDENT BOOK UNIT
+============================================================ */
+
+function loadStudentUnit(unitNumber) {
+
+    isLessonCardMode =
+        false;
+
+    lessonCardsContainer.classList.remove(
+        "active"
+    );
+
+
+    currentImages =
+        [];
+
+    currentIndex =
+        0;
+
+
+    const folderName =
+        "unit_" +
+        unitNumber;
+
+    const basePath =
+        `images/student-book-pages/${folderName}/`;
+
+
+    let pageNumbers = [];
+
+
+    switch (String(unitNumber)) {
+
+        case "1":
+            pageNumbers =
+                [10,11,12,13,14,15,16,17,18];
+            break;
+
+        case "2":
+            pageNumbers =
+                [12,13,14,15,16,17];
+            break;
+
+        case "3":
+            pageNumbers =
+                [18,19,20,21,22,23,24,25];
+            break;
+
+        case "4":
+            pageNumbers =
+                [26,27,28,29,30,31];
+            break;
+
+        case "5":
+            pageNumbers =
+                [32,33,34,35,36,37];
+            break;
+
+        case "6":
+            pageNumbers =
+                [38,39,40,41,42,43,44,45];
+            break;
+
+        case "7":
+            pageNumbers =
+                [46,47,48,49,50,51];
+            break;
+
+        case "8":
+            pageNumbers =
+                [52,53,54,55,56,57];
+            break;
+
+        case "9":
+            pageNumbers =
+                [58,59,60,61,62,63,64,65];
+            break;
+
+        case "10":
+            pageNumbers =
+                [66,67,68,69,70,71];
+            break;
+
+        case "11":
+            pageNumbers =
+                [72,73,74,75,76,77];
+            break;
+
+        case "12":
+            pageNumbers =
+                [78,79,80,81,82,83,84,85];
+            break;
+
+    }
+
+
+    pageNumbers.forEach(num => {
+
+        currentImages.push(
+            basePath +
+            "page" +
+            num +
+            ".jpg"
+        );
+
+    });
+
+
+    if (currentImages.length) {
+
+        loadImage(
             currentImages[currentIndex]
         );
 
-        // Close lesson menus
-        document.querySelectorAll(".lesson-dropdown").forEach(menu => {
-            menu.classList.remove("show");
-        });
-
-    });
-
-});
-
-
-activityDropdownLinks.forEach(link => {
-    link.addEventListener("click", (e) => {
-        e.preventDefault();
-        const unit = link.getAttribute("data-unit");
-        loadActivityUnit(unit);
-        // Save state
-        saveCurrentState(
-            "activity",
-            unit,
-            parseInt(currentImages[currentIndex].match(/page(\d+)/)[1])
-        );
-    });
-});
-
-// ==========================
-// NAVIGATION
-// ==========================
-prevBtn.addEventListener("click", () => {
-    if (currentIndex > 0) {
-        currentIndex--;
-        loadImage(currentImages[currentIndex]);
-         // Save state
-        saveCurrentState(
-            currentImages[currentIndex].includes("student-book-pages") ? "student" : "activity",
-            currentImages[currentIndex].match(/unit_(\d+)/)[1],
-            currentImages[currentIndex].match(/page(\d+)/)[1]
-        );
-    }
-});
-
-nextBtn.addEventListener("click", () => {
-    if (currentIndex < currentImages.length - 1) {
-        currentIndex++;
-        loadImage(currentImages[currentIndex]);
-         // Save state
-        saveCurrentState(
-            currentImages[currentIndex].includes("student-book-pages") ? "student" : "activity",
-            currentImages[currentIndex].match(/unit_(\d+)/)[1],
-            currentImages[currentIndex].match(/page(\d+)/)[1]
-        );
-    }
-});
-
-// ==========================
-// ZOOM SYSTEM
-// ==========================
-
-// Minimum and maximum zoom
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 5;
-
-// Apply zoom ONLY to the slide image
-function applyZoom() {
-
-    if (!slideImage.naturalWidth || !slideImage.naturalHeight) {
-        return;
     }
 
-    slideImage.style.width =
-        (slideImage.naturalWidth * currentScale) + "px";
 
-    slideImage.style.height =
-        (slideImage.naturalHeight * currentScale) + "px";
+    prevBtn.style.display =
+        "block";
 
-    resizeEditCanvas();
+    nextBtn.style.display =
+        "block";
+
+
+    viewerTitle.textContent =
+        `Student Book — Unit ${unitNumber}`;
+
+    viewerSubtitle.textContent =
+        "Student Book pages";
+
 }
 
 
-// ==========================
-// COMPUTER — CTRL + MOUSE WHEEL
-// ==========================
+/* ============================================================
+   ACTIVITY BOOK UNIT
+============================================================ */
 
-slideContainer.addEventListener("wheel", function(e) {
+function loadActivityUnit(unitNumber) {
 
-    if (!e.ctrlKey) return;
+    isLessonCardMode =
+        false;
 
-    e.preventDefault();
+    lessonCardsContainer.classList.remove(
+        "active"
+    );
 
-    if (e.deltaY < 0) {
 
-        currentScale += 0.1;
+    currentImages =
+        [];
+
+    currentIndex =
+        0;
+
+
+    const folderName =
+        "unit_" +
+        unitNumber;
+
+    const basePath =
+        `images/activity-book-pages/${folderName}/`;
+
+
+    let pageNumbers = [];
+
+
+    switch (String(unitNumber)) {
+
+        case "1":
+            pageNumbers =
+                [106,107];
+            break;
+
+        case "2":
+            pageNumbers =
+                [108,109];
+            break;
+
+        case "3":
+            pageNumbers =
+                [110,111];
+            break;
+
+        case "4":
+            pageNumbers =
+                [112,113];
+            break;
+
+        case "5":
+            pageNumbers =
+                [114,115];
+            break;
+
+        case "6":
+            pageNumbers =
+                [116,117];
+            break;
+
+        case "7":
+            pageNumbers =
+                [118,119];
+            break;
+
+        case "8":
+            pageNumbers =
+                [120,121];
+            break;
+
+        case "9":
+            pageNumbers =
+                [122,123];
+            break;
+
+        case "10":
+            pageNumbers =
+                [124,125];
+            break;
+
+        case "11":
+            pageNumbers =
+                [126,127];
+            break;
+
+        case "12":
+            pageNumbers =
+                [128,129];
+            break;
+
+    }
+
+
+    pageNumbers.forEach(num => {
+
+        currentImages.push(
+            basePath +
+            "page" +
+            num +
+            ".JPG"
+        );
+
+    });
+
+
+    if (currentImages.length) {
+
+        loadImage(
+            currentImages[currentIndex]
+        );
+
+    }
+
+
+    if (currentImages.length > 1) {
+
+        prevBtn.style.display =
+            "block";
+
+        nextBtn.style.display =
+            "block";
 
     } else {
 
-        currentScale -= 0.1;
+        prevBtn.style.display =
+            "none";
+
+        nextBtn.style.display =
+            "none";
+
     }
 
-    currentScale = Math.max(
-        MIN_ZOOM,
-        Math.min(MAX_ZOOM, currentScale)
+
+    viewerTitle.textContent =
+        `Activity Book — Unit ${unitNumber}`;
+
+    viewerSubtitle.textContent =
+        "Activity Book pages";
+
+}
+
+
+/* ============================================================
+   STUDENT UNIT CLICK
+============================================================ */
+
+studentDropdownLinks.forEach(link => {
+
+    link.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+
+            event.stopPropagation();
+
+
+            const unit =
+                link.getAttribute(
+                    "data-unit"
+                );
+
+
+            const lessonMenu =
+                link.parentElement.querySelector(
+                    ".lesson-dropdown"
+                );
+
+
+            if (!lessonMenu) {
+
+                return;
+
+            }
+
+
+            document
+                .querySelectorAll(
+                    ".lesson-dropdown"
+                )
+                .forEach(menu => {
+
+                    if (
+                        menu !==
+                        lessonMenu
+                    ) {
+
+                        menu.classList.remove(
+                            "show"
+                        );
+
+                    }
+
+                });
+
+
+            lessonMenu.classList.toggle(
+                "show"
+            );
+
+        }
     );
 
-    applyZoom();
-
-}, { passive: false });
+});
 
 
-// ==========================
-// ANDROID / TOUCH — PINCH ZOOM
-// ==========================
+/* ============================================================
+   LESSON LINKS
+============================================================ */
+
+const lessonDropdownLinks =
+    document.querySelectorAll(
+        ".lesson-dropdown a"
+    );
+
+
+lessonDropdownLinks.forEach(link => {
+
+    link.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+
+            event.stopPropagation();
+
+
+            const unit =
+                link.getAttribute(
+                    "data-unit"
+                );
+
+            const lesson =
+                link.getAttribute(
+                    "data-lesson"
+                );
+
+
+            console.log(
+                "Opening Unit:",
+                unit,
+                "Lesson:",
+                lesson
+            );
+
+
+            /* -----------------------------------
+               NEW CARD SYSTEM
+            ----------------------------------- */
+
+            loadLessonCards(
+                unit,
+                lesson
+            );
+
+
+            /* -----------------------------------
+               SAVE LESSON STATE
+            ----------------------------------- */
+
+            saveCurrentState(
+                "lesson",
+                unit,
+                lesson
+            );
+
+
+            /* -----------------------------------
+               CLOSE MENUS
+            ----------------------------------- */
+
+            document
+                .querySelectorAll(
+                    ".lesson-dropdown"
+                )
+                .forEach(menu => {
+
+                    menu.classList.remove(
+                        "show"
+                    );
+
+                });
+
+        }
+    );
+
+});
+
+
+/* ============================================================
+   ACTIVITY LINKS
+============================================================ */
+
+activityDropdownLinks.forEach(link => {
+
+    link.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+
+            event.stopPropagation();
+
+
+            const unit =
+                link.getAttribute(
+                    "data-unit"
+                );
+
+
+            loadActivityUnit(
+                unit
+            );
+
+
+            if (
+                currentImages.length
+            ) {
+
+                const match =
+                    currentImages[
+                        currentIndex
+                    ].match(
+                        /page(\d+)/i
+                    );
+
+
+                if (match) {
+
+                    saveCurrentState(
+                        "activity",
+                        unit,
+                        parseInt(
+                            match[1]
+                        )
+                    );
+
+                }
+
+            }
+
+        }
+    );
+
+});
+
+
+/* ============================================================
+   PREVIOUS
+============================================================ */
+
+prevBtn.addEventListener(
+    "click",
+    () => {
+
+        if (isLessonCardMode) {
+
+            return;
+
+        }
+
+
+        if (
+            currentIndex > 0
+        ) {
+
+            currentIndex--;
+
+            loadImage(
+                currentImages[
+                    currentIndex
+                ]
+            );
+
+
+            saveImageState();
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   NEXT
+============================================================ */
+
+nextBtn.addEventListener(
+    "click",
+    () => {
+
+        if (isLessonCardMode) {
+
+            return;
+
+        }
+
+
+        if (
+            currentIndex <
+            currentImages.length - 1
+        ) {
+
+            currentIndex++;
+
+            loadImage(
+                currentImages[
+                    currentIndex
+                ]
+            );
+
+
+            saveImageState();
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   SAVE IMAGE STATE
+============================================================ */
+
+function saveImageState() {
+
+    if (
+        !currentImages.length
+    ) {
+
+        return;
+
+    }
+
+
+    const src =
+        currentImages[
+            currentIndex
+        ];
+
+
+    const unitMatch =
+        src.match(
+            /unit_(\d+)/i
+        );
+
+    const pageMatch =
+        src.match(
+            /page(\d+)/i
+        );
+
+
+    if (
+        !unitMatch ||
+        !pageMatch
+    ) {
+
+        return;
+
+    }
+
+
+    saveCurrentState(
+
+        src.includes(
+            "student-book-pages"
+        )
+            ? "student"
+            : "activity",
+
+        unitMatch[1],
+
+        pageMatch[1]
+
+    );
+
+}
+
+
+/* ============================================================
+   ZOOM
+============================================================ */
+
+const MIN_ZOOM = 0.1;
+
+const MAX_ZOOM = 5;
+
+
+function applyZoom() {
+
+    if (
+        !slideImage.naturalWidth ||
+        !slideImage.naturalHeight
+    ) {
+
+        return;
+
+    }
+
+
+    slideImage.style.width =
+        slideImage.naturalWidth *
+        currentScale +
+        "px";
+
+
+    slideImage.style.height =
+        slideImage.naturalHeight *
+        currentScale +
+        "px";
+
+
+    resizeEditCanvas();
+
+}
+
+
+/* ============================================================
+   CTRL + WHEEL
+============================================================ */
+
+slideContainer.addEventListener(
+    "wheel",
+    event => {
+
+        if (!event.ctrlKey) {
+
+            return;
+
+        }
+
+
+        event.preventDefault();
+
+
+        if (
+            event.deltaY < 0
+        ) {
+
+            currentScale +=
+                0.1;
+
+        } else {
+
+            currentScale -=
+                0.1;
+
+        }
+
+
+        currentScale =
+            Math.max(
+                MIN_ZOOM,
+                Math.min(
+                    MAX_ZOOM,
+                    currentScale
+                )
+            );
+
+
+        applyZoom();
+
+    },
+    {
+        passive: false
+    }
+);
+
+
+/* ============================================================
+   PINCH ZOOM
+============================================================ */
 
 let pinchStartDistance = null;
+
 let pinchStartScale = 1;
 
 
-// Calculate distance between two fingers
-function getTouchDistance(touch1, touch2) {
+function getTouchDistance(
+    touch1,
+    touch2
+) {
 
-    const dx = touch2.clientX - touch1.clientX;
-    const dy = touch2.clientY - touch1.clientY;
+    const dx =
+        touch2.clientX -
+        touch1.clientX;
+
+    const dy =
+        touch2.clientY -
+        touch1.clientY;
+
 
     return Math.sqrt(
-        dx * dx + dy * dy
+        dx * dx +
+        dy * dy
     );
+
 }
 
 
-// Start pinch
-slideContainer.addEventListener("touchstart", function(e) {
+slideContainer.addEventListener(
+    "touchstart",
+    event => {
 
-    if (e.touches.length !== 2) return;
+        if (
+            event.touches.length !==
+            2
+        ) {
 
-    e.preventDefault();
+            return;
 
-    pinchStartDistance = getTouchDistance(
-        e.touches[0],
-        e.touches[1]
-    );
-
-    // Remember the zoom level when the pinch begins
-    pinchStartScale = currentScale;
-
-}, { passive: false });
-
-
-// Continue pinch
-slideContainer.addEventListener("touchmove", function(e) {
-
-    if (e.touches.length !== 2) return;
-
-    e.preventDefault();
-
-    const currentDistance = getTouchDistance(
-        e.touches[0],
-        e.touches[1]
-    );
-
-    if (!pinchStartDistance) return;
-
-    // How much the fingers moved apart/together
-    const scaleChange =
-        currentDistance / pinchStartDistance;
-
-    // Calculate new zoom
-    currentScale =
-        pinchStartScale * scaleChange;
-
-    // Limit zoom
-    currentScale = Math.max(
-        MIN_ZOOM,
-        Math.min(MAX_ZOOM, currentScale)
-    );
-
-    applyZoom();
-
-}, { passive: false });
-
-
-// Finish pinch
-slideContainer.addEventListener("touchend", function(e) {
-
-    if (e.touches.length < 2) {
-
-        pinchStartDistance = null;
-
-        // currentScale is deliberately NOT reset
-        // The zoom remains exactly where the user left it.
-    }
-
-}, { passive: false });
-
-
-// Also handle cancelled touches
-slideContainer.addEventListener("touchcancel", function() {
-
-    pinchStartDistance = null;
-
-}, { passive: false });
-// ==========================
-// HOME BUTTON
-// ==========================
-homeBtn.addEventListener("click", function(e) {
-    e.preventDefault();
-    loadHome();
-});
-
-window.addEventListener("load", () => {
-    const navigationEntries = performance.getEntriesByType("navigation");
-    const isReload = navigationEntries.length > 0 && navigationEntries[0].type === "reload";
-
-    if (isReload) {
-        // Page was refreshed → restore previous state if exists
-        const savedState = localStorage.getItem("pptkb1State");
-        if (savedState) {
-            const { bookType, unit, pageNum } = JSON.parse(savedState);
-            if (bookType === "student") {
-                loadStudentUnit(unit);
-                currentIndex = currentImages.findIndex(src => src.includes(`page${pageNum}.JPG`));
-                if (currentIndex >= 0) loadImage(currentImages[currentIndex]);
-            } else if (bookType === "activity") {
-                loadActivityUnit(unit);
-                currentIndex = currentImages.findIndex(src => src.includes(`page${pageNum}.JPG`));
-                if (currentIndex >= 0) loadImage(currentImages[currentIndex]);
-            }
-        } else {
-            loadHome(); // fallback if nothing saved
         }
-    } else {
-        // First time opening → always Home
+
+
+        event.preventDefault();
+
+
+        pinchStartDistance =
+            getTouchDistance(
+                event.touches[0],
+                event.touches[1]
+            );
+
+
+        pinchStartScale =
+            currentScale;
+
+    },
+    {
+        passive: false
+    }
+);
+
+
+slideContainer.addEventListener(
+    "touchmove",
+    event => {
+
+        if (
+            event.touches.length !==
+            2
+        ) {
+
+            return;
+
+        }
+
+
+        event.preventDefault();
+
+
+        const distance =
+            getTouchDistance(
+                event.touches[0],
+                event.touches[1]
+            );
+
+
+        if (
+            !pinchStartDistance
+        ) {
+
+            return;
+
+        }
+
+
+        const scaleChange =
+            distance /
+            pinchStartDistance;
+
+
+        currentScale =
+            pinchStartScale *
+            scaleChange;
+
+
+        currentScale =
+            Math.max(
+                MIN_ZOOM,
+                Math.min(
+                    MAX_ZOOM,
+                    currentScale
+                )
+            );
+
+
+        applyZoom();
+
+    },
+    {
+        passive: false
+    }
+);
+
+
+slideContainer.addEventListener(
+    "touchend",
+    () => {
+
+        pinchStartDistance =
+            null;
+
+    }
+);
+
+
+slideContainer.addEventListener(
+    "touchcancel",
+    () => {
+
+        pinchStartDistance =
+            null;
+
+    }
+);
+
+
+/* ============================================================
+   HOME BUTTON
+============================================================ */
+
+homeBtn.addEventListener(
+    "click",
+    event => {
+
+        event.preventDefault();
+
         loadHome();
+
     }
-});
+);
 
-// ==========================
-// AUDIO FUNCTIONALITY FOR ALL UNITS
-// ==========================
 
-audioBtn.addEventListener("click", function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-  // TOGGLE: hide if already visible
-    if (audioListContainer.style.display === "flex") {
-        audioListContainer.style.display = "none";
-        return;
-    }
-    // Clear previous buttons
-    audioListContainer.innerHTML = "";
-    audioListContainer.style.display = "flex";
+/* ============================================================
+   AUDIO BUTTON
+============================================================ */
 
-    if (currentImages.length === 0) return;
+audioBtn.addEventListener(
+    "click",
+    event => {
 
-    const pageSrc = currentImages[currentIndex];
+        event.preventDefault();
 
-    // Determine if Student or Activity Book
-    let bookType;
-    if (pageSrc.includes("student-book-pages")) bookType = "student";
-    else if (pageSrc.includes("activity-book-pages")) bookType = "activity";
-    else return;
+        event.stopPropagation();
 
-    // Extract unit number
-    const unitMatch = pageSrc.match(/unit_(\d+)/i);
-    if (!unitMatch) return;
-    const unit = parseInt(unitMatch[1]);
 
-    // Extract page number
-    const pageMatch = pageSrc.match(/page(\d+)/i);
-    if (!pageMatch) return;
-    const pageNum = parseInt(pageMatch[1]);
+        if (
+            audioListContainer.style.display ===
+            "flex"
+        ) {
 
-    // Define audio tracks for all units (Student Book)
-    const studentBookAudioTracks = {
-        1: {8:["page8_Track_1.1"],9:["page9_Track_1.2","page9_Track_1.3"],10:["br2_003_a1_4"]},
-        2: {13:["br2_003_a2_1"],15:["br2_003_a2_2"],16:["br2_003_a2_3"]},
-        3: {19:["br2_003_a3_1"],20:["br2_003_a3_2"],21:["br2_003_a3_3","br2_003_a3_4"],22:["br2_003_a3_5"]},
-        4: {27:["br2_003_a4_1"],28:["br2_003_a4_2"],29:["br2_003_a4_3"],30:["br2_003_a4_4"]},
-        5: {34:["br2_003_a5_1"],35:["br2_003_a5_2","br2_003_a5_3"],36:["br2_003_a5_4","br2_003_a5_5","br2_003_a5_6"]},
-        6: {38:["br2_003_a6_1"],41:["br2_003_a6_2","br2_003_a6_3"],42:["br2_003_a6_4"],43:["br2_003_a6_5"]},
-        7: {47:["br2_003_a7_1"],49:["br2_003_a7_2","br2_003_a7_3"],50:["br2_003_a7_4"]},
-        8: {54:["br2_003_a8_1"],55:["br2_003_a8_2"],56:["br2_003_a8_3"]},
-        9: {59:["br2_003_a9_1"],60:["br2_003_a9_2"],61:["br2_003_a9_3"],62:["br2_003_a9_4"],},
-        10: {67:["br2_003_a10_1"],68:["br2_003_a10_2"],69:["br2_003_a10_3"],70:["br2_003_a10_4"]},
-        11: {72:["br2_003_a11_1"],73:["br2_003_a11_1"],75:["br2_003_a11_2"],76:["br2_003_a11_3","br2_003_a11_4"]},
-        12: {79:["br2_003_a12_1"],81:["br2_003_a12_2"],82:["br2_003_a12_3","br2_003_a12_4","br2_003_a12_5"],83:["br2_003_a12_6"]},
-    };
+            audioListContainer.style.display =
+                "none";
 
-    // Define audio tracks for all units (Activity Book)
-    const activityBookAudioTracks = {
-        1: {4:["page4_Track_02"],15:["br2_003_a2_2"],7:["page7_Track_04"]},
-        2: {13:["br2_003_a2_1"],12:["page12_Track_06"],16:["page16_Track_07"]},
-        3: {18:["page18_Track_08"],19:["page19_Track_09"],20:["page20_Track_10"],21:["page21_Track_11"],22:["page22_Track_12"]},
-        4: {24:["page24_Track_13"],25:["page25_Track_14"],26:["page26_Track_15"],28:["page28_Track_16"]},
-        5: {34:["page34_Track_18"],36:["page36_Track_19"],38:["page38_Track_20"]},
-        6: {40:["page40_Track_21"],41:["page41_Track_22"],42:["page42_Track_23"],46:["page46_Track_24"]},
-        7: {48:["page48_Track_25"],50:["page50_Track_26"],52:["page52_Track_27"]},
-        8: {54:["page54_Track_28"],55:["page55_Track_29"],56:["page56_Track_30","page56_Track_31"],57:["page57_Track_32"],60:["page60_Track_33"],62:["page62_Track_34"]},
-        9: {64:["page64_Track_35"],66:["page66_Track_36"]},
-        10: {70:["page70_Track_37"],72:["page72_Track_38"],73:["page73_Track_39"]},
-        11: {78:["page78_Track_40"],80:["page80_Track_41"]},
-        12: {84:["page84_Track_42"],86:["page86_Track_43"],87:["page87_Track_44"] }
-    };
+            return;
 
-    // Pick the correct track list
-    let tracks;
-    if (bookType === "student") tracks = studentBookAudioTracks[unit] ? studentBookAudioTracks[unit][pageNum] || [] : [];
-    else tracks = activityBookAudioTracks[unit] ? activityBookAudioTracks[unit][pageNum] || [] : [];
-
-    if (tracks.length === 0) {
-        
-        return;
-    }
-
-    // Create buttons for each track
-    tracks.forEach(track => {
-        const btn = document.createElement("button");
-        const trackNumber = track.split("_")[2]; // get number
-        btn.textContent = `Audio ${trackNumber}`;
-
-        btn.addEventListener("click", () => {
-            const folder = bookType === "student" ? "student-book-audios" : "activity-book-audios";
-            audioSource.src = `audios/${folder}/unit_${unit}/${track}.mp3`;
-            audioPlayer.load();
-            showAudioPlayer(); // <-- use the new function
-            audioPlayer.controls = true;
-        });
-
-        audioListContainer.appendChild(btn);
-    });
-});
-
-// Hide audio list if click outside
-window.addEventListener("click", () => {
-    audioListContainer.style.display = "none";
-});
-// ==========================
-// VIDEO FUNCTIONALITY FOR UNIT 1
-// ==========================
-
-const videoBtn = document.querySelector('a img[alt="Videos"]').parentElement;
-const videoListContainer = document.createElement("div");
-videoListContainer.id = "video-list-container";
-document.body.appendChild(videoListContainer);
-
-const videoPlayer = document.getElementById("slide-video");
-const videoSource = document.getElementById("video-source");
-const hideVideoBtn = document.getElementById("hide-video-btn");
-
-// Show video player and hide button
-function showVideoPlayer() {
-    videoPlayer.style.display = "block";
-    hideVideoBtn.style.display = "inline-block";
-}
-
-// Hide video player when hide button is clicked
-hideVideoBtn.addEventListener("click", () => {
-    videoPlayer.pause();
-    videoPlayer.style.display = "none";
-    hideVideoBtn.style.display = "none";
-});
-
-// Double-click to toggle fullscreen
-videoPlayer.addEventListener("dblclick", () => {
-    if (!document.fullscreenElement) {
-        videoPlayer.requestFullscreen().catch(err => console.log(err));
-    } else {
-        document.exitFullscreen();
-    }
-});
-
-// Define videos for Unit 1
-// Define videos for Unit 1
-const unitVideos = {
-    1: {
-        10: ["presentation1"],
-        },
-    3: {
-        24: ["br2_004_v1_1","br2_004_v1_2"],
-        25: ["br2_004_v1_3"]
-    },
-
-    6: {
-        44: ["br2_004_v2_1"],
-        45: ["br2_004_v2_2","br2_004_v2_3"]
-    },
-
-    9: {
-        64: ["br2_004_v3_1", "br2_004_v3_2"],
-        65: ["br2_004_v3_3","br2_004_v3_4","br2_004_v3_5","br2_004_v3_6"]
-    },
-
-    12: {
-        84: ["br2_004_v4_1"],
-        85: ["br2_004_v4_2","br2_004_v4_3","br2_004_v4_4"]
-    }
-};
-// Click event for video icon (Student Book only)
-videoBtn.addEventListener("click", function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-   // TOGGLE: hide if already visible
-    if (videoListContainer.style.display === "flex") {
-        videoListContainer.style.display = "none";
-        return;
-    }
-
-    // Clear previous buttons
-    videoListContainer.innerHTML = "";
-    videoListContainer.style.display = "flex";
-
-    if (currentImages.length === 0) return;
-
-    const pageSrc = currentImages[currentIndex];
-
-    // ONLY show videos for Student Book pages
-    if (!pageSrc.includes("student-book-pages")) return; // <- key change
-
-    // Extract unit number
-    const unitMatch = pageSrc.match(/unit_(\d+)/i);
-    if (!unitMatch) return;
-    const unit = parseInt(unitMatch[1]);
-
-    // Extract page number
-    const pageMatch = pageSrc.match(/page(\d+)/i);
-    if (!pageMatch) return;
-    const pageNum = parseInt(pageMatch[1]);
-
-    // Get videos for this page
-    const tracks = unitVideos[unit] ? unitVideos[unit][pageNum] || [] : [];
-
-    if (tracks.length === 0) return; // <- do nothing if no videos
-
-    tracks.forEach((track, index) => {
-        const btn = document.createElement("button");
-        btn.textContent = `Video ${index + 1}`;
-
-        btn.addEventListener("click", () => {
-            videoSource.src = `video/unit_${unit}/${track}.mp4`;
-            videoPlayer.load();
-            showVideoPlayer();
-        });
-
-        videoListContainer.appendChild(btn);
-    });
-});
-
-// Hide video list if click outside
-window.addEventListener("click", () => {
-    videoListContainer.style.display = "none";
-});
-
-// ==========================
-// DRAWING TARGET SYSTEM (NEW CORE FIX)
-// ==========================
-
-const editCanvas = document.getElementById("edit-canvas");
-const editCtx = editCanvas.getContext("2d");
-
-const whiteboardCanvas = document.getElementById("whiteboard-canvas");
-const whiteboardCtx = whiteboardCanvas.getContext("2d");
-
-// ACTIVE CANVAS
-let drawingCanvas = editCanvas;
-let drawingCtx = editCtx;
-
-// Switch drawing target
-function setDrawingTarget(type) {
-
-    if (type === "whiteboard") {
-        drawingCanvas = whiteboardCanvas;
-        drawingCtx = whiteboardCtx;
-    } else {
-        drawingCanvas = editCanvas;
-        drawingCtx = editCtx;
-    }
-
-    updateCursor();
-}
-
-// ==========================
-// EDIT TRAY TOGGLE SYSTEM
-// ==========================
-
-const editBtn = document.getElementById("edit-btn");
-const editTray = document.getElementById("edit-tray");
-const pencilTool = document.getElementById("pencil-tool");
-
-editBtn.addEventListener("click", function(e) {
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    editTray.style.display =
-        editTray.style.display === "flex"
-            ? "none"
-            : "flex";
-});
-
-// ==========================
-// WHITEBOARD TOGGLE
-// ==========================
-
-const whiteboardBtn = document.getElementById("whiteboard-btn");
-const whiteboard = document.getElementById("whiteboard");
-
-whiteboardBtn.addEventListener("click", function(e) {
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (whiteboard.style.display === "flex") {
-
-        whiteboard.style.display = "none";
-        editTray.style.display = "none";
-
-        setDrawingTarget("slide");
-
-    } else {
-
-        whiteboard.style.display = "flex";
-        editTray.style.display = "flex";
-
-        resizeWhiteboardCanvas();
-
-        setDrawingTarget("whiteboard");
-    }
-});
-
-// Hide whiteboard when changing pages
-studentDropdownLinks.forEach(link => {
-
-    link.addEventListener("click", () => {
-
-        whiteboard.style.display = "none";
-        editTray.style.display = "none";
-
-        setDrawingTarget("slide");
-    });
-});
-
-activityDropdownLinks.forEach(link => {
-
-    link.addEventListener("click", () => {
-
-        whiteboard.style.display = "none";
-        editTray.style.display = "none";
-
-        setDrawingTarget("slide");
-    });
-});
-
-// ==========================
-// TOOL SYSTEM
-// ==========================
-
-let currentTool = null;
-function setTool(tool) {
-
-    // toggle OFF
-    if (currentTool === tool) {
-
-        currentTool = null;
-
-    } else {
-
-        currentTool = tool;
-    }
-
-    updateToolUI();
-    updateCursor();
-}
-const penTool = document.getElementById("pen-tool");
-const eraserTool = document.getElementById("eraser-tool");
-const highlightTool = document.getElementById("highlight-tool");
-const textTool = document.getElementById("text-tool");
-const clearTool = document.getElementById("clear-tool");
-
-pencilTool.addEventListener("click", () => setTool("pencil"));
-penTool.addEventListener("click", () => setTool("pen"));
-eraserTool.addEventListener("click", () => setTool("eraser"));
-highlightTool.addEventListener("click", () => setTool("marker"));
-
-textTool.addEventListener("click", () => setTool("text"));
-function updateToolUI() {
-
-    const tools = {
-        pencil: pencilTool,
-        pen: penTool,
-        eraser: eraserTool,
-        marker: highlightTool,
-        text: textTool
-    };
-
-    Object.values(tools).forEach(btn => {
-        if (btn) btn.classList.remove("active-tool");
-    });
-
-    if (tools[currentTool]) {
-        tools[currentTool].classList.add("active-tool");
-    }
-}
-// ==========================
-// CLEAR CURRENT CANVAS
-// ==========================
-
-clearTool.addEventListener("click", () => {
-
-    const currentCanvasId = drawingCanvas.id;
-
-    // Remove only strokes from current canvas
-    strokes = strokes.filter(stroke => {
-        return stroke.canvas !== currentCanvasId;
-    });
-
-    // Clear actual canvas
-    if (currentCanvasId === "whiteboard-canvas") {
-
-        whiteboardCtx.clearRect(
-            0,
-            0,
-            whiteboardCanvas.width,
-            whiteboardCanvas.height
-        );
-
-    } else {
-
-        editCtx.clearRect(
-            0,
-            0,
-            editCanvas.width,
-            editCanvas.height
-        );
-    }
-
-    redrawStrokes();
-});
-// ==========================
-// CURSOR SYSTEM
-// ==========================
-
-function updateCursor() {
-
-    if (currentTool === "text") {
-
-        drawingCanvas.style.cursor = "text";
-
-        // allow clicking textboxes
-        editCanvas.style.pointerEvents = "none";
-
-    } else {
-
-        editCanvas.style.pointerEvents = "auto";
-
-        if (currentTool === "eraser") {
-            drawingCanvas.style.cursor = "crosshair";
         }
 
-        else if (currentTool === "marker") {
-            drawingCanvas.style.cursor = "cell";
+
+        audioListContainer.innerHTML =
+            "";
+
+        audioListContainer.style.display =
+            "flex";
+
+
+        if (
+            !currentImages.length
+        ) {
+
+            return;
+
+        }
+
+
+        const pageSrc =
+            currentImages[
+                currentIndex
+            ];
+
+
+        let bookType;
+
+
+        if (
+            pageSrc.includes(
+                "student-book-pages"
+            )
+        ) {
+
+            bookType =
+                "student";
+
+        }
+
+        else if (
+            pageSrc.includes(
+                "activity-book-pages"
+            )
+        ) {
+
+            bookType =
+                "activity";
+
         }
 
         else {
-            drawingCanvas.style.cursor = "default";
+
+            return;
+
         }
+
+
+        const unitMatch =
+            pageSrc.match(
+                /unit_(\d+)/i
+            );
+
+
+        const pageMatch =
+            pageSrc.match(
+                /page(\d+)/i
+            );
+
+
+        if (
+            !unitMatch ||
+            !pageMatch
+        ) {
+
+            return;
+
+        }
+
+
+        const unit =
+            parseInt(
+                unitMatch[1]
+            );
+
+        const pageNum =
+            parseInt(
+                pageMatch[1]
+            );
+
+
+        const studentBookAudioTracks = {
+
+            1: {
+                8: [
+                    "page8_Track_1.1"
+                ],
+                9: [
+                    "page9_Track_1.2",
+                    "page9_Track_1.3"
+                ],
+                10: [
+                    "br2_003_a1_4"
+                ]
+            },
+
+            2: {
+                13: [
+                    "br2_003_a2_1"
+                ],
+                15: [
+                    "br2_003_a2_2"
+                ],
+                16: [
+                    "br2_003_a2_3"
+                ]
+            },
+
+            3: {
+                19: [
+                    "br2_003_a3_1"
+                ],
+                20: [
+                    "br2_003_a3_2"
+                ],
+                21: [
+                    "br2_003_a3_3",
+                    "br2_003_a3_4"
+                ],
+                22: [
+                    "br2_003_a3_5"
+                ]
+            },
+
+            4: {
+                27: [
+                    "br2_003_a4_1"
+                ],
+                28: [
+                    "br2_003_a4_2"
+                ],
+                29: [
+                    "br2_003_a4_3"
+                ],
+                30: [
+                    "br2_003_a4_4"
+                ]
+            },
+
+            5: {
+                34: [
+                    "br2_003_a5_1"
+                ],
+                35: [
+                    "br2_003_a5_2",
+                    "br2_003_a5_3"
+                ],
+                36: [
+                    "br2_003_a5_4",
+                    "br2_003_a5_5",
+                    "br2_003_a5_6"
+                ]
+            },
+
+            6: {
+                38: [
+                    "br2_003_a6_1"
+                ],
+                41: [
+                    "br2_003_a6_2",
+                    "br2_003_a6_3"
+                ],
+                42: [
+                    "br2_003_a6_4"
+                ],
+                43: [
+                    "br2_003_a6_5"
+                ]
+            },
+
+            7: {
+                47: [
+                    "br2_003_a7_1"
+                ],
+                49: [
+                    "br2_003_a7_2",
+                    "br2_003_a7_3"
+                ],
+                50: [
+                    "br2_003_a7_4"
+                ]
+            },
+
+            8: {
+                54: [
+                    "br2_003_a8_1"
+                ],
+                55: [
+                    "br2_003_a8_2"
+                ],
+                56: [
+                    "br2_003_a8_3"
+                ]
+            },
+
+            9: {
+                59: [
+                    "br2_003_a9_1"
+                ],
+                60: [
+                    "br2_003_a9_2"
+                ],
+                61: [
+                    "br2_003_a9_3"
+                ],
+                62: [
+                    "br2_003_a9_4"
+                ]
+            },
+
+            10: {
+                67: [
+                    "br2_003_a10_1"
+                ],
+                68: [
+                    "br2_003_a10_2"
+                ],
+                69: [
+                    "br2_003_a10_3"
+                ],
+                70: [
+                    "br2_003_a10_4"
+                ]
+            },
+
+            11: {
+                72: [
+                    "br2_003_a11_1"
+                ],
+                73: [
+                    "br2_003_a11_1"
+                ],
+                75: [
+                    "br2_003_a11_2"
+                ],
+                76: [
+                    "br2_003_a11_3",
+                    "br2_003_a11_4"
+                ]
+            },
+
+            12: {
+                79: [
+                    "br2_003_a12_1"
+                ],
+                81: [
+                    "br2_003_a12_2"
+                ],
+                82: [
+                    "br2_003_a12_3",
+                    "br2_003_a12_4",
+                    "br2_003_a12_5"
+                ],
+                83: [
+                    "br2_003_a12_6"
+                ]
+            }
+
+        };
+
+
+        const activityBookAudioTracks = {
+
+            1: {
+                4: [
+                    "page4_Track_02"
+                ],
+                15: [
+                    "br2_003_a2_2"
+                ],
+                7: [
+                    "page7_Track_04"
+                ]
+            },
+
+            2: {
+                13: [
+                    "br2_003_a2_1"
+                ],
+                12: [
+                    "page12_Track_06"
+                ],
+                16: [
+                    "page16_Track_07"
+                ]
+            },
+
+            3: {
+                18: [
+                    "page18_Track_08"
+                ],
+                19: [
+                    "page19_Track_09"
+                ],
+                20: [
+                    "page20_Track_10"
+                ],
+                21: [
+                    "page21_Track_11"
+                ],
+                22: [
+                    "page22_Track_12"
+                ]
+            },
+
+            4: {
+                24: [
+                    "page24_Track_13"
+                ],
+                25: [
+                    "page25_Track_14"
+                ],
+                26: [
+                    "page26_Track_15"
+                ],
+                28: [
+                    "page28_Track_16"
+                ]
+            },
+
+            5: {
+                34: [
+                    "page34_Track_18"
+                ],
+                36: [
+                    "page36_Track_19"
+                ],
+                38: [
+                    "page38_Track_20"
+                ]
+            },
+
+            6: {
+                40: [
+                    "page40_Track_21"
+                ],
+                41: [
+                    "page41_Track_22"
+                ],
+                42: [
+                    "page42_Track_23"
+                ],
+                46: [
+                    "page46_Track_24"
+                ]
+            },
+
+            7: {
+                48: [
+                    "page48_Track_25"
+                ],
+                50: [
+                    "page50_Track_26"
+                ],
+                52: [
+                    "page52_Track_27"
+                ]
+            },
+
+            8: {
+                54: [
+                    "page54_Track_28"
+                ],
+                55: [
+                    "page55_Track_29"
+                ],
+                56: [
+                    "page56_Track_30",
+                    "page56_Track_31"
+                ],
+                57: [
+                    "page57_Track_32"
+                ],
+                60: [
+                    "page60_Track_33"
+                ],
+                62: [
+                    "page62_Track_34"
+                ]
+            },
+
+            9: {
+                64: [
+                    "page64_Track_35"
+                ],
+                66: [
+                    "page66_Track_36"
+                ]
+            },
+
+            10: {
+                70: [
+                    "page70_Track_37"
+                ],
+                72: [
+                    "page72_Track_38"
+                ],
+                73: [
+                    "page73_Track_39"
+                ]
+            },
+
+            11: {
+                78: [
+                    "page78_Track_40"
+                ],
+                80: [
+                    "page80_Track_41"
+                ]
+            },
+
+            12: {
+                84: [
+                    "page84_Track_42"
+                ],
+                86: [
+                    "page86_Track_43"
+                ],
+                87: [
+                    "page87_Track_44"
+                ]
+            }
+
+        };
+
+
+        let tracks = [];
+
+
+        if (
+            bookType ===
+            "student"
+        ) {
+
+            tracks =
+                studentBookAudioTracks[
+                    unit
+                ]?.[
+                    pageNum
+                ] || [];
+
+        }
+
+        else {
+
+            tracks =
+                activityBookAudioTracks[
+                    unit
+                ]?.[
+                    pageNum
+                ] || [];
+
+        }
+
+
+        if (!tracks.length) {
+
+            audioListContainer.innerHTML =
+                "<span>No audio available.</span>";
+
+            return;
+
+        }
+
+
+        tracks.forEach(
+            (track, index) => {
+
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+
+                button.textContent =
+                    `Audio ${index + 1}`;
+
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        const folder =
+                            bookType ===
+                            "student"
+
+                                ? "student-book-audios"
+
+                                : "activity-book-audios";
+
+
+                        audioSource.src =
+                            `audios/${folder}/unit_${unit}/${track}.mp3`;
+
+
+                        audioPlayer.load();
+
+                        showAudioPlayer();
+
+                        audioPlayer.controls =
+                            true;
+
+                    }
+                );
+
+
+                audioListContainer.appendChild(
+                    button
+                );
+
+            }
+        );
+
     }
+);
+
+
+/* ============================================================
+   HIDE AUDIO LIST
+============================================================ */
+
+window.addEventListener(
+    "click",
+    () => {
+
+        audioListContainer.style.display =
+            "none";
+
+    }
+);
+
+
+/* ============================================================
+   VIDEO SYSTEM
+============================================================ */
+
+const videoBtn =
+    document.getElementById(
+        "video-btn"
+    );
+
+const videoListContainer =
+    document.createElement(
+        "div"
+    );
+
+videoListContainer.id =
+    "video-list-container";
+
+document.body.appendChild(
+    videoListContainer
+);
+
+
+const videoPlayer =
+    document.getElementById(
+        "slide-video"
+    );
+
+const videoSource =
+    document.getElementById(
+        "video-source"
+    );
+
+const hideVideoBtn =
+    document.getElementById(
+        "hide-video-btn"
+    );
+
+
+function showVideoPlayer() {
+
+    videoPlayer.parentElement.style.display =
+        "block";
+
 }
-// ==========================
-// DRAWING ENGINE
-// ==========================
+
+
+hideVideoBtn.addEventListener(
+    "click",
+    () => {
+
+        videoPlayer.pause();
+
+        videoPlayer.parentElement.style.display =
+            "none";
+
+    }
+);
+
+
+videoPlayer.addEventListener(
+    "dblclick",
+    () => {
+
+        if (
+            !document.fullscreenElement
+        ) {
+
+            videoPlayer
+                .requestFullscreen()
+                .catch(
+                    error =>
+                        console.log(
+                            error
+                        )
+                );
+
+        }
+
+        else {
+
+            document.exitFullscreen();
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   VIDEO DATA
+============================================================ */
+
+const unitVideos = {
+
+    1: {
+
+        10: [
+            "presentation1"
+        ]
+
+    },
+
+    3: {
+
+        24: [
+            "br2_004_v1_1",
+            "br2_004_v1_2"
+        ],
+
+        25: [
+            "br2_004_v1_3"
+        ]
+
+    },
+
+    6: {
+
+        44: [
+            "br2_004_v2_1"
+        ],
+
+        45: [
+            "br2_004_v2_2",
+            "br2_004_v2_3"
+        ]
+
+    },
+
+    9: {
+
+        64: [
+            "br2_004_v3_1",
+            "br2_004_v3_2"
+        ],
+
+        65: [
+            "br2_004_v3_3",
+            "br2_004_v3_4",
+            "br2_004_v3_5",
+            "br2_004_v3_6"
+        ]
+
+    },
+
+    12: {
+
+        84: [
+            "br2_004_v4_1"
+        ],
+
+        85: [
+            "br2_004_v4_2",
+            "br2_004_v4_3",
+            "br2_004_v4_4"
+        ]
+
+    }
+
+};
+
+
+/* ============================================================
+   VIDEO BUTTON
+============================================================ */
+
+videoBtn.addEventListener(
+    "click",
+    event => {
+
+        event.preventDefault();
+
+        event.stopPropagation();
+
+
+        if (
+            videoListContainer.style.display ===
+            "flex"
+        ) {
+
+            videoListContainer.style.display =
+                "none";
+
+            return;
+
+        }
+
+
+        videoListContainer.innerHTML =
+            "";
+
+        videoListContainer.style.display =
+            "flex";
+
+
+        if (
+            !currentImages.length
+        ) {
+
+            return;
+
+        }
+
+
+        const pageSrc =
+            currentImages[
+                currentIndex
+            ];
+
+
+        if (
+            !pageSrc.includes(
+                "student-book-pages"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        const unitMatch =
+            pageSrc.match(
+                /unit_(\d+)/i
+            );
+
+        const pageMatch =
+            pageSrc.match(
+                /page(\d+)/i
+            );
+
+
+        if (
+            !unitMatch ||
+            !pageMatch
+        ) {
+
+            return;
+
+        }
+
+
+        const unit =
+            parseInt(
+                unitMatch[1]
+            );
+
+        const pageNum =
+            parseInt(
+                pageMatch[1]
+            );
+
+
+        const tracks =
+            unitVideos[
+                unit
+            ]?.[
+                pageNum
+            ] || [];
+
+
+        if (!tracks.length) {
+
+            return;
+
+        }
+
+
+        tracks.forEach(
+            (track, index) => {
+
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+
+                button.textContent =
+                    `Video ${index + 1}`;
+
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        videoSource.src =
+                            `video/unit_${unit}/${track}.mp4`;
+
+
+                        videoPlayer.load();
+
+                        showVideoPlayer();
+
+                    }
+                );
+
+
+                videoListContainer.appendChild(
+                    button
+                );
+
+            }
+        );
+
+    }
+);
+
+
+/* ============================================================
+   HIDE VIDEO LIST
+============================================================ */
+
+window.addEventListener(
+    "click",
+    () => {
+
+        videoListContainer.style.display =
+            "none";
+
+    }
+);
+
+
+/* ============================================================
+   DRAWING SYSTEM
+============================================================ */
+
+const editCanvas =
+    document.getElementById(
+        "edit-canvas"
+    );
+
+const editCtx =
+    editCanvas.getContext(
+        "2d"
+    );
+
+
+const whiteboardCanvas =
+    document.getElementById(
+        "whiteboard-canvas"
+    );
+
+const whiteboardCtx =
+    whiteboardCanvas.getContext(
+        "2d"
+    );
+
+
+let drawingCanvas =
+    editCanvas;
+
+let drawingCtx =
+    editCtx;
+
+
+function setDrawingTarget(
+    type
+) {
+
+    if (
+        type ===
+        "whiteboard"
+    ) {
+
+        drawingCanvas =
+            whiteboardCanvas;
+
+        drawingCtx =
+            whiteboardCtx;
+
+    }
+
+    else {
+
+        drawingCanvas =
+            editCanvas;
+
+        drawingCtx =
+            editCtx;
+
+    }
+
+
+    updateCursor();
+
+}
+
+
+/* ============================================================
+   EDIT TRAY
+============================================================ */
+
+const editBtn =
+    document.getElementById(
+        "edit-btn"
+    );
+
+const editTray =
+    document.getElementById(
+        "edit-tray"
+    );
+
+const pencilTool =
+    document.getElementById(
+        "pencil-tool"
+    );
+
+
+editBtn.addEventListener(
+    "click",
+    event => {
+
+        event.preventDefault();
+
+        event.stopPropagation();
+
+
+        editTray.style.display =
+            editTray.style.display ===
+            "flex"
+
+                ? "none"
+
+                : "flex";
+
+    }
+);
+
+
+/* ============================================================
+   WHITEBOARD
+============================================================ */
+
+const whiteboardBtn =
+    document.getElementById(
+        "whiteboard-btn"
+    );
+
+const whiteboard =
+    document.getElementById(
+        "whiteboard"
+    );
+
+
+whiteboardBtn.addEventListener(
+    "click",
+    event => {
+
+        event.preventDefault();
+
+        event.stopPropagation();
+
+
+        if (
+            whiteboard.style.display ===
+            "flex"
+        ) {
+
+            whiteboard.style.display =
+                "none";
+
+            editTray.style.display =
+                "none";
+
+            setDrawingTarget(
+                "slide"
+            );
+
+        }
+
+        else {
+
+            whiteboard.style.display =
+                "flex";
+
+            editTray.style.display =
+                "flex";
+
+            resizeWhiteboardCanvas();
+
+            setDrawingTarget(
+                "whiteboard"
+            );
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   HIDE WHITEBOARD WHEN OPENING UNIT/LESSON
+============================================================ */
+
+function hideWhiteboard() {
+
+    whiteboard.style.display =
+        "none";
+
+    editTray.style.display =
+        "none";
+
+    setDrawingTarget(
+        "slide"
+    );
+
+}
+
+
+studentDropdownLinks.forEach(
+    link => {
+
+        link.addEventListener(
+            "click",
+            hideWhiteboard
+        );
+
+    }
+);
+
+
+activityDropdownLinks.forEach(
+    link => {
+
+        link.addEventListener(
+            "click",
+            hideWhiteboard
+        );
+
+    }
+);
+
+
+lessonDropdownLinks.forEach(
+    link => {
+
+        link.addEventListener(
+            "click",
+            hideWhiteboard
+        );
+
+    }
+);
+
+
+/* ============================================================
+   TOOL SYSTEM
+============================================================ */
+
+let currentTool =
+    null;
+
+
+function setTool(tool) {
+
+    if (
+        currentTool ===
+        tool
+    ) {
+
+        currentTool =
+            null;
+
+    }
+
+    else {
+
+        currentTool =
+            tool;
+
+    }
+
+
+    updateToolUI();
+
+    updateCursor();
+
+}
+
+
+const penTool =
+    document.getElementById(
+        "pen-tool"
+    );
+
+const eraserTool =
+    document.getElementById(
+        "eraser-tool"
+    );
+
+const highlightTool =
+    document.getElementById(
+        "highlight-tool"
+    );
+
+const textTool =
+    document.getElementById(
+        "text-tool"
+    );
+
+const clearTool =
+    document.getElementById(
+        "clear-tool"
+    );
+
+
+pencilTool.addEventListener(
+    "click",
+    () =>
+        setTool("pencil")
+);
+
+penTool.addEventListener(
+    "click",
+    () =>
+        setTool("pen")
+);
+
+eraserTool.addEventListener(
+    "click",
+    () =>
+        setTool("eraser")
+);
+
+highlightTool.addEventListener(
+    "click",
+    () =>
+        setTool("marker")
+);
+
+textTool.addEventListener(
+    "click",
+    () =>
+        setTool("text")
+);
+
+
+/* ============================================================
+   TOOL UI
+============================================================ */
+
+function updateToolUI() {
+
+    const tools = {
+
+        pencil:
+            pencilTool,
+
+        pen:
+            penTool,
+
+        eraser:
+            eraserTool,
+
+        marker:
+            highlightTool,
+
+        text:
+            textTool
+
+    };
+
+
+    Object.values(
+        tools
+    ).forEach(
+        button => {
+
+            if (button) {
+
+                button.classList.remove(
+                    "active-tool"
+                );
+
+            }
+
+        }
+    );
+
+
+    if (
+        tools[currentTool]
+    ) {
+
+        tools[currentTool].classList.add(
+            "active-tool"
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   STROKES
+============================================================ */
 
 let strokes = [];
-let currentStroke = null;
-let drawing = false;
 
-let pencilSize = 3;
+let currentStroke =
+    null;
 
-// ==========================
-// RESIZE SYSTEM
-// ==========================
+let drawing =
+    false;
+
+let pencilSize =
+    3;
+
+
+/* ============================================================
+   CLEAR CANVAS
+============================================================ */
+
+clearTool.addEventListener(
+    "click",
+    () => {
+
+        const canvasId =
+            drawingCanvas.id;
+
+
+        strokes =
+            strokes.filter(
+                stroke =>
+                    stroke.canvas !==
+                    canvasId
+            );
+
+
+        if (
+            canvasId ===
+            "whiteboard-canvas"
+        ) {
+
+            whiteboardCtx.clearRect(
+                0,
+                0,
+                whiteboardCanvas.width,
+                whiteboardCanvas.height
+            );
+
+        }
+
+        else {
+
+            editCtx.clearRect(
+                0,
+                0,
+                editCanvas.width,
+                editCanvas.height
+            );
+
+        }
+
+
+        redrawStrokes();
+
+    }
+);
+
+
+/* ============================================================
+   CURSOR
+============================================================ */
+
+function updateCursor() {
+
+    if (
+        !drawingCanvas
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        !currentTool
+    ) {
+
+        drawingCanvas.style.cursor =
+            "default";
+
+        return;
+
+    }
+
+
+    if (
+        currentTool ===
+        "eraser"
+    ) {
+
+        drawingCanvas.style.cursor =
+            "crosshair";
+
+    }
+
+    else if (
+        currentTool ===
+        "text"
+    ) {
+
+        drawingCanvas.style.cursor =
+            "text";
+
+    }
+
+    else if (
+        currentTool ===
+        "marker"
+    ) {
+
+        drawingCanvas.style.cursor =
+            "cell";
+
+    }
+
+    else {
+
+        drawingCanvas.style.cursor =
+            "pointer";
+
+    }
+
+}
+
+
+/* ============================================================
+   RESIZE CANVAS
+============================================================ */
 
 function resizeEditCanvas() {
 
-    const rect = slideImage.getBoundingClientRect();
+    const rect =
+        slideImage.getBoundingClientRect();
 
-    editCanvas.width = rect.width;
-    editCanvas.height = rect.height;
 
-    editCanvas.style.left = slideImage.offsetLeft + "px";
-    editCanvas.style.top = slideImage.offsetTop + "px";
+    if (
+        !rect.width ||
+        !rect.height
+    ) {
+
+        return;
+
+    }
+
+
+    editCanvas.width =
+        rect.width;
+
+    editCanvas.height =
+        rect.height;
+
+
+    editCanvas.style.left =
+        slideImage.offsetLeft +
+        "px";
+
+    editCanvas.style.top =
+        slideImage.offsetTop +
+        "px";
+
 
     redrawStrokes();
+
     rerenderAllTextBoxes();
+
 }
+
 
 function resizeWhiteboardCanvas() {
 
-    whiteboardCanvas.width = whiteboard.offsetWidth;
-    whiteboardCanvas.height = whiteboard.offsetHeight;
+    whiteboardCanvas.width =
+        whiteboard.offsetWidth;
+
+    whiteboardCanvas.height =
+        whiteboard.offsetHeight;
+
 
     redrawStrokes();
+
 }
 
-window.addEventListener("resize", () => {
 
-    resizeEditCanvas();
-    resizeWhiteboardCanvas();
-});
+window.addEventListener(
+    "resize",
+    () => {
 
-// ==========================
-// POSITION SYSTEM
-// ==========================
+        resizeEditCanvas();
 
-function getPos(e, canvas) {
+        resizeWhiteboardCanvas();
 
-    const rect = canvas.getBoundingClientRect();
+    }
+);
+
+
+/* ============================================================
+   POSITION
+============================================================ */
+
+function getPos(
+    event,
+    canvas
+) {
+
+    const rect =
+        canvas.getBoundingClientRect();
+
 
     return {
-        x: (e.clientX - rect.left) / canvas.width,
-        y: (e.clientY - rect.top) / canvas.height
+
+        x:
+            (event.clientX -
+                rect.left) /
+            canvas.width,
+
+        y:
+            (event.clientY -
+                rect.top) /
+            canvas.height
+
     };
+
 }
 
-// ==========================
-// DRAW START
-// ==========================
 
-function startDrawing(e, canvas) {
-if (!currentTool) return;
-    const { x, y } = getPos(e, canvas);
+/* ============================================================
+   DRAW START
+============================================================ */
 
-    if (currentTool === "eraser") {
+function startDrawing(
+    event,
+    canvas
+) {
 
-        drawing = true;
+    if (
+        !currentTool
+    ) {
 
-        eraseAt(x, y, canvas.id);
+        return;
+
+    }
+
+
+    const {
+        x,
+        y
+    } =
+        getPos(
+            event,
+            canvas
+        );
+
+
+    if (
+        currentTool ===
+        "eraser"
+    ) {
+
+        drawing =
+            true;
+
+        eraseAt(
+            x,
+            y,
+            canvas.id
+        );
 
         redrawStrokes();
 
         return;
+
     }
 
-    drawing = true;
 
-    let color = "red";
-    let size = pencilSize;
+    drawing =
+        true;
 
-    if (currentTool === "pen") {
 
-        color = "blue";
-        size = 4;
+    let color =
+        "red";
+
+    let size =
+        pencilSize;
+
+
+    if (
+        currentTool ===
+        "pen"
+    ) {
+
+        color =
+            "blue";
+
+        size =
+            4;
+
     }
 
-    if (currentTool === "marker") {
 
-        color = "rgba(255,255,0,0.4)";
-        size = 18;
+    if (
+        currentTool ===
+        "marker"
+    ) {
+
+        color =
+            "rgba(255,255,0,0.4)";
+
+        size =
+            18;
+
     }
+
 
     currentStroke = {
-        type: "stroke",
-        canvas: canvas.id,
+
+        type:
+            "stroke",
+
+        canvas:
+            canvas.id,
+
         color,
+
         size,
-        points: [{ x, y }]
+
+        points:
+            [
+                {
+                    x,
+                    y
+                }
+            ]
+
     };
 
-    strokes.push(currentStroke);
+
+    strokes.push(
+        currentStroke
+    );
+
 }
 
-// ==========================
-// DRAW MOVE
-// ==========================
 
-function moveDrawing(e, canvas) {
+/* ============================================================
+   DRAW MOVE
+============================================================ */
 
-    if (!drawing) return;
+function moveDrawing(
+    event,
+    canvas
+) {
 
-    const { x, y } = getPos(e, canvas);
+    if (
+        !drawing
+    ) {
 
-    if (currentTool === "eraser") {
+        return;
 
-        eraseAt(x, y, canvas.id);
+    }
+
+
+    const {
+        x,
+        y
+    } =
+        getPos(
+            event,
+            canvas
+        );
+
+
+    if (
+        currentTool ===
+        "eraser"
+    ) {
+
+        eraseAt(
+            x,
+            y,
+            canvas.id
+        );
 
         redrawStrokes();
 
         return;
+
     }
 
-    currentStroke.points.push({ x, y });
+
+    if (
+        currentStroke
+    ) {
+
+        currentStroke.points.push(
+            {
+                x,
+                y
+            }
+        );
+
+    }
+
 
     redrawStrokes();
+
 }
 
-// ==========================
-// DRAW STOP
-// ==========================
+
+/* ============================================================
+   STOP DRAWING
+============================================================ */
 
 function stopDrawing() {
 
-    drawing = false;
+    drawing =
+        false;
+
+    currentStroke =
+        null;
+
 }
 
-// ==========================
-// EDIT CANVAS EVENTS
-// ==========================
 
-editCanvas.addEventListener("mousedown", (e) => {
-    startDrawing(e, editCanvas);
-});
+/* ============================================================
+   CANVAS EVENTS
+============================================================ */
 
-editCanvas.addEventListener("mousemove", (e) => {
-    moveDrawing(e, editCanvas);
-});
+editCanvas.addEventListener(
+    "mousedown",
+    event =>
+        startDrawing(
+            event,
+            editCanvas
+        )
+);
 
-editCanvas.addEventListener("mouseup", stopDrawing);
+editCanvas.addEventListener(
+    "mousemove",
+    event =>
+        moveDrawing(
+            event,
+            editCanvas
+        )
+);
 
-editCanvas.addEventListener("mouseleave", stopDrawing);
+editCanvas.addEventListener(
+    "mouseup",
+    stopDrawing
+);
 
-// ==========================
-// WHITEBOARD EVENTS
-// ==========================
+editCanvas.addEventListener(
+    "mouseleave",
+    stopDrawing
+);
 
-whiteboardCanvas.addEventListener("mousedown", (e) => {
-    startDrawing(e, whiteboardCanvas);
-});
 
-whiteboardCanvas.addEventListener("mousemove", (e) => {
-    moveDrawing(e, whiteboardCanvas);
-});
+whiteboardCanvas.addEventListener(
+    "mousedown",
+    event =>
+        startDrawing(
+            event,
+            whiteboardCanvas
+        )
+);
 
-whiteboardCanvas.addEventListener("mouseup", stopDrawing);
+whiteboardCanvas.addEventListener(
+    "mousemove",
+    event =>
+        moveDrawing(
+            event,
+            whiteboardCanvas
+        )
+);
 
-whiteboardCanvas.addEventListener("mouseleave", stopDrawing);
+whiteboardCanvas.addEventListener(
+    "mouseup",
+    stopDrawing
+);
 
-// ==========================
-// ERASER SYSTEM
-// ==========================
+whiteboardCanvas.addEventListener(
+    "mouseleave",
+    stopDrawing
+);
 
-function eraseAt(x, y, canvasId) {
 
-    const radius = 0.01;
+/* ============================================================
+   ERASER
+============================================================ */
 
-    strokes = strokes.flatMap(stroke => {
+function eraseAt(
+    x,
+    y,
+    canvasId
+) {
 
-        if (stroke.canvas !== canvasId) return [stroke];
+    const radius =
+        0.01;
 
-        let newStrokes = [];
-        let temp = [];
 
-        for (let p of stroke.points) {
+    strokes =
+        strokes.flatMap(
+            stroke => {
 
-            const dx = p.x - x;
-            const dy = p.y - y;
+                if (
+                    stroke.canvas !==
+                    canvasId
+                ) {
 
-            const dist = Math.sqrt(dx * dx + dy * dy);
+                    return [
+                        stroke
+                    ];
 
-            if (dist > radius) {
+                }
 
-                temp.push(p);
 
-            } else {
+                const newStrokes =
+                    [];
 
-                if (temp.length) {
+                let temp =
+                    [];
+
+
+                for (
+                    const point
+                    of stroke.points
+                ) {
+
+                    const dx =
+                        point.x -
+                        x;
+
+                    const dy =
+                        point.y -
+                        y;
+
+
+                    const distance =
+                        Math.sqrt(
+                            dx * dx +
+                            dy * dy
+                        );
+
+
+                    if (
+                        distance >
+                        radius
+                    ) {
+
+                        temp.push(
+                            point
+                        );
+
+                    }
+
+                    else {
+
+                        if (
+                            temp.length
+                        ) {
+
+                            newStrokes.push({
+
+                                type:
+                                    "stroke",
+
+                                canvas:
+                                    stroke.canvas,
+
+                                color:
+                                    stroke.color,
+
+                                size:
+                                    stroke.size,
+
+                                points:
+                                    temp
+
+                            });
+
+
+                            temp =
+                                [];
+
+                        }
+
+                    }
+
+                }
+
+
+                if (
+                    temp.length
+                ) {
 
                     newStrokes.push({
-                        type: "stroke",
-                        canvas: stroke.canvas,
-                        color: stroke.color,
-                        size: stroke.size,
-                        points: temp
+
+                        type:
+                            "stroke",
+
+                        canvas:
+                            stroke.canvas,
+
+                        color:
+                            stroke.color,
+
+                        size:
+                            stroke.size,
+
+                        points:
+                            temp
+
                     });
 
-                    temp = [];
                 }
+
+
+                return newStrokes;
+
             }
-        }
+        );
 
-        if (temp.length) {
-
-            newStrokes.push({
-                type: "stroke",
-                canvas: stroke.canvas,
-                color: stroke.color,
-                size: stroke.size,
-                points: temp
-            });
-        }
-
-        return newStrokes;
-    });
 }
 
-// ==========================
-// REDRAW SYSTEM
-// ==========================
+
+/* ============================================================
+   REDRAW
+============================================================ */
 
 function redrawStrokes() {
 
-    editCtx.clearRect(0, 0, editCanvas.width, editCanvas.height);
+    editCtx.clearRect(
+        0,
+        0,
+        editCanvas.width,
+        editCanvas.height
+    );
+
 
     whiteboardCtx.clearRect(
         0,
@@ -1579,277 +3636,684 @@ function redrawStrokes() {
         whiteboardCanvas.height
     );
 
-    strokes.forEach(item => {
 
-        let ctx;
-        let canvas;
+    strokes.forEach(
+        item => {
 
-        if (item.canvas === "whiteboard-canvas") {
+            let ctx;
 
-            ctx = whiteboardCtx;
-            canvas = whiteboardCanvas;
+            let canvas;
 
-        } else {
 
-            ctx = editCtx;
-            canvas = editCanvas;
-        }
+            if (
+                item.canvas ===
+                "whiteboard-canvas"
+            ) {
 
-        ctx.strokeStyle = item.color;
-        ctx.lineWidth = item.size;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
+                ctx =
+                    whiteboardCtx;
 
-        ctx.beginPath();
+                canvas =
+                    whiteboardCanvas;
 
-        item.points.forEach((p, i) => {
-
-            const x = p.x * canvas.width;
-            const y = p.y * canvas.height;
-
-            if (i === 0) {
-
-                ctx.moveTo(x, y);
-
-            } else {
-
-                ctx.lineTo(x, y);
             }
-        });
 
-        ctx.stroke();
-    });
+            else {
+
+                ctx =
+                    editCtx;
+
+                canvas =
+                    editCanvas;
+
+            }
+
+
+            ctx.strokeStyle =
+                item.color;
+
+            ctx.lineWidth =
+                item.size;
+
+            ctx.lineCap =
+                "round";
+
+            ctx.lineJoin =
+                "round";
+
+
+            ctx.beginPath();
+
+
+            item.points.forEach(
+                (
+                    point,
+                    index
+                ) => {
+
+                    const x =
+                        point.x *
+                        canvas.width;
+
+                    const y =
+                        point.y *
+                        canvas.height;
+
+
+                    if (
+                        index ===
+                        0
+                    ) {
+
+                        ctx.moveTo(
+                            x,
+                            y
+                        );
+
+                    }
+
+                    else {
+
+                        ctx.lineTo(
+                            x,
+                            y
+                        );
+
+                    }
+
+                }
+            );
+
+
+            ctx.stroke();
+
+        }
+    );
+
 }
 
-// ==========================
-// TEXT TOOL (FIXED VERSION)
-// ==========================
 
-let activeTextBox = null;
+/* ============================================================
+   TEXT TOOL
+============================================================ */
 
-// click handler
-editCanvas.addEventListener("click", handleTextClick);
-whiteboardCanvas.addEventListener("click", handleTextClick);
+let activeTextBox =
+    null;
 
-function handleTextClick(e) {
-    if (currentTool !== "text") return;
 
-    const canvas = drawingCanvas;
-    const rect = canvas.getBoundingClientRect();
+editCanvas.addEventListener(
+    "click",
+    handleTextClick
+);
 
-    // FIX: correct absolute positioning (no shift left anymore)
-const x = (e.clientX - rect.left) / rect.width;
-const y = (e.clientY - rect.top) / rect.height;
+whiteboardCanvas.addEventListener(
+    "click",
+    handleTextClick
+);
 
-    createTextBox(x, y, canvas);
+
+function handleTextClick(event) {
+
+    if (
+        currentTool !==
+        "text"
+    ) {
+
+        return;
+
+    }
+
+
+    const canvas =
+        drawingCanvas;
+
+
+    const rect =
+        canvas.getBoundingClientRect();
+
+
+    const x =
+        (event.clientX -
+            rect.left) /
+        rect.width;
+
+
+    const y =
+        (event.clientY -
+            rect.top) /
+        rect.height;
+
+
+    createTextBox(
+        x,
+        y,
+        canvas
+    );
+
 }
 
-// ==========================
-// CREATE TEXT BOX (FIXED)
-// ==========================
-function createTextBox(x, y, canvas) {
 
-    const box = document.createElement("div");
+/* ============================================================
+   CREATE TEXT BOX
+============================================================ */
 
-    box.contentEditable = true;
-    box.classList.add("slide-textbox");
+function createTextBox(
+    x,
+    y,
+    canvas
+) {
 
-    box.dataset.x = x;
-    box.dataset.y = y;
-    box.dataset.canvas = canvas.id;
+    const box =
+        document.createElement(
+            "div"
+        );
 
-    box.style.position = "absolute";
 
-    // POSITION
-    const rect = canvas.getBoundingClientRect();
+    box.contentEditable =
+        true;
 
-    box.style.left = (x * rect.width) + "px";
-    box.style.top = (y * rect.height) + "px";
+    box.classList.add(
+        "slide-textbox"
+    );
 
-    // STYLE
-    box.style.minWidth = "50px";
-    box.style.minHeight = "20px";
-    box.style.color = "red";
-    box.style.fontSize = "28px";
-    box.style.fontWeight = "bold";
-    box.style.outline = "none";
-    box.style.cursor = "move";
-    box.style.zIndex = "999999"; // VERY IMPORTANT
-    box.style.pointerEvents = "auto"; // VERY IMPORTANT
 
-    // allow interaction
-    box.style.userSelect = "text";
+    box.dataset.x =
+        x;
 
-    canvas.parentElement.appendChild(box);
+    box.dataset.y =
+        y;
+
+    box.dataset.canvas =
+        canvas.id;
+
+
+    box.style.left =
+        x *
+        canvas.getBoundingClientRect().width +
+        "px";
+
+
+    box.style.top =
+        y *
+        canvas.getBoundingClientRect().height +
+        "px";
+
+
+    canvas.parentElement.appendChild(
+        box
+    );
+
 
     box.focus();
 
-    activeTextBox = box;
 
-    showTextToolbar(box);
+    activeTextBox =
+        box;
 
-    enableDrag(box);
+
+    showTextToolbar(
+        box
+    );
+
+
+    enableDrag(
+        box
+    );
+
 }
 
-// ==========================
-// TOOLBAR (FIXED POSITIONING)
-// ==========================
-const textToolbar = document.createElement("div");
 
-textToolbar.style.position = "absolute";
-textToolbar.style.display = "none";
-textToolbar.style.gap = "6px";
-textToolbar.style.padding = "5px";
-textToolbar.style.background = "#fff";
-textToolbar.style.border = "1px solid #ccc";
-textToolbar.style.zIndex = "99999";
-textToolbar.style.borderRadius = "6px";
+/* ============================================================
+   TEXT TOOLBAR
+============================================================ */
 
-document.body.appendChild(textToolbar);
+const textToolbar =
+    document.createElement(
+        "div"
+    );
 
-function showTextToolbar(box) {
 
-    textToolbar.innerHTML = "";
+textToolbar.style.position =
+    "fixed";
 
-    textToolbar.style.display = "flex";
+textToolbar.style.display =
+    "none";
 
-    // FIX: real screen position (not offsetLeft/Top)
-    const rect = box.getBoundingClientRect();
+textToolbar.style.gap =
+    "6px";
 
-    textToolbar.style.left = rect.left + "px";
-    textToolbar.style.top = (rect.top - 40) + "px";
+textToolbar.style.padding =
+    "5px";
 
-    // DELETE
-    const del = document.createElement("button");
-    del.innerText = "🗑️";
-    del.onclick = () => {
-        box.remove();
-        textToolbar.style.display = "none";
-    };
+textToolbar.style.background =
+    "#fff";
 
-    // SIZE +
-    const plus = document.createElement("button");
-    plus.innerText = "A+";
-    plus.onclick = () => {
-        let size = parseInt(window.getComputedStyle(box).fontSize);
-        box.style.fontSize = (size + 2) + "px";
-    };
+textToolbar.style.border =
+    "1px solid #ccc";
 
-    // SIZE -
-    const minus = document.createElement("button");
-    minus.innerText = "A-";
-    minus.onclick = () => {
-        let size = parseInt(window.getComputedStyle(box).fontSize);
-        if (size > 10) box.style.fontSize = (size - 2) + "px";
-    };
+textToolbar.style.zIndex =
+    "999999";
 
-    // COLORS
-    const red = document.createElement("button");
-    red.innerText = "🔴";
-    red.onclick = () => box.style.color = "red";
+textToolbar.style.borderRadius =
+    "6px";
 
-    const black = document.createElement("button");
-    black.innerText = "⚫";
-    black.onclick = () => box.style.color = "black";
 
-    const blue = document.createElement("button");
-    blue.innerText = "🔵";
-    blue.onclick = () => box.style.color = "blue";
+document.body.appendChild(
+    textToolbar
+);
 
-    textToolbar.append(del, plus, minus, red, black, blue);
+
+function showTextToolbar(
+    box
+) {
+
+    textToolbar.innerHTML =
+        "";
+
+    textToolbar.style.display =
+        "flex";
+
+
+    const rect =
+        box.getBoundingClientRect();
+
+
+    textToolbar.style.left =
+        rect.left +
+        "px";
+
+    textToolbar.style.top =
+        Math.max(
+            5,
+            rect.top - 45
+        ) +
+        "px";
+
+
+    const del =
+        document.createElement(
+            "button"
+        );
+
+    del.innerText =
+        "🗑️";
+
+
+    del.onclick =
+        () => {
+
+            box.remove();
+
+            textToolbar.style.display =
+                "none";
+
+        };
+
+
+    const plus =
+        document.createElement(
+            "button"
+        );
+
+    plus.innerText =
+        "A+";
+
+
+    plus.onclick =
+        () => {
+
+            const size =
+                parseInt(
+                    window
+                        .getComputedStyle(
+                            box
+                        )
+                        .fontSize
+                );
+
+
+            box.style.fontSize =
+                size +
+                2 +
+                "px";
+
+        };
+
+
+    const minus =
+        document.createElement(
+            "button"
+        );
+
+    minus.innerText =
+        "A-";
+
+
+    minus.onclick =
+        () => {
+
+            const size =
+                parseInt(
+                    window
+                        .getComputedStyle(
+                            box
+                        )
+                        .fontSize
+                );
+
+
+            if (
+                size > 10
+            ) {
+
+                box.style.fontSize =
+                    size -
+                    2 +
+                    "px";
+
+            }
+
+        };
+
+
+    const red =
+        document.createElement(
+            "button"
+        );
+
+    red.innerText =
+        "🔴";
+
+    red.onclick =
+        () =>
+            box.style.color =
+                "red";
+
+
+    const black =
+        document.createElement(
+            "button"
+        );
+
+    black.innerText =
+        "⚫";
+
+    black.onclick =
+        () =>
+            box.style.color =
+                "black";
+
+
+    const blue =
+        document.createElement(
+            "button"
+        );
+
+    blue.innerText =
+        "🔵";
+
+    blue.onclick =
+        () =>
+            box.style.color =
+                "blue";
+
+
+    textToolbar.append(
+        del,
+        plus,
+        minus,
+        red,
+        black,
+        blue
+    );
+
 }
 
-// hide toolbar when clicking outside
-document.addEventListener("click", (e) => {
-    if (e.target.contentEditable === "true") {
-        activeTextBox = e.target;
-        showTextToolbar(e.target);
-    } else if (!textToolbar.contains(e.target)) {
-        textToolbar.style.display = "none";
+
+/* ============================================================
+   TEXT TOOLBAR CLICK
+============================================================ */
+
+document.addEventListener(
+    "click",
+    event => {
+
+        if (
+            event.target.contentEditable ===
+            "true"
+        ) {
+
+            activeTextBox =
+                event.target;
+
+            showTextToolbar(
+                event.target
+            );
+
+        }
+
+        else if (
+            !textToolbar.contains(
+                event.target
+            )
+        ) {
+
+            textToolbar.style.display =
+                "none";
+
+        }
+
     }
-});
+);
 
-// ==========================
-// DRAG TEXT BOX (NEW FEATURE)
-// ==========================
+
+/* ============================================================
+   DRAG TEXT BOX
+============================================================ */
+
 function enableDrag(el) {
-    let offsetX = 0;
-    let offsetY = 0;
-    let dragging = false;
 
-    el.addEventListener("mousedown", (e) => {
-        dragging = true;
+    let offsetX =
+        0;
 
-        const rect = el.getBoundingClientRect();
+    let offsetY =
+        0;
 
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
+    let dragging =
+        false;
 
-        document.body.style.userSelect = "none";
-    });
 
-    document.addEventListener("mousemove", (e) => {
-        if (!dragging) return;
+    el.addEventListener(
+        "mousedown",
+        event => {
 
-        const parentRect = el.parentElement.getBoundingClientRect();
+            dragging =
+                true;
 
-        el.style.left = (e.clientX - parentRect.left - offsetX) + "px";
-        el.style.top = (e.clientY - parentRect.top - offsetY) + "px";
-    });
 
-    document.addEventListener("mouseup", () => {
-        dragging = false;
-        document.body.style.userSelect = "auto";
-    });
+            const rect =
+                el.getBoundingClientRect();
+
+
+            offsetX =
+                event.clientX -
+                rect.left;
+
+
+            offsetY =
+                event.clientY -
+                rect.top;
+
+
+            document.body.style.userSelect =
+                "none";
+
+        }
+    );
+
+
+    document.addEventListener(
+        "mousemove",
+        event => {
+
+            if (
+                !dragging
+            ) {
+
+                return;
+
+            }
+
+
+            const parentRect =
+                el.parentElement
+                    .getBoundingClientRect();
+
+
+            el.style.left =
+                event.clientX -
+                parentRect.left -
+                offsetX +
+                "px";
+
+
+            el.style.top =
+                event.clientY -
+                parentRect.top -
+                offsetY +
+                "px";
+
+        }
+    );
+
+
+    document.addEventListener(
+        "mouseup",
+        () => {
+
+            dragging =
+                false;
+
+            document.body.style.userSelect =
+                "auto";
+
+        }
+    );
+
 }
-// ==========================
-// INITIAL SETUP
-// ==========================
 
-window.addEventListener("load", () => {
 
-    setDrawingTarget("slide");
+/* ============================================================
+   TEXT BOX RERENDER
+============================================================ */
 
-    resizeEditCanvas();
-    resizeWhiteboardCanvas();
+function rerenderAllTextBoxes() {
 
-    updateCursor(); // safe initial call
+    document
+        .querySelectorAll(
+            ".slide-textbox"
+        )
+        .forEach(
+            box => {
 
-});
+                const canvas =
+                    document.getElementById(
+                        box.dataset.canvas
+                    );
 
-// ==========================
-// CURSOR SYSTEM
-// ==========================
 
-function updateCursor() {
+                if (
+                    !canvas
+                ) {
 
-    if (!drawingCanvas) return;
+                    return;
 
-    // NO TOOL SELECTED
-    if (!currentTool) {
-        drawingCanvas.style.cursor = "default";
-        return;
-    }
+                }
 
-    // ERASER
-    if (currentTool === "eraser") {
-        drawingCanvas.style.cursor = "crosshair";
-    }
 
-    // TEXT TOOL
-    else if (currentTool === "text") {
-        drawingCanvas.style.cursor = "text";
-    }
+                const rect =
+                    canvas.getBoundingClientRect();
 
-    // MARKER / HIGHLIGHT
-    else if (currentTool === "marker") {
-        drawingCanvas.style.cursor = "cell";
-    }
 
-    // DEFAULT FOR ALL OTHER TOOLS
-    else {
-        drawingCanvas.style.cursor = "pointer";
-    }
+                box.style.left =
+                    parseFloat(
+                        box.dataset.x
+                    ) *
+                    rect.width +
+                    "px";
+
+
+                box.style.top =
+                    parseFloat(
+                        box.dataset.y
+                    ) *
+                    rect.height +
+                    "px";
+
+            }
+        );
+
 }
 
 
+/* ============================================================
+   INITIAL LOAD
+============================================================ */
+
+window.addEventListener(
+    "load",
+    () => {
+
+        setDrawingTarget(
+            "slide"
+        );
+
+
+        resizeEditCanvas();
+
+        resizeWhiteboardCanvas();
+
+        updateCursor();
+
+
+        /* -------------------------------------
+           ALWAYS START HOME
+        ------------------------------------- */
+
+        loadHome();
+
+    }
+);
+
+
+/* ============================================================
+   ESC CLOSES EXPANDED CARD
+============================================================ */
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key !==
+            "Escape"
+        ) {
+
+            return;
+
+        }
+
+
+        document
+            .querySelectorAll(
+                ".lesson-card.expanded"
+            )
+            .forEach(
+                card =>
+                    card.classList.remove(
+                        "expanded"
+                    )
+            );
+
+    }
+);
