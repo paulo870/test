@@ -1,5 +1,11 @@
 const slideImage = document.getElementById("slide-image");
 const slideContainer = document.querySelector(".slide-container");
+const lessonContentContainer =
+    document.getElementById("lesson-content-container");
+
+let lessonCards = [];
+let activeLessonCard = null;
+let lessonMode = false;
 const homeBtn = document.getElementById("home-btn");
 const prevBtn = document.getElementById("prev-btn");
 const nextBtn = document.getElementById("next-btn");
@@ -111,9 +117,22 @@ function loadImage(src) {
 // HOME PAGE
 // ==========================
 function loadHome() {
+
+    lessonMode = false;
+
+    closeLessonCard();
+
+    lessonContentContainer.innerHTML = "";
+    lessonContentContainer.style.display = "none";
+
+    slideImage.style.display = "block";
+    editCanvas.style.display = "block";
+
     currentImages = [];
     currentIndex = 0;
+
     loadImage("images/homepage.jpg");
+
     prevBtn.style.display = "none";
     nextBtn.style.display = "none";
 }
@@ -122,37 +141,16 @@ function loadHome() {
 // STUDENT BOOK
 // ==========================
 function loadStudentUnit(unitNumber) {
-    currentImages = [];
-    currentIndex = 0;
+    lessonMode = false;
 
-    const folderName = "unit_" + unitNumber;
-    const basePath = `images/student-book-pages/${folderName}/`;
+closeLessonCard();
 
-    let pageNumbers = [];
-    switch(unitNumber) {
-        case "1": pageNumbers = [10,11,12,13,14,15,16,17,18]; break;
-        case "2": pageNumbers = [12,13,14,15,16,17]; break;
-        case "3": pageNumbers = [18,19,20,21,22,23,24,25]; break;
-        case "4": pageNumbers = [26,27,28,29,30,31]; break;
-        case "5": pageNumbers = [32,33,34,35,36,37]; break;
-        case "6": pageNumbers = [38,39,40,41,42,43,44,45]; break;
-        case "7": pageNumbers = [46,47,48,49,50,51]; break;
-        case "8": pageNumbers = [52,53,54,55,56,57]; break;
-        case "9": pageNumbers = [58,59,60,61,62,63,64,65]; break;
-        case "10": pageNumbers = [66,67,68,69,70,71]; break;
-        case "11": pageNumbers = [72,73,74,75,76,77]; break;
-        case "12": pageNumbers = [78,79,80,81,82,83,84,85]; break;
-        default: pageNumbers = []; break;
-    }
+lessonContentContainer.innerHTML = "";
+lessonContentContainer.style.display = "none";
 
-    pageNumbers.forEach(num => {
-        currentImages.push(basePath + "page" + num + ".jpg");
-    });
-
-    loadImage(currentImages[currentIndex]);
-    prevBtn.style.display = "block";
-    nextBtn.style.display = "block";
-}
+slideImage.style.display = "block";
+editCanvas.style.display = "block";
+   
 
 // ==========================
 // ACTIVITY BOOK
@@ -241,97 +239,220 @@ studentDropdownLinks.forEach(link => {
 
 function getLessonPages(unit, lesson) {
 
-    const lessonMap = {
+ // ==========================
+// LESSON CONTENT
+// ==========================
 
-        1: {
-            1: [ 6, 7],
-            2: [8, 9],
-            3: [10],
-            4: [11],
-            5: [106,107]
-        },
+function getLessonContent(unit, lesson) {
 
-        2: {
-            1: [12, 13],
-            2: [14,15],
-            3: [16],
-            4: [17],
-            5: [108,109]
-        },
-        3: {
-            1: [18, 19],
-            2: [20,21],
-            3: [22,23],
-            4: [24,25],
-            5: [110,111]
-        },
-       4: {
-            1: [26, 27],
-            2: [28,29],
-            3: [30],
-            4: [31],
-            5: [112,113]
-        },
-       5: {
-            1: [32,33],
-            2: [34,35],
-            3: [36],
-            4: [37],
-            5: [114,115]
-        },
-        6: {
-            1: [38,39],
-            2: [40,41],
-            3: [42,43],
-            4: [44,45],
-            5: [116,117]
-        }, 
-         7: {
-            1: [46,47],
-            2: [48,49],
-            3: [50],
-            4: [51],
-            5: [118,119]
-        },   
-          8: {
-            1: [52,53],
-            2: [54,55],
-            3: [56],
-            4: [57],
-            5: [120,121]
-        },   
-          9: {
-            1: [58,59],
-            2: [60,61],
-            3: [62,63],
-            4: [64,65],
-            5: [122,123]
-        },   
-          10: {
-            1: [66,67],
-            2: [68,69],
-            3: [70],
-            4: [71],
-            5: [124,125]
-        },   
-          11: {
-            1: [72,73],
-            2: [74,75],
-            3: [76],
-            4: [77],
-            5: [126,127]
-        },   
-          12: {
-            1: [78,79],
-            2: [80,81],
-            3: [82,83],
-            4: [84,85],
-            5: [128,129]
-        },     
+    const lessons = {
+
+        "1-1": [
+            {
+                type: "text",
+                title: "Introduction",
+                content: `
+                    <h2>Welcome to the lesson</h2>
+                    <p>
+                        In this lesson we are going to learn
+                        the basic vocabulary and expressions.
+                    </p>
+                `
+            },
+
+            {
+                type: "text",
+                title: "Vocabulary",
+                content: `
+                    <h2>New Vocabulary</h2>
+                    <p>Hello</p>
+                    <p>Good morning</p>
+                    <p>Good afternoon</p>
+                    <p>Good evening</p>
+                `
+            },
+
+            {
+                type: "audio",
+                title: "Listen and Repeat",
+                audio: "audios/student-book-audios/unit_1/example.mp3"
+            },
+
+            {
+                type: "video",
+                title: "Watch the Video",
+                video: "video/unit_1/presentation1.mp4"
+            }
+        ]
+
     };
 
-    return lessonMap[unit]?.[lesson] || [];
+    return lessons[`${unit}-${lesson}`] || [];
 }
+    // ==========================
+// RENDER LESSON CARDS
+// ==========================
+
+function renderLessonCards(unit, lesson) {
+
+    const content = getLessonContent(unit, lesson);
+
+    lessonContentContainer.innerHTML = "";
+
+    if (!content.length) {
+        lessonContentContainer.innerHTML = `
+            <div class="lesson-empty">
+                <h2>Lesson content coming soon</h2>
+                <p>This lesson has no content yet.</p>
+            </div>
+        `;
+
+        return;
+    }
+
+    lessonCards = content;
+    lessonMode = true;
+
+    slideImage.style.display = "none";
+    editCanvas.style.display = "none";
+
+    lessonContentContainer.style.display = "grid";
+
+    content.forEach((item, index) => {
+
+        const card = document.createElement("div");
+
+        card.className = "lesson-card";
+
+        card.dataset.index = index;
+
+        let cardContent = "";
+
+        // TEXT
+        if (item.type === "text") {
+
+            cardContent = `
+                <div class="lesson-card-icon">📖</div>
+
+                <h2>${item.title}</h2>
+
+                <div class="lesson-card-content">
+                    ${item.content}
+                </div>
+            `;
+        }
+
+        // AUDIO
+        else if (item.type === "audio") {
+
+            cardContent = `
+                <div class="lesson-card-icon">🎧</div>
+
+                <h2>${item.title}</h2>
+
+                <div class="lesson-card-content">
+
+                    <audio controls>
+                        <source src="${item.audio}" type="audio/mpeg">
+                    </audio>
+
+                </div>
+            `;
+        }
+
+        // VIDEO
+        else if (item.type === "video") {
+
+            cardContent = `
+                <div class="lesson-card-icon">🎥</div>
+
+                <h2>${item.title}</h2>
+
+                <div class="lesson-card-content">
+
+                    <video controls>
+                        <source src="${item.video}" type="video/mp4">
+                    </video>
+
+                </div>
+            `;
+        }
+
+        card.innerHTML = cardContent;
+
+        card.addEventListener("click", function(e) {
+
+            // Don't expand when interacting with media controls
+            if (
+                e.target.closest("audio") ||
+                e.target.closest("video") ||
+                e.target.closest("button")
+            ) {
+                return;
+            }
+
+            openLessonCard(card);
+
+        });
+
+        lessonContentContainer.appendChild(card);
+
+    });
+}
+    // ==========================
+// OPEN LESSON CARD
+// ==========================
+
+function openLessonCard(card) {
+
+    if (activeLessonCard === card) {
+
+        closeLessonCard();
+
+        return;
+    }
+
+    if (activeLessonCard) {
+        activeLessonCard.classList.remove("expanded");
+    }
+
+    activeLessonCard = card;
+
+    card.classList.add("expanded");
+
+    lessonContentContainer.classList.add("focus-mode");
+
+    document.body.classList.add("lesson-card-open");
+
+}
+    // ==========================
+// CLOSE LESSON CARD
+// ==========================
+
+function closeLessonCard() {
+
+    if (!activeLessonCard) return;
+
+    activeLessonCard.classList.remove("expanded");
+
+    activeLessonCard = null;
+
+    lessonContentContainer.classList.remove("focus-mode");
+
+    document.body.classList.remove("lesson-card-open");
+
+}
+
+    document.addEventListener("keydown", (e) => {
+
+    if (e.key === "Escape" && activeLessonCard) {
+
+        closeLessonCard();
+
+    }
+
+});
+    
 // ==========================
 // LESSON MENU
 // ==========================
@@ -347,79 +468,58 @@ lessonDropdownLinks.forEach(link => {
         const unit = link.getAttribute("data-unit");
         const lesson = link.getAttribute("data-lesson");
 
-        console.log("Opening Unit:", unit, "Lesson:", lesson);
+        console.log(
+            "Opening Lesson:",
+            unit,
+            lesson
+        );
 
-        // ==========================
-        // NEW LESSON FOLDER PATH
-        // ==========================
+        // Enable lesson mode
+        lessonMode = true;
 
-        const lessonPath =
-            `images/student-book-pages/unit_${unit}/lesson_${lesson}/`;
+        // Hide image viewer
+        slideImage.style.display = "none";
 
-        /*
-         * IMPORTANT:
-         * JavaScript cannot automatically discover the files
-         * inside a folder on Vercel/server hosting.
-         *
-         * Therefore, we define which pages belong to each lesson.
-         */
+        // Hide drawing canvas
+        editCanvas.style.display = "none";
 
-        const lessonPages = getLessonPages(unit, lesson);
+        // Hide page navigation
+        prevBtn.style.display = "none";
+        nextBtn.style.display = "none";
 
-        if (lessonPages.length === 0) {
-            console.warn(
-                `No pages found for Unit ${unit}, Lesson ${lesson}`
-            );
-            return;
+        // Hide audio/video menus
+        audioListContainer.style.display = "none";
+
+        if (videoListContainer) {
+            videoListContainer.style.display = "none";
         }
 
-        // Build the NEW paths
-        currentImages = lessonPages.map(page =>
-            `${lessonPath}page${page}.jpg`
+        // Close whiteboard
+        whiteboard.style.display = "none";
+        editTray.style.display = "none";
+
+        // Render lesson cards
+        renderLessonCards(unit, lesson);
+
+        // Save lesson state
+        localStorage.setItem(
+            "pptkb1State",
+            JSON.stringify({
+                bookType: "lesson",
+                unit: unit,
+                lesson: lesson
+            })
         );
 
-        // Start at the FIRST page of the lesson
-        currentIndex = 0;
-
-        loadImage(currentImages[currentIndex]);
-
-        prevBtn.style.display = "block";
-        nextBtn.style.display = "block";
-
-        // Save current state
-        saveCurrentState(
-            "student",
-            unit,
-            lessonPages[0]
-        );
-
-        console.log(
-            "Opening:",
-            currentImages[currentIndex]
-        );
-
-        // Close lesson menus
-        document.querySelectorAll(".lesson-dropdown").forEach(menu => {
-            menu.classList.remove("show");
-        });
+        // Close lesson dropdowns
+        document
+            .querySelectorAll(".lesson-dropdown")
+            .forEach(menu => {
+                menu.classList.remove("show");
+            });
 
     });
 
-});
-
-
-activityDropdownLinks.forEach(link => {
-    link.addEventListener("click", (e) => {
-        e.preventDefault();
-        const unit = link.getAttribute("data-unit");
-        loadActivityUnit(unit);
-        // Save state
-        saveCurrentState(
-            "activity",
-            unit,
-            parseInt(currentImages[currentIndex].match(/page(\d+)/)[1])
-        );
-    });
 });
 
 // ==========================
@@ -613,8 +713,11 @@ window.addEventListener("load", () => {
         const savedState = localStorage.getItem("pptkb1State");
         if (savedState) {
             const { bookType, unit, pageNum } = JSON.parse(savedState);
-            if (bookType === "student") {
-                loadStudentUnit(unit);
+            if (bookType === "lesson") {
+
+    renderLessonCards(unit, lesson);
+
+}
                 currentIndex = currentImages.findIndex(src => src.includes(`page${pageNum}.JPG`));
                 if (currentIndex >= 0) loadImage(currentImages[currentIndex]);
             } else if (bookType === "activity") {
