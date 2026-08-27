@@ -531,6 +531,10 @@ window.addEventListener("load", function() {
 <!-- Vertical control bar -->
 
 <div class="control-bar">
+    <button id="lesson-upload-btn" class="lesson-upload-btn" type="button" title="Upload class material" aria-label="Upload class material">
+        <span class="upload-icon">↥</span>
+        <span class="upload-label">UPLOAD</span>
+    </button>
     <a href="#" id="home-btn"><img src="images/control-panel-icons/home-icon.png" alt="Home" class="control-icon"></a>
 
     <!-- Student Book Dropdown -->
@@ -737,6 +741,17 @@ window.addEventListener("load", function() {
 
 <!-- Slide container -->
 <div class="slide-container">
+    <section id="lesson-content-view" aria-live="polite">
+        <div class="lesson-content-header">
+            <div>
+                <span class="lesson-content-kicker">CLASS MATERIAL</span>
+                <h1 id="lesson-content-title">Select a lesson</h1>
+                <p id="lesson-content-subtitle">Choose a lesson from the Students Book.</p>
+            </div>
+            <button id="lesson-content-refresh" type="button" title="Refresh lesson materials">↻</button>
+        </div>
+        <div id="lesson-cards" class="lesson-cards"></div>
+    </section>
     <div class="slide-wrapper">
     <img id="slide-image" alt="Slide Image" style="display: none;">
     <canvas id="edit-canvas"></canvas>
@@ -744,6 +759,28 @@ window.addEventListener("load", function() {
     <button id="prev-btn">&#9664;</button>
     <button id="next-btn">&#9654;</button>
 </div>
+<!-- EXPANDED LESSON CONTENT -->
+<div id="lesson-focus-overlay" class="lesson-focus-overlay" aria-hidden="true">
+    <button id="lesson-focus-close" class="lesson-focus-close" type="button" aria-label="Close">×</button>
+    <div id="lesson-focus-card" class="lesson-focus-card"></div>
+</div>
+
+<!-- TEACHER UPLOAD -->
+<div id="lesson-upload-modal" class="lesson-upload-modal" aria-hidden="true">
+    <div class="lesson-upload-dialog">
+        <button id="lesson-upload-close" class="lesson-upload-close" type="button" aria-label="Close">×</button>
+        <span class="lesson-content-kicker">TEACHER MATERIAL</span>
+        <h2>Upload class material</h2>
+        <p id="upload-lesson-label">Select a lesson first.</p>
+        <label>Title<input id="upload-title" type="text" placeholder="e.g. Greetings practice"></label>
+        <label>Description <span>(optional)</span><textarea id="upload-description" rows="3" placeholder="What should students focus on?"></textarea></label>
+        <label>File<input id="lesson-file-input" type="file" accept="image/*,audio/*,video/*,application/pdf,.pdf"></label>
+        <div id="upload-progress" class="upload-progress" aria-live="polite"></div>
+        <button id="lesson-upload-submit" class="lesson-upload-submit" type="button">Upload material</button>
+        <p class="upload-note">Teachers can upload materials. Deletion is intentionally unavailable here and must be done by the owner in Supabase.</p>
+    </div>
+</div>
+
 <!-- WHITEBOARD -->
 <div id="whiteboard">
     <canvas id="whiteboard-canvas"></canvas>
@@ -751,13 +788,8 @@ window.addEventListener("load", function() {
 <!-- Audio list -->
 <div id="audio-list-container"></div>
 
-<!-- Audio player (hidden by default) -->
-<audio id="slide-audio" controls style="display:none;">
-    <source id="audio-source" src="" type="audio/mpeg">
-    Your browser does not support the audio element.
-</audio>
-<!-- Audio player (hidden by default) -->
-<audio id="slide-audio" controls style="display:none;">
+<!-- Audio player -->
+<audio id="slide-audio" controls preload="metadata" style="display:none;">
     <source id="audio-source" src="" type="audio/mpeg">
     Your browser does not support the audio element.
 </audio>
@@ -789,15 +821,13 @@ window.addEventListener("load", function() {
     <button class="edit-tool-btn" id="highlight-tool">🖍️</button>
     <button class="edit-tool-btn" id="text-tool">🔤</button>
     <button class="edit-tool-btn" id="clear-tool">🗑️</button>
-    
-</button>
 </div>
- </div>
 
 </div>
 
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/script.js"></script>
 </body>
 </html>
