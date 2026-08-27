@@ -736,14 +736,55 @@ window.addEventListener("load", function() {
 
 </div>
 
-<!-- Slide container -->
+<!-- ============================================================
+     LESSON CARD CONTAINER
+============================================================ -->
+
 <div class="slide-container">
-    <div class="slide-wrapper">
-    <img id="slide-image" alt="Slide Image" style="display: none;">
-    <canvas id="edit-canvas"></canvas>
+
+    <!-- 8 lesson cards will be loaded here -->
+    <div id="lesson-cards-container"></div>
+
+    <!--
+        Legacy elements kept hidden so the existing JavaScript
+        does not immediately break while we transition from
+        pages/slides to lesson cards.
+    -->
+    <div id="legacy-slide-elements" style="display:none;">
+
+        <div class="slide-wrapper">
+            <img id="slide-image" alt="Slide Image">
+            <canvas id="edit-canvas"></canvas>
+        </div>
+
+        <button id="prev-btn">&#9664;</button>
+        <button id="next-btn">&#9654;</button>
+
+    </div>
+
 </div>
-    <button id="prev-btn">&#9664;</button>
-    <button id="next-btn">&#9654;</button>
+
+
+<!-- ============================================================
+     EXPANDED LESSON CARD
+============================================================ -->
+
+<div id="expanded-card-overlay" style="display:none;">
+
+    <button
+        id="close-expanded-card"
+        type="button"
+        aria-label="Close"
+    >
+        ×
+    </button>
+
+    <div id="expanded-card-content">
+
+        <!-- Media/content will be inserted here by script.js -->
+
+    </div>
+
 </div>
 <!-- WHITEBOARD -->
 <div id="whiteboard">
@@ -799,6 +840,8 @@ window.addEventListener("load", function() {
 
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
 <script src="js/script.js"></script>
 </body>
 </html>
