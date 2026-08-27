@@ -1,1069 +1,446 @@
-/* =========================================================
-   ACADEMIA POLIGLOTA
-   INTERACTIVE BOOK PLATFORM
-   =========================================================
+const slideImage = document.getElementById("slide-image");
+const slideContainer = document.querySelector(".slide-container");
+const homeBtn = document.getElementById("home-btn");
+const prevBtn = document.getElementById("prev-btn");
+const nextBtn = document.getElementById("next-btn");
+document.addEventListener("DOMContentLoaded", () => {
+    });
+const studentDropdownLinks = document.querySelectorAll(
+    "#students-book-dropdown .unit-item > a"
+);
+const activityDropdownLinks = document.querySelectorAll("#activity-book-dropdown a");
+const dropdownBtns = document.querySelectorAll(".dropdown-btn");
 
-   LESSON SYSTEM
+const audioBtn = document.getElementById("audio-btn");
+const audioListContainer = document.getElementById("audio-list-container");
+const audioPlayer = document.getElementById("slide-audio");
+const audioSource = document.getElementById("audio-source");
+const hideAudioBtn = document.getElementById("hide-audio-btn");
 
-   Lesson
-      ↓
-   Content Cards
-      ↓
-   Click / Tap
-      ↓
-   Expanded Card
-      ↓
-   Text / Image / Audio / Video / PDF
-
-   Supabase:
-      lessons
-      lesson_cards
-      lesson_media
-
-   Teachers:
-      CAN upload
-      CANNOT delete
-========================================================= */
-
-
-/* =========================================================
-   01. SUPABASE
-========================================================= */
-
-const SUPABASE_URL =
-    "https://kioqhgkpfqdhjqidrlwf.supabase.co";
-
-const SUPABASE_ANON_KEY =
-    "sb_publishable_ZDAJmFtSl9WNGVlZPyvngA_ZWiv_Q4g";
-
-let supabaseClient = null;
-
-if (
-    window.supabase &&
-    SUPABASE_URL &&
-    SUPABASE_ANON_KEY
-) {
-
-    supabaseClient =
-        window.supabase.createClient(
-            SUPABASE_URL,
-            SUPABASE_ANON_KEY
-        );
-
+// Show audio player and hide button
+function showAudioPlayer() {
+    audioPlayer.style.display = "block";
+    hideAudioBtn.style.display = "inline-block";
 }
 
+// Hide audio player when hide button is clicked
+hideAudioBtn.addEventListener("click", () => {
+    audioPlayer.style.display = "none";
+    hideAudioBtn.style.display = "none";
+});
+let currentImages = [];
+let currentIndex = 0;
+let currentScale = 1;
+// ============================================================
+// LESSON CARD SYSTEM
+// ============================================================
 
-/* =========================================================
-   02. STATE
-========================================================= */
+const mainSlideView =
+    document.getElementById("main-slide-view");
 
-const state = {
+const lessonContentView =
+    document.getElementById("lesson-content-view");
 
-    lessons: [],
+const lessonCardsContainer =
+    document.getElementById("lesson-cards");
 
-    cards: [],
+const lessonContentTitle =
+    document.getElementById("lesson-content-title");
 
-    media: [],
+const lessonContentKicker =
+    document.getElementById("lesson-content-kicker");
 
-    currentLesson: null,
+const lessonContentDescription =
+    document.getElementById("lesson-content-description");
 
-    currentLessonId: null,
+const lessonContentRefresh =
+    document.getElementById("lesson-content-refresh");
 
-    currentCard: null,
+const lessonFocusOverlay =
+    document.getElementById("lesson-focus-overlay");
 
-    currentCardElement: null,
+const lessonFocusClose =
+    document.getElementById("lesson-focus-close");
 
-    currentUnit: null,
+const lessonFocusCard =
+    document.getElementById("lesson-focus-card");
 
-    currentSlide: 0,
+const focusType =
+    document.getElementById("focus-type");
 
-    cardOpen: false,
+const focusTitle =
+    document.getElementById("focus-title");
 
-    drawing: false,
+const focusDescription =
+    document.getElementById("focus-description");
 
-    pencilSize: 5,
+const focusMedia =
+    document.getElementById("focus-media");
 
-    pencilColor: "#111111",
 
-    editMode: false
+// ============================================================
+// LESSON CONTENT
+//
+// This is the new lesson structure.
+//
+// Each lesson can contain:
+// text
+// audio
+// video
+// document
+// image
+//
+// The actual lesson text should be entered here.
+// ============================================================
+
+const LESSON_CONTENT = {
+
+    1: {
+
+        1: {
+
+            title: "Lesson 1",
+
+            description:
+                "Introduction and first lesson material.",
+
+            parts: [
+
+                {
+                    type: "text",
+                    title: "Warm-up",
+                    description:
+                        "Introduce the topic and activate prior knowledge.",
+                    content:
+                        "Add the actual warm-up content for this lesson here."
+                },
+
+                {
+                    type: "text",
+                    title: "Vocabulary",
+                    description:
+                        "Key vocabulary for the lesson.",
+                    content:
+                        "Add the vocabulary, meanings and examples here."
+                },
+
+                {
+                    type: "audio",
+                    title: "Listening Practice",
+                    description:
+                        "Listen to the lesson audio.",
+                    src:
+                        "audios/student-book-audios/unit_1/page8_Track_1.1.mp3"
+                },
+
+                {
+                    type: "text",
+                    title: "Language Focus",
+                    description:
+                        "Grammar and language explanation.",
+                    content:
+                        "Add the grammar or language explanation here."
+                },
+
+                {
+                    type: "video",
+                    title: "Video",
+                    description:
+                        "Watch the lesson video.",
+                    src:
+                        "video/unit_1/presentation1.mp4"
+                }
+
+            ]
+
+        }
+
+    }
 
 };
 
 
-/* =========================================================
-   03. LOCAL FALLBACK
-========================================================= */
+// ============================================================
+// GENERIC LESSON BUILDER
+//
+// Lessons that have not yet been filled with actual content
+// receive a clean structure based on their existing pages.
+// ============================================================
 
-const localLessons = [
+function createDefaultLessonContent(unit, lesson) {
 
-    {
-        id: "lesson-1",
+    const pages =
+        getLessonPages(unit, lesson);
 
-        title: "Introduction",
+    const parts = [];
 
-        unit: "Unit 1",
 
-        lesson_number: 1,
+    pages.forEach(
+        (page, index) => {
 
-        description:
-            "Introduction to the lesson.",
+            let title =
+                `Lesson Part ${index + 1}`;
 
-        cards: [
+            let description =
+                "Lesson material";
 
-            {
-                id: "card-1",
 
-                type: "text",
+            if (index === 0) {
 
-                title: "Welcome",
+                title =
+                    "Introduction";
 
-                subtitle: "Start here",
-
-                content:
-                    "Welcome to today's lesson. Tap this card to expand it and begin learning."
-
-            },
-
-            {
-                id: "card-2",
-
-                type: "text",
-
-                title: "Key Vocabulary",
-
-                subtitle: "Vocabulary",
-
-                content:
-                    "Learn the most important vocabulary from this lesson."
-
-            },
-
-            {
-                id: "card-3",
-
-                type: "audio",
-
-                title: "Listening",
-
-                subtitle: "Listen",
-
-                content:
-                    "Listen carefully and repeat what you hear.",
-
-                media_url: ""
-
-            },
-
-            {
-                id: "card-4",
-
-                type: "video",
-
-                title: "Lesson Video",
-
-                subtitle: "Watch",
-
-                content:
-                    "Watch the lesson video.",
-
-                media_url: ""
+                description =
+                    "Start the lesson and introduce the topic.";
 
             }
 
-        ]
+            else if (index === 1) {
 
-    }
+                title =
+                    "Vocabulary";
 
-];
+                description =
+                    "Explore the key vocabulary.";
+
+            }
+
+            else if (index === 2) {
+
+                title =
+                    "Language Focus";
+
+                description =
+                    "Study the language presented in this part.";
+
+            }
+
+            else if (index === 3) {
+
+                title =
+                    "Practice";
+
+                description =
+                    "Practise the language from the lesson.";
+
+            }
+
+            else {
+
+                title =
+                    `Lesson Part ${index + 1}`;
+
+                description =
+                    "Additional lesson material.";
+
+            }
 
 
-/* =========================================================
-   04. HELPERS
-========================================================= */
+            parts.push({
 
-function $(selector) {
+                type: "text",
 
-    return document.querySelector(selector);
+                title,
+
+                description,
+
+                content:
+                    `Add the lesson content for Unit ${unit}, Lesson ${lesson}, Part ${index + 1} here.`,
+
+                page
+
+            });
+
+        }
+    );
+
+
+    return {
+
+        title:
+            `Lesson ${lesson}`,
+
+        description:
+            `Unit ${unit} · Lesson ${lesson}`,
+
+        parts
+
+    };
 
 }
 
 
-function $all(selector) {
+// ============================================================
+// GET LESSON DATA
+// ============================================================
 
-    return Array.from(
-        document.querySelectorAll(selector)
+function getLessonContent(unit, lesson) {
+
+    const unitData =
+        LESSON_CONTENT[unit];
+
+    if (
+        unitData &&
+        unitData[lesson]
+    ) {
+
+        return unitData[lesson];
+
+    }
+
+    return createDefaultLessonContent(
+        unit,
+        lesson
     );
 
 }
 
+
+// ============================================================
+// ESCAPE HTML
+// ============================================================
 
 function escapeHTML(value) {
 
     return String(value || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-
-}
-
-
-function sanitizeLessonHTML(html) {
-
-    const temp =
-        document.createElement("div");
-
-    temp.innerHTML =
-        String(html || "");
-
-    temp.querySelectorAll(
-        "script, iframe, object, embed, form"
-    ).forEach(
-        element => element.remove()
-    );
-
-    temp.querySelectorAll("*").forEach(
-        element => {
-
-            Array.from(
-                element.attributes
-            ).forEach(
-                attribute => {
-
-                    if (
-                        /^on/i.test(attribute.name)
-                    ) {
-
-                        element.removeAttribute(
-                            attribute.name
-                        );
-
-                    }
-
-                }
-            );
-
-        }
-    );
-
-    return temp.innerHTML;
-
-}
-
-
-function normalizeUnit(unit) {
-
-    if (
-        unit === null ||
-        unit === undefined
-    ) {
-
-        return "";
-
-    }
-
-    return String(unit)
-        .replace(/^unit\s*/i, "")
-        .trim();
-
-}
-
-
-function getLessonNumber(lesson) {
-
-    if (
-        lesson.lesson_number !==
-        undefined &&
-        lesson.lesson_number !== null
-    ) {
-
-        return Number(
-            lesson.lesson_number
-        );
-
-    }
-
-    const match =
-        String(lesson.title || "")
-            .match(
-                /lesson\s*(\d+)/i
-            );
-
-    return match
-        ? Number(match[1])
-        : 0;
-
-}
-
-
-/* =========================================================
-   05. INITIALIZATION
-========================================================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    async () => {
-
-        initializePassword();
-
-        initializeExistingControls();
-
-        initializeLessonInterface();
-
-        initializeUploadSystem();
-
-        initializeWhiteboard();
-
-        initializeKeyboard();
-
-        await loadLessons();
-
-        await loadMedia();
-
-    }
-);
-
-
-/* =========================================================
-   06. PASSWORD
-========================================================= */
-
-function initializePassword() {
-
-    const form =
-        $("#teacher-login-form");
-
-    const screen =
-        $("#password-screen");
-
-    const input =
-        $("#teacher-password");
-
-    const error =
-        $("#password-error");
-
-    if (
-        !form ||
-        !screen
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        sessionStorage.getItem(
-            "poliglotaTeacherAccess"
-        ) === "true"
-    ) {
-
-        screen.style.display =
-            "none";
-
-    }
-
-
-    form.addEventListener(
-        "submit",
-        event => {
-
-            event.preventDefault();
-
-            const password =
-                input
-                    ? input.value
-                    : "";
-
-            if (
-                password === "angola"
-            ) {
-
-                sessionStorage.setItem(
-                    "poliglotaTeacherAccess",
-                    "true"
-                );
-
-                screen.style.display =
-                    "none";
-
-                if (error) {
-                    error.textContent = "";
-                }
-
-            } else {
-
-                if (error) {
-
-                    error.textContent =
-                        "Incorrect password.";
-
-                }
-
-                if (input) {
-
-                    input.focus();
-
-                    input.select();
-
-                }
-
-            }
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   07. LESSON INTERFACE
-========================================================= */
-
-function initializeLessonInterface() {
-
-    const refresh =
-        $("#lesson-content-refresh");
-
-    if (refresh) {
-
-        refresh.addEventListener(
-            "click",
-            async () => {
-
-                await loadLessons();
-
-                await loadMedia();
-
-                if (
-                    state.currentLessonId
-                ) {
-
-                    openLesson(
-                        state.currentLessonId
-                    );
-
-                }
-
-            }
-        );
-
-    }
-
-
-    const close =
-        $("#lesson-focus-close");
-
-    if (close) {
-
-        close.addEventListener(
-            "click",
-            closeFocusedCard
-        );
-
-    }
-
-
-    const overlay =
-        $("#lesson-focus-overlay");
-
-    if (overlay) {
-
-        overlay.addEventListener(
-            "click",
-            event => {
-
-                if (
-                    event.target === overlay
-                ) {
-
-                    closeFocusedCard();
-
-                }
-
-            }
-        );
-
-    }
-
-
-    document.addEventListener(
-        "click",
-        event => {
-
-            const card =
-                event.target.closest(
-                    ".lesson-card"
-                );
-
-            if (!card) {
-                return;
-            }
-
-            if (
-                event.target.closest(
-                    "button, a, audio, video, input, textarea, select"
-                )
-            ) {
-
-                return;
-
-            }
-
-            const cardId =
-                card.dataset.cardId;
-
-            const found =
-                state.cards.find(
-                    item =>
-                        String(item.id) ===
-                        String(cardId)
-                );
-
-            if (found) {
-
-                openLessonCard(
-                    found,
-                    card
-                );
-
-            }
-
-        }
-    );
-
-
-    document.addEventListener(
-        "click",
-        event => {
-
-            const closeButton =
-                event.target.closest(
-                    ".lesson-card-close"
-                );
-
-            if (!closeButton) {
-                return;
-            }
-
-            event.stopPropagation();
-
-            closeFocusedCard();
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   08. LOAD LESSONS
-========================================================= */
-
-async function loadLessons() {
-
-    if (!supabaseClient) {
-
-        state.lessons =
-            localLessons;
-
-        renderLessonNavigation();
-
-        if (
-            state.lessons.length &&
-            !state.currentLessonId
-        ) {
-
-            openLesson(
-                state.lessons[0].id
-            );
-
-        }
-
-        return;
-
-    }
-
-
-    try {
-
-        const result =
-            await supabaseClient
-                .from("lessons")
-                .select(`
-                    *,
-                    lesson_cards (*)
-                `)
-                .order(
-                    "position",
-                    {
-                        ascending: true
-                    }
-                );
-
-
-        if (result.error) {
-
-            console.warn(
-                "Supabase lesson loading failed:",
-                result.error
-            );
-
-            state.lessons =
-                localLessons;
-
-        } else {
-
-            state.lessons =
-                normalizeLessons(
-                    result.data
-                );
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Lesson loading error:",
-            error
-        );
-
-        state.lessons =
-            localLessons;
-
-    }
-
-
-    renderLessonNavigation();
-
-
-    if (
-        state.currentLessonId
-    ) {
-
-        const exists =
-            state.lessons.some(
-                lesson =>
-                    String(lesson.id) ===
-                    String(
-                        state.currentLessonId
-                    )
-            );
-
-        if (exists) {
-
-            openLesson(
-                state.currentLessonId
-            );
-
-            return;
-
-        }
-
-    }
-
-
-    const restored =
-        restoreLastLesson();
-
-    if (!restored && state.lessons.length) {
-
-        openLesson(
-            state.lessons[0].id
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   09. NORMALIZE LESSONS
-========================================================= */
-
-function normalizeLessons(data) {
-
-    if (!Array.isArray(data)) {
-
-        return [];
-
-    }
-
-
-    return data.map(
-        lesson => {
-
-            const cards =
-                Array.isArray(
-                    lesson.lesson_cards
-                )
-                    ? [...lesson.lesson_cards]
-                    : [];
-
-
-            cards.sort(
-                (a, b) => {
-
-                    return (
-                        Number(a.position || 0) -
-                        Number(b.position || 0)
-                    );
-
-                }
-            );
-
-
-            return {
-
-                ...lesson,
-
-                id:
-                    lesson.id,
-
-                title:
-                    lesson.title ||
-                    "Lesson",
-
-                unit:
-                    lesson.unit ||
-                    lesson.unit_name ||
-                    "",
-
-                lesson_number:
-                    getLessonNumber(
-                        lesson
-                    ),
-
-                description:
-                    lesson.description ||
-                    "",
-
-                cards
-
-            };
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   10. RENDER NAVIGATION
-========================================================= */
-
-function renderLessonNavigation() {
-
-    const links =
-        $all(
-            "#students-book-dropdown a[data-lesson]"
-        );
-
-
-    links.forEach(
-        link => {
-
-            const unit =
-                normalizeUnit(
-                    link.dataset.unit
-                );
-
-            const number =
-                Number(
-                    link.dataset.lesson
-                );
-
-
-            const lesson =
-                state.lessons.find(
-                    item => {
-
-                        return (
-                            normalizeUnit(
-                                item.unit
-                            ) === unit &&
-                            getLessonNumber(
-                                item
-                            ) === number
-                        );
-
-                    }
-                );
-
-
-            if (lesson) {
-
-                link.dataset.lessonId =
-                    lesson.id;
-
-                link.classList.remove(
-                    "lesson-unavailable"
-                );
-
-                link.title =
-                    lesson.title;
-
-            } else {
-
-                link.classList.add(
-                    "lesson-unavailable"
-                );
-
-            }
-
-        }
-    );
-
-
-    links.forEach(
-        link => {
-
-            link.onclick =
-                event => {
-
-                    event.preventDefault();
-
-                    const id =
-                        link.dataset.lessonId;
-
-                    if (!id) {
-
-                        showUploadStatus(
-                            "This lesson has not been created yet."
-                        );
-
-                        return;
-
-                    }
-
-                    openLesson(id);
-
-                };
-
-        }
-    );
-
-
-    $all(
-        "#students-book-dropdown .unit-item > a"
-    ).forEach(
-        unitLink => {
-
-            unitLink.onclick =
-                event => {
-
-                    event.preventDefault();
-
-                    event.stopPropagation();
-
-                    const unit =
-                        normalizeUnit(
-                            unitLink.dataset.unit
-                        );
-
-                    const parent =
-                        unitLink.closest(
-                            ".unit-item"
-                        );
-
-                    if (parent) {
-
-                        parent.classList.toggle(
-                            "unit-open"
-                        );
-
-                    }
-
-                    state.currentUnit =
-                        unit;
-
-                };
-
-        }
-    );
-
-
-    $all(
-        "#activity-book-dropdown a[data-unit]"
-    ).forEach(
-        link => {
-
-            link.onclick =
-                event => {
-
-                    event.preventDefault();
-
-                    const unit =
-                        normalizeUnit(
-                            link.dataset.unit
-                        );
-
-                    state.currentUnit =
-                        unit;
-
-                    const lesson =
-                        state.lessons.find(
-                            item =>
-                                normalizeUnit(
-                                    item.unit
-                                ) === unit
-                        );
-
-                    if (lesson) {
-
-                        openLesson(
-                            lesson.id
-                        );
-
-                    }
-
-                };
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   11. OPEN LESSON
-========================================================= */
-
-function openLesson(lessonId) {
-
-    const lesson =
-        state.lessons.find(
-            item =>
-                String(item.id) ===
-                String(lessonId)
-        );
-
-
-    if (!lesson) {
-
-        console.warn(
-            "Lesson not found:",
-            lessonId
-        );
-
-        return;
-
-    }
-
-
-    state.currentLesson =
-        lesson;
-
-    state.currentLessonId =
-        lesson.id;
-
-    state.currentUnit =
-        normalizeUnit(
-            lesson.unit
-        );
-
-    state.cards =
-        Array.isArray(
-            lesson.cards
+        .replace(
+            /&/g,
+            "&amp;"
         )
-            ? lesson.cards
-            : [];
-
-    state.currentCard =
-        null;
-
-    state.currentCardElement =
-        null;
-
-    state.cardOpen =
-        false;
-
-
-    closeFocusedCard(
-        false
-    );
-
-
-    hideLegacySlide();
-
-    renderLesson();
-
-    saveCurrentLessonLocally();
-
-    updateNavigationButtons();
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 
 }
 
 
-/* =========================================================
-   12. RENDER LESSON
-========================================================= */
+// ============================================================
+// SHOW LESSON VIEW
+// ============================================================
 
-function renderLesson() {
+function showLessonView(
+    unit,
+    lesson
+) {
 
-    const title =
-        $("#lesson-content-title");
-
-    const subtitle =
-        $("#lesson-content-subtitle");
-
-    const cardsContainer =
-        $("#lesson-cards");
-
-
-    if (
-        !cardsContainer
-    ) {
-
-        return;
-
-    }
+    const data =
+        getLessonContent(
+            unit,
+            lesson
+        );
 
 
-    if (title) {
+    mainSlideView.style.display =
+        "none";
 
-        title.textContent =
-            state.currentLesson.title ||
-            "Lesson";
+    lessonContentView.classList.add(
+        "active"
+    );
 
-    }
-
-
-    if (subtitle) {
-
-        const unit =
-            state.currentLesson.unit
-                ? `${state.currentLesson.unit} • `
-                : "";
-
-        subtitle.textContent =
-            `${unit}${state.currentLesson.description || "Explore the lesson cards below."}`;
-
-    }
+    lessonContentView.setAttribute(
+        "aria-hidden",
+        "false"
+    );
 
 
-    cardsContainer.innerHTML =
+    lessonContentKicker.textContent =
+        `UNIT ${unit} · LESSON ${lesson}`;
+
+    lessonContentTitle.textContent =
+        data.title ||
+        `Lesson ${lesson}`;
+
+    lessonContentDescription.textContent =
+        data.description ||
         "";
 
 
-    if (!state.cards.length) {
+    renderLessonCards(
+        data.parts || [],
+        unit,
+        lesson
+    );
 
-        cardsContainer.innerHTML = `
 
-            <div class="lesson-empty">
+    lessonContentView.scrollTop =
+        0;
 
-                <div class="lesson-empty-icon">
+
+    currentImages = [];
+
+    currentIndex = 0;
+
+    prevBtn.style.display =
+        "none";
+
+    nextBtn.style.display =
+        "none";
+
+
+    closeAudioList();
+
+    closeVideoList();
+
+    hideAudioPlayer();
+
+    hideVideoPlayer();
+
+
+    saveCurrentLessonState(
+        unit,
+        lesson
+    );
+
+}
+
+
+// ============================================================
+// RENDER LESSON CARDS
+// ============================================================
+
+function renderLessonCards(
+    parts,
+    unit,
+    lesson
+) {
+
+    lessonCardsContainer.innerHTML =
+        "";
+
+
+    if (
+        !parts ||
+        parts.length === 0
+    ) {
+
+        lessonCardsContainer.innerHTML = `
+
+            <div class="lesson-empty-state">
+
+                <div class="empty-icon">
                     +
                 </div>
 
-                <h3>
-                    No lesson content yet
-                </h3>
+                <h2>
+                    No lesson material yet
+                </h2>
 
                 <p>
-                    Teacher materials can be uploaded
-                    using the UPLOAD button.
+                    This lesson has been created,
+                    but its content has not been added yet.
                 </p>
 
             </div>
@@ -1075,14 +452,125 @@ function renderLesson() {
     }
 
 
-    state.cards.forEach(
-        (card, index) => {
+    parts.forEach(
+        (part, index) => {
 
-            cardsContainer.appendChild(
-                createLessonCardElement(
-                    card,
-                    index
-                )
+            const card =
+                document.createElement("article");
+
+
+            card.className =
+                "lesson-material-card";
+
+
+            card.tabIndex =
+                0;
+
+
+            card.dataset.index =
+                index;
+
+
+            const type =
+                String(
+                    part.type || "text"
+                ).toLowerCase();
+
+
+            const typeInfo =
+                getLessonTypeInfo(type);
+
+
+            card.innerHTML = `
+
+                <div class="material-preview">
+
+                    <div class="material-icon ${typeInfo.className}">
+                        ${typeInfo.icon}
+                    </div>
+
+                    <div class="material-type">
+                        ${typeInfo.label}
+                    </div>
+
+                </div>
+
+
+                <div class="material-card-body">
+
+                    <strong>
+                        ${escapeHTML(
+                            part.title ||
+                            `Part ${index + 1}`
+                        )}
+                    </strong>
+
+                    <span>
+                        ${escapeHTML(
+                            part.description ||
+                            typeInfo.description
+                        )}
+                    </span>
+
+                    <small>
+                        ${typeInfo.action}
+                    </small>
+
+                </div>
+
+
+                <div class="material-open">
+                    →
+                </div>
+
+            `;
+
+
+            card.style.setProperty(
+                "--card-index",
+                index
+            );
+
+
+            card.addEventListener(
+                "click",
+                () => {
+
+                    openLessonPart(
+                        part,
+                        unit,
+                        lesson
+                    );
+
+                }
+            );
+
+
+            card.addEventListener(
+                "keydown",
+                event => {
+
+                    if (
+                        event.key === "Enter" ||
+                        event.key === " "
+                    ) {
+
+                        event.preventDefault();
+
+                        openLessonPart(
+                            part,
+                            unit,
+                            lesson
+                        );
+
+                    }
+
+                }
+            );
+
+
+            lessonCardsContainer.appendChild(
+                card
             );
 
         }
@@ -1091,3020 +579,2114 @@ function renderLesson() {
 }
 
 
-/* =========================================================
-   13. CREATE CARD DOM ELEMENT
-========================================================= */
+// ============================================================
+// LESSON TYPE INFORMATION
+// ============================================================
 
-function createLessonCardElement(
-    card,
-    index
-) {
+function getLessonTypeInfo(type) {
 
-    const wrapper =
-        document.createElement(
-            "article"
-        );
+    const types = {
 
-    wrapper.className =
-        "lesson-card-wrapper";
+        text: {
 
+            label: "READ",
 
-    const cardElement =
-        document.createElement(
-            "div"
-        );
+            icon: "Aa",
 
-    cardElement.className =
-        "lesson-card";
+            className:
+                "text-icon",
 
-    cardElement.dataset.cardId =
-        card.id || index;
+            description:
+                "Lesson explanation",
 
-    cardElement.dataset.cardType =
-        card.type || "text";
+            action:
+                "Tap to read"
 
+        },
 
-    const front =
-        document.createElement(
-            "div"
-        );
+        audio: {
 
-    front.className =
-        "lesson-card-front";
+            label: "AUDIO",
 
+            icon: "♫",
 
-    const icon =
-        document.createElement(
-            "div"
-        );
+            className:
+                "audio-icon",
 
-    icon.className =
-        "lesson-card-icon";
+            description:
+                "Listening material",
 
-    icon.textContent =
-        getCardIcon(
-            card.type
-        );
+            action:
+                "Tap to listen"
 
+        },
 
-    const title =
-        document.createElement(
-            "h2"
-        );
+        video: {
 
-    title.className =
-        "lesson-card-title";
+            label: "VIDEO",
 
-    title.textContent =
-        card.title ||
-        "Lesson content";
+            icon: "▶",
 
+            className:
+                "video-icon",
 
-    const subtitle =
-        document.createElement(
-            "p"
-        );
+            description:
+                "Video material",
 
-    subtitle.className =
-        "lesson-card-subtitle";
+            action:
+                "Tap to watch"
 
-    subtitle.textContent =
-        card.subtitle ||
-        getCardTypeLabel(
-            card.type
-        );
+        },
 
+        image: {
 
-    const hint =
-        document.createElement(
-            "div"
-        );
+            label: "VISUAL",
 
-    hint.className =
-        "lesson-card-hint";
+            icon: "▧",
 
-    hint.innerHTML =
-        `Tap to explore <span>→</span>`;
+            className:
+                "image-icon",
 
+            description:
+                "Visual lesson material",
 
-    front.appendChild(icon);
+            action:
+                "Tap to view"
 
-    front.appendChild(title);
+        },
 
-    front.appendChild(subtitle);
+        document: {
 
-    front.appendChild(hint);
+            label: "DOCUMENT",
+
+            icon: "▤",
+
+            className:
+                "document-icon",
+
+            description:
+                "Lesson document",
+
+            action:
+                "Tap to open"
+
+        }
+
+    };
 
 
-    const back =
-        document.createElement(
-            "div"
-        );
-
-    back.className =
-        "lesson-card-back";
-
-
-    const close =
-        document.createElement(
-            "button"
-        );
-
-    close.type =
-        "button";
-
-    close.className =
-        "lesson-card-close";
-
-    close.textContent =
-        "×";
-
-    close.setAttribute(
-        "aria-label",
-        "Close"
+    return (
+        types[type] ||
+        types.text
     );
-
-
-    const expandedTitle =
-        document.createElement(
-            "h2"
-        );
-
-    expandedTitle.className =
-        "lesson-card-expanded-title";
-
-    expandedTitle.textContent =
-        card.title ||
-        "Lesson content";
-
-
-    const content =
-        document.createElement(
-            "div"
-        );
-
-    content.className =
-        "lesson-card-content";
-
-
-    renderCardContent(
-        content,
-        card
-    );
-
-
-    back.appendChild(
-        close
-    );
-
-    back.appendChild(
-        expandedTitle
-    );
-
-    back.appendChild(
-        content
-    );
-
-
-    cardElement.appendChild(
-        front
-    );
-
-    cardElement.appendChild(
-        back
-    );
-
-
-    wrapper.appendChild(
-        cardElement
-    );
-
-
-    return wrapper;
 
 }
 
 
-/* =========================================================
-   14. CARD ICON
-========================================================= */
+// ============================================================
+// OPEN EXPANDED LESSON PART
+// ============================================================
 
-function getCardIcon(type) {
-
-    switch (
-        String(type || "")
-            .toLowerCase()
-    ) {
-
-        case "audio":
-        case "listening":
-            return "🎧";
-
-        case "video":
-            return "▶";
-
-        case "image":
-            return "▣";
-
-        case "pdf":
-            return "PDF";
-
-        case "grammar":
-            return "Aa";
-
-        case "question":
-            return "?";
-
-        case "exercise":
-            return "✓";
-
-        case "speaking":
-            return "◉";
-
-        case "text":
-        case "explanation":
-            return "Aa";
-
-        default:
-            return "◆";
-
-    }
-
-}
-
-
-/* =========================================================
-   15. CARD TYPE LABEL
-========================================================= */
-
-function getCardTypeLabel(type) {
-
-    switch (
-        String(type || "")
-            .toLowerCase()
-    ) {
-
-        case "audio":
-            return "Audio";
-
-        case "video":
-            return "Video";
-
-        case "image":
-            return "Visual";
-
-        case "pdf":
-            return "Document";
-
-        case "grammar":
-            return "Grammar";
-
-        case "question":
-            return "Question";
-
-        case "exercise":
-            return "Practice";
-
-        case "listening":
-            return "Listening";
-
-        case "speaking":
-            return "Speaking";
-
-        case "text":
-        case "explanation":
-            return "Explanation";
-
-        default:
-            return "Explore";
-
-    }
-
-}
-
-
-/* =========================================================
-   16. RENDER CARD CONTENT
-========================================================= */
-
-function renderCardContent(
-    container,
-    card
+function openLessonPart(
+    part,
+    unit,
+    lesson
 ) {
 
     const type =
         String(
-            card.type || "text"
+            part.type || "text"
         ).toLowerCase();
 
 
-    /* TEXT */
+    focusType.textContent =
+        getLessonTypeInfo(type).label;
 
-    if (
-        type === "text" ||
-        type === "explanation" ||
-        type === "grammar"
-    ) {
 
-        const text =
-            document.createElement(
-                "div"
-            );
+    focusTitle.textContent =
+        part.title ||
+        `Lesson ${lesson}`;
 
-        text.className =
-            "lesson-card-text";
 
-        text.innerHTML =
-            sanitizeLessonHTML(
-                card.content || ""
-            );
-
-        container.appendChild(
-            text
-        );
-
-        return;
-
-    }
-
-
-    /* IMAGE */
-
-    if (
-        type === "image"
-    ) {
-
-        if (
-            card.media_url
-        ) {
-
-            const image =
-                document.createElement(
-                    "img"
-                );
-
-            image.className =
-                "lesson-card-image";
-
-            image.src =
-                card.media_url;
-
-            image.alt =
-                card.title ||
-                "Lesson image";
-
-            image.loading =
-                "lazy";
-
-            container.appendChild(
-                image
-            );
-
-        } else {
-
-            showMissingMedia(
-                container,
-                "Image"
-            );
-
-        }
-
-
-        if (card.content) {
-
-            appendDescription(
-                container,
-                card.content
-            );
-
-        }
-
-        return;
-
-    }
-
-
-    /* AUDIO */
-
-    if (
-        type === "audio" ||
-        type === "listening"
-    ) {
-
-        if (
-            card.media_url
-        ) {
-
-            const audio =
-                document.createElement(
-                    "audio"
-                );
-
-            audio.className =
-                "lesson-card-audio";
-
-            audio.controls =
-                true;
-
-            audio.preload =
-                "metadata";
-
-            audio.src =
-                card.media_url;
-
-            container.appendChild(
-                audio
-            );
-
-        } else {
-
-            showMissingMedia(
-                container,
-                "Audio"
-            );
-
-        }
-
-
-        if (card.content) {
-
-            appendDescription(
-                container,
-                card.content
-            );
-
-        }
-
-        return;
-
-    }
-
-
-    /* VIDEO */
-
-    if (
-        type === "video"
-    ) {
-
-        if (
-            card.media_url
-        ) {
-
-            const video =
-                document.createElement(
-                    "video"
-                );
-
-            video.className =
-                "lesson-card-video";
-
-            video.controls =
-                true;
-
-            video.preload =
-                "metadata";
-
-            video.playsInline =
-                true;
-
-            video.src =
-                card.media_url;
-
-            container.appendChild(
-                video
-            );
-
-        } else {
-
-            showMissingMedia(
-                container,
-                "Video"
-            );
-
-        }
-
-
-        if (card.content) {
-
-            appendDescription(
-                container,
-                card.content
-            );
-
-        }
-
-        return;
-
-    }
-
-
-    /* PDF */
-
-    if (
-        type === "pdf"
-    ) {
-
-        if (
-            card.media_url
-        ) {
-
-            const link =
-                document.createElement(
-                    "a"
-                );
-
-            link.className =
-                "lesson-pdf-link";
-
-            link.href =
-                card.media_url;
-
-            link.target =
-                "_blank";
-
-            link.rel =
-                "noopener noreferrer";
-
-            link.textContent =
-                "Open lesson document";
-
-            container.appendChild(
-                link
-            );
-
-        } else {
-
-            showMissingMedia(
-                container,
-                "Document"
-            );
-
-        }
-
-
-        if (card.content) {
-
-            appendDescription(
-                container,
-                card.content
-            );
-
-        }
-
-        return;
-
-    }
-
-
-    /* DEFAULT */
-
-    if (card.content) {
-
-        appendDescription(
-            container,
-            card.content
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   17. DESCRIPTION
-========================================================= */
-
-function appendDescription(
-    container,
-    content
-) {
-
-    const description =
-        document.createElement(
-            "div"
-        );
-
-    description.className =
-        "lesson-card-text";
-
-    description.innerHTML =
-        sanitizeLessonHTML(
-            content
-        );
-
-    container.appendChild(
-        description
-    );
-
-}
-
-
-/* =========================================================
-   18. MISSING MEDIA
-========================================================= */
-
-function showMissingMedia(
-    container,
-    mediaType
-) {
-
-    const message =
-        document.createElement(
-            "div"
-        );
-
-    message.className =
-        "lesson-media-missing";
-
-    message.innerHTML = `
-
-        <strong>
-            ${escapeHTML(mediaType)}
-        </strong>
-
-        <span>
-            No ${escapeHTML(
-                mediaType.toLowerCase()
-            )} has been uploaded yet.
-        </span>
-
-    `;
-
-    container.appendChild(
-        message
-    );
-
-}
-
-
-/* =========================================================
-   19. OPEN CARD
-========================================================= */
-
-function openLessonCard(
-    card,
-    element
-) {
-
-    if (!card) {
-        return;
-    }
-
-
-    state.currentCard =
-        card;
-
-    state.currentCardElement =
-        element;
-
-    state.cardOpen =
-        true;
-
-
-    /*
-       The requested behavior is a true focused card.
-       We use the overlay rather than relying solely on
-       CSS expansion inside the grid.
-    */
-
-    const overlay =
-        $("#lesson-focus-overlay");
-
-    const focusCard =
-        $("#lesson-focus-card");
-
-
-    if (
-        !overlay ||
-        !focusCard
-    ) {
-
-        return;
-
-    }
-
-
-    focusCard.innerHTML =
+    focusDescription.textContent =
+        part.description ||
         "";
 
 
-    const close =
-        document.createElement(
-            "button"
-        );
+    focusMedia.innerHTML =
+        "";
 
-    close.type =
-        "button";
 
-    close.className =
-        "lesson-card-close";
+    if (type === "text") {
 
-    close.textContent =
-        "×";
+        const article =
+            document.createElement("div");
 
-    close.setAttribute(
-        "aria-label",
-        "Close"
-    );
+        article.className =
+            "focus-text-content";
 
-
-    const title =
-        document.createElement(
-            "h2"
-        );
-
-    title.className =
-        "lesson-card-expanded-title";
-
-    title.textContent =
-        card.title ||
-        "Lesson content";
-
-
-    const content =
-        document.createElement(
-            "div"
-        );
-
-    content.className =
-        "lesson-card-content";
-
-
-    renderCardContent(
-        content,
-        card
-    );
-
-
-    focusCard.appendChild(
-        close
-    );
-
-    focusCard.appendChild(
-        title
-    );
-
-    focusCard.appendChild(
-        content
-    );
-
-
-    close.addEventListener(
-        "click",
-        closeFocusedCard
-    );
-
-
-    overlay.classList.add(
-        "is-visible"
-    );
-
-    overlay.setAttribute(
-        "aria-hidden",
-        "false"
-    );
-
-
-    document.body.classList.add(
-        "lesson-card-open"
-    );
-
-
-    /*
-       Prevent background scrolling.
-    */
-
-    document.documentElement.classList.add(
-        "lesson-focus-active"
-    );
-
-}
-
-
-/* =========================================================
-   20. CLOSE CARD
-========================================================= */
-
-function closeFocusedCard(
-    updateState = true
-) {
-
-    const overlay =
-        $("#lesson-focus-overlay");
-
-    if (overlay) {
-
-        overlay.classList.remove(
-            "is-visible"
-        );
-
-        overlay.setAttribute(
-            "aria-hidden",
-            "true"
-        );
-
-    }
-
-
-    document.body.classList.remove(
-        "lesson-card-open"
-    );
-
-    document.documentElement.classList.remove(
-        "lesson-focus-active"
-    );
-
-
-    if (updateState) {
-
-        state.currentCard =
-            null;
-
-        state.currentCardElement =
-            null;
-
-        state.cardOpen =
-            false;
-
-    }
-
-}
-
-
-/* =========================================================
-   21. LEGACY SLIDE
-========================================================= */
-
-function hideLegacySlide() {
-
-    const image =
-        $("#slide-image");
-
-    if (image) {
-
-        image.style.display =
-            "none";
-
-    }
-
-
-    const wrapper =
-        document.querySelector(
-            ".slide-wrapper"
-        );
-
-    if (wrapper) {
-
-        wrapper.classList.add(
-            "lesson-mode-active"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   22. MEDIA
-========================================================= */
-
-async function loadMedia() {
-
-    if (!supabaseClient) {
-
-        state.media = [];
-
-        return [];
-
-    }
-
-
-    try {
-
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .from("lesson_media")
-                .select("*")
-                .order(
-                    "created_at",
-                    {
-                        ascending: false
-                    }
-                );
-
-
-        if (error) {
-
-            console.warn(
-                "Could not load media:",
-                error
+        article.innerHTML =
+            formatLessonText(
+                part.content || ""
             );
 
-            return [];
-
-        }
-
-
-        state.media =
-            data || [];
-
-        return state.media;
-
-    } catch (error) {
-
-        console.error(
-            "Media loading failed:",
-            error
-        );
-
-        return [];
-
-    }
-
-}
-
-
-/* =========================================================
-   23. TEACHER UPLOAD SYSTEM
-========================================================= */
-
-function initializeUploadSystem() {
-
-    const button =
-        $("#lesson-upload-btn");
-
-    const modal =
-        $("#lesson-upload-modal");
-
-    const close =
-        $("#lesson-upload-close");
-
-    const submit =
-        $("#lesson-upload-submit");
-
-    const input =
-        $("#lesson-file-input");
-
-
-    if (button) {
-
-        button.addEventListener(
-            "click",
-            openUploadModal
+        focusMedia.appendChild(
+            article
         );
 
     }
 
 
-    if (close) {
+    else if (type === "audio") {
 
-        close.addEventListener(
-            "click",
-            closeUploadModal
+        const wrapper =
+            document.createElement("div");
+
+        wrapper.className =
+            "focus-audio-wrapper";
+
+
+        const icon =
+            document.createElement("div");
+
+        icon.className =
+            "focus-audio-art";
+
+        icon.textContent =
+            "♫";
+
+
+        const audio =
+            document.createElement("audio");
+
+        audio.controls =
+            true;
+
+        audio.preload =
+            "metadata";
+
+        audio.src =
+            part.src || "";
+
+
+        wrapper.appendChild(
+            icon
+        );
+
+        wrapper.appendChild(
+            audio
+        );
+
+
+        focusMedia.appendChild(
+            wrapper
         );
 
     }
 
 
-    if (modal) {
+    else if (type === "video") {
 
-        modal.addEventListener(
-            "click",
-            event => {
+        const video =
+            document.createElement("video");
 
-                if (
-                    event.target === modal
-                ) {
+        video.controls =
+            true;
 
-                    closeUploadModal();
+        video.playsInline =
+            true;
 
-                }
+        video.preload =
+            "metadata";
 
-            }
+        video.src =
+            part.src || "";
+
+
+        focusMedia.appendChild(
+            video
         );
 
     }
 
 
-    if (submit) {
+    else if (type === "image") {
 
-        submit.addEventListener(
-            "click",
-            handleUploadSubmit
+        const image =
+            document.createElement("img");
+
+        image.src =
+            part.src || "";
+
+        image.alt =
+            part.title ||
+            "Lesson image";
+
+
+        focusMedia.appendChild(
+            image
         );
 
     }
 
 
-    if (input) {
+    else if (type === "document") {
 
-        input.addEventListener(
-            "change",
-            updateUploadFileLabel
+        const wrapper =
+            document.createElement("div");
+
+        wrapper.className =
+            "focus-document";
+
+
+        wrapper.innerHTML = `
+
+            <div class="focus-document-icon">
+                ▤
+            </div>
+
+            <p>
+                ${escapeHTML(
+                    part.description ||
+                    "Open lesson document"
+                )}
+            </p>
+
+            <a
+                href="${escapeHTML(
+                    part.src || "#"
+                )}"
+                target="_blank"
+                rel="noopener"
+            >
+                Open Document
+            </a>
+
+        `;
+
+
+        focusMedia.appendChild(
+            wrapper
         );
 
     }
 
-}
 
-
-/* =========================================================
-   24. OPEN UPLOAD MODAL
-========================================================= */
-
-function openUploadModal() {
-
-    const modal =
-        $("#lesson-upload-modal");
-
-    const label =
-        $("#upload-lesson-label");
-
-
-    if (!modal) {
-        return;
-    }
-
-
-    if (
-        !state.currentLesson
-    ) {
-
-        if (label) {
-
-            label.textContent =
-                "Please select a lesson first.";
-
-        }
-
-    } else {
-
-        if (label) {
-
-            label.textContent =
-                `${state.currentLesson.unit || ""} • ${state.currentLesson.title}`;
-
-        }
-
-    }
-
-
-    modal.classList.add(
-        "is-visible"
+    lessonFocusOverlay.classList.add(
+        "open"
     );
 
-    modal.setAttribute(
+    lessonFocusOverlay.setAttribute(
         "aria-hidden",
         "false"
     );
 
-
-    const title =
-        $("#upload-title");
-
-    if (title) {
-
-        setTimeout(
-            () => title.focus(),
-            100
-        );
-
-    }
+    document.body.classList.add(
+        "lesson-focus-open"
+    );
 
 }
 
 
-/* =========================================================
-   25. CLOSE UPLOAD MODAL
-========================================================= */
+// ============================================================
+// FORMAT TEXT CONTENT
+// ============================================================
 
-function closeUploadModal() {
+function formatLessonText(
+    text
+) {
 
-    const modal =
-        $("#lesson-upload-modal");
-
-    if (!modal) {
-        return;
-    }
+    const safe =
+        escapeHTML(text);
 
 
-    modal.classList.remove(
-        "is-visible"
+    return safe
+        .split(/\n\s*\n/)
+        .map(
+            paragraph =>
+                `<p>${paragraph.replace(
+                    /\n/g,
+                    "<br>"
+                )}</p>`
+        )
+        .join("");
+
+}
+
+
+// ============================================================
+// CLOSE LESSON PART
+// ============================================================
+
+function closeLessonPart() {
+
+    const media =
+        focusMedia.querySelectorAll(
+            "audio, video"
+        );
+
+
+    media.forEach(
+        element => {
+
+            try {
+
+                element.pause();
+
+            } catch (_) {}
+
+        }
     );
 
-    modal.setAttribute(
+
+    lessonFocusOverlay.classList.remove(
+        "open"
+    );
+
+    lessonFocusOverlay.setAttribute(
         "aria-hidden",
         "true"
     );
 
-}
-
-
-/* =========================================================
-   26. FILE LABEL
-========================================================= */
-
-function updateUploadFileLabel() {
-
-    const input =
-        $("#lesson-file-input");
-
-    const progress =
-        $("#upload-progress");
-
-
-    if (
-        !input ||
-        !progress
-    ) {
-
-        return;
-
-    }
-
-
-    const file =
-        input.files?.[0];
-
-
-    if (!file) {
-
-        progress.textContent =
-            "";
-
-        return;
-
-    }
-
-
-    progress.textContent =
-        `${file.name} • ${formatFileSize(file.size)}`;
+    document.body.classList.remove(
+        "lesson-focus-open"
+    );
 
 }
 
 
-/* =========================================================
-   27. HANDLE UPLOAD
-========================================================= */
+// ============================================================
+// RETURN FROM LESSON VIEW
+// ============================================================
 
-async function handleUploadSubmit() {
+function closeLessonView() {
 
-    if (
-        !state.currentLesson
-    ) {
-
-        showUploadProgress(
-            "Select a lesson first."
-        );
-
-        return;
-
-    }
+    closeLessonPart();
 
 
-    const titleInput =
-        $("#upload-title");
+    lessonContentView.classList.remove(
+        "active"
+    );
 
-    const descriptionInput =
-        $("#upload-description");
-
-    const fileInput =
-        $("#lesson-file-input");
-
-
-    const title =
-        titleInput?.value.trim() ||
-        "Teacher Material";
+    lessonContentView.setAttribute(
+        "aria-hidden",
+        "true"
+    );
 
 
-    const description =
-        descriptionInput?.value.trim() ||
+    mainSlideView.style.display =
         "";
 
 
-    const file =
-        fileInput?.files?.[0];
+    loadHome();
+
+}
 
 
-    if (!file) {
+// ============================================================
+// LESSON STATE
+// ============================================================
 
-        showUploadProgress(
-            "Please select a file."
-        );
+function saveCurrentLessonState(
+    unit,
+    lesson
+) {
 
-        return;
+    localStorage.setItem(
+        "poliglotaLessonState",
+        JSON.stringify({
+            unit,
+            lesson
+        })
+    );
+
+}
+
+
+// ============================================================
+// LESSON REFRESH / RETURN BUTTON
+// ============================================================
+
+lessonContentRefresh.addEventListener(
+    "click",
+    () => {
+
+        closeLessonView();
 
     }
+);
 
 
-    const submit =
-        $("#lesson-upload-submit");
+lessonFocusClose.addEventListener(
+    "click",
+    () => {
 
-
-    if (submit) {
-
-        submit.disabled =
-            true;
-
-        submit.textContent =
-            "Uploading...";
+        closeLessonPart();
 
     }
+);
 
 
-    try {
-
-        const media =
-            await uploadMedia(
-                file
-            );
-
-
-        if (!media) {
-
-            return;
-
-        }
-
-
-        const card =
-            await createLessonCard(
-                state.currentLesson.id,
-                {
-
-                    title,
-
-                    subtitle:
-                        detectMediaType(
-                            file.type
-                        ) === "audio"
-                            ? "Audio"
-                            : detectMediaType(
-                                file.type
-                            ) === "video"
-                                ? "Video"
-                                : detectMediaType(
-                                    file.type
-                                ) === "image"
-                                    ? "Visual"
-                                    : "Document",
-
-                    type:
-                        detectMediaType(
-                            file.type
-                        ),
-
-                    content:
-                        description,
-
-                    media_id:
-                        media.id,
-
-                    media_url:
-                        media.file_url
-
-                }
-            );
-
-
-        if (!card) {
-
-            showUploadProgress(
-                "The file uploaded, but the lesson card could not be created."
-            );
-
-            return;
-
-        }
-
-
-        showUploadProgress(
-            "Material uploaded successfully."
-        );
-
-
-        if (titleInput) {
-            titleInput.value = "";
-        }
-
-        if (descriptionInput) {
-            descriptionInput.value = "";
-        }
-
-        if (fileInput) {
-            fileInput.value = "";
-        }
-
-
-        await loadLessons();
-
-        await loadMedia();
-
+lessonFocusOverlay.addEventListener(
+    "click",
+    event => {
 
         if (
-            state.currentLessonId
+            event.target ===
+            lessonFocusOverlay
         ) {
 
-            openLesson(
-                state.currentLessonId
-            );
-
-        }
-
-
-        setTimeout(
-            closeUploadModal,
-            1200
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Upload process failed:",
-            error
-        );
-
-        showUploadProgress(
-            `Upload failed: ${error.message}`
-        );
-
-    } finally {
-
-        if (submit) {
-
-            submit.disabled =
-                false;
-
-            submit.textContent =
-                "Upload material";
+            closeLessonPart();
 
         }
 
     }
+);
 
-}
 
-
-/* =========================================================
-   28. UPLOAD MEDIA
-========================================================= */
-
-async function uploadMedia(file) {
-
-    if (!supabaseClient) {
-
-        showUploadProgress(
-            "Supabase is not configured."
-        );
-
-        return null;
-
-    }
-
-
-    const allowedTypes = [
-
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "image/gif",
-
-        "audio/mpeg",
-        "audio/mp3",
-        "audio/wav",
-        "audio/ogg",
-        "audio/webm",
-
-        "video/mp4",
-        "video/webm",
-        "video/ogg",
-
-        "application/pdf"
-
-    ];
-
-
-    if (
-        !allowedTypes.includes(
-            file.type
-        )
-    ) {
-
-        showUploadProgress(
-            "This file type is not supported."
-        );
-
-        return null;
-
-    }
-
-
-    const maxSize =
-        500 * 1024 * 1024;
-
-
-    if (
-        file.size > maxSize
-    ) {
-
-        showUploadProgress(
-            "The file is larger than 500 MB."
-        );
-
-        return null;
-
-    }
-
-
-    const safeName =
-        sanitizeFileName(
-            file.name
-        );
-
-
-    const path =
-        `${Date.now()}-${crypto.randomUUID?.() || Math.random().toString(36).slice(2)}-${safeName}`;
-
-
-    showUploadProgress(
-        `Uploading ${file.name}...`
-    );
-
-
-    try {
-
-        const {
-            error
-        } =
-            await supabaseClient
-                .storage
-                .from("lesson-media")
-                .upload(
-                    path,
-                    file,
-                    {
-
-                        cacheControl:
-                            "3600",
-
-                        upsert:
-                            false,
-
-                        contentType:
-                            file.type
-
-                    }
-                );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        const {
-            data: publicData
-        } =
-            supabaseClient
-                .storage
-                .from("lesson-media")
-                .getPublicUrl(
-                    path
-                );
-
-
-        const publicUrl =
-            publicData.publicUrl;
-
-
-        const mediaType =
-            detectMediaType(
-                file.type
-            );
-
-
-        const {
-            data,
-            error: databaseError
-        } =
-            await supabaseClient
-                .from("lesson_media")
-                .insert({
-
-                    file_name:
-                        file.name,
-
-                    file_path:
-                        path,
-
-                    file_url:
-                        publicUrl,
-
-                    media_type:
-                        mediaType,
-
-                    mime_type:
-                        file.type,
-
-                    file_size:
-                        file.size
-
-                })
-                .select()
-                .single();
-
-
-        if (databaseError) {
-
-            console.error(
-                "Media database error:",
-                databaseError
-            );
-
-            /*
-               Storage succeeded but database
-               record failed.
-            */
-
-            showUploadProgress(
-                "File uploaded, but the media record could not be saved."
-            );
-
-            return null;
-
-        }
-
-
-        state.media.push(
-            data
-        );
-
-
-        return data;
-
-    } catch (error) {
-
-        console.error(
-            "Upload failed:",
-            error
-        );
-
-        showUploadProgress(
-            `Upload failed: ${error.message}`
-        );
-
-        return null;
-
-    }
-
-}
-
-
-/* =========================================================
-   29. MEDIA TYPE
-========================================================= */
-
-function detectMediaType(mime) {
-
-    if (
-        mime === "application/pdf"
-    ) {
-
-        return "pdf";
-
-    }
-
-
-    if (
-        mime.startsWith("image/")
-    ) {
-
-        return "image";
-
-    }
-
-
-    if (
-        mime.startsWith("audio/")
-    ) {
-
-        return "audio";
-
-    }
-
-
-    if (
-        mime.startsWith("video/")
-    ) {
-
-        return "video";
-
-    }
-
-
-    return "other";
-
-}
-
-
-/* =========================================================
-   30. CREATE LESSON CARD
-========================================================= */
-
-async function createLessonCard(
-    lessonId,
-    cardData
-) {
-
-    if (!supabaseClient) {
-
-        return null;
-
-    }
-
-
-    try {
-
-        const position =
-            state.cards.length;
-
-
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .from("lesson_cards")
-                .insert({
-
-                    lesson_id:
-                        lessonId,
-
-                    title:
-                        cardData.title ||
-                        "New Card",
-
-                    subtitle:
-                        cardData.subtitle ||
-                        "",
-
-                    type:
-                        cardData.type ||
-                        "text",
-
-                    content:
-                        cardData.content ||
-                        "",
-
-                    media_id:
-                        cardData.media_id ||
-                        null,
-
-                    media_url:
-                        cardData.media_url ||
-                        null,
-
-                    position
-
-                })
-                .select()
-                .single();
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        return data;
-
-    } catch (error) {
-
-        console.error(
-            "Could not create lesson card:",
-            error
-        );
-
-        return null;
-
-    }
-
-}
-
-
-/* =========================================================
-   31. ASSIGN MEDIA
-========================================================= */
-
-async function assignMediaToCard(
-    cardId,
-    mediaId
-) {
-
-    if (!supabaseClient) {
-
-        return false;
-
-    }
-
-
-    try {
-
-        const {
-            data: media,
-            error
-        } =
-            await supabaseClient
-                .from("lesson_media")
-                .select("*")
-                .eq(
-                    "id",
-                    mediaId
-                )
-                .single();
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        const {
-            error: updateError
-        } =
-            await supabaseClient
-                .from("lesson_cards")
-                .update({
-
-                    media_id:
-                        media.id,
-
-                    media_url:
-                        media.file_url
-
-                })
-                .eq(
-                    "id",
-                    cardId
-                );
-
-
-        if (updateError) {
-
-            throw updateError;
-
-        }
-
-
-        await loadLessons();
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "Could not assign media:",
-            error
-        );
-
-        return false;
-
-    }
-
-}
-
-
-/* =========================================================
-   32. UPDATE CARD
-========================================================= */
-
-async function updateLessonCard(
-    cardId,
-    updates
-) {
-
-    if (!supabaseClient) {
-
-        return false;
-
-    }
-
-
-    try {
-
-        const {
-            error
-        } =
-            await supabaseClient
-                .from("lesson_cards")
-                .update(
-                    updates
-                )
-                .eq(
-                    "id",
-                    cardId
-                );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        await loadLessons();
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "Could not update card:",
-            error
-        );
-
-        return false;
-
-    }
-
-}
-
-
-/* =========================================================
-   33. DELETE CARD
-=========================================================
-
-   This remains available to the owner/backend API,
-   but NO delete UI is exposed to teachers.
-========================================================= */
-
-async function deleteLessonCard(
-    cardId
-) {
-
-    if (!supabaseClient) {
-
-        return false;
-
-    }
-
-
-    try {
-
-        const {
-            error
-        } =
-            await supabaseClient
-                .from("lesson_cards")
-                .delete()
-                .eq(
-                    "id",
-                    cardId
-                );
-
-
-        if (error) {
-
-            throw error;
-
-        }
-
-
-        await loadLessons();
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "Could not delete card:",
-            error
-        );
-
-        return false;
-
-    }
-
-}
-
-
-/* =========================================================
-   34. EXISTING CONTROLS
-========================================================= */
-
-function initializeExistingControls() {
-
-    initializeNavigation();
-
-    initializeAudio();
-
-    initializeVideo();
-
-    initializeDropdowns();
-
-    initializeLegacyButtons();
-
-}
-
-
-/* =========================================================
-   35. NAVIGATION
-========================================================= */
-
-function initializeNavigation() {
-
-    const previous =
-        $("#prev-btn");
-
-    const next =
-        $("#next-btn");
-
-
-    if (previous) {
-
-        previous.addEventListener(
-            "click",
-            () => navigateLesson(-1)
-        );
-
-    }
-
-
-    if (next) {
-
-        next.addEventListener(
-            "click",
-            () => navigateLesson(1)
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   36. LESSON NAVIGATION
-========================================================= */
-
-function navigateLesson(direction) {
-
-    if (
-        !state.lessons.length
-    ) {
-
-        return;
-
-    }
-
-
-    const index =
-        state.lessons.findIndex(
-            lesson =>
-                String(lesson.id) ===
-                String(
-                    state.currentLessonId
-                )
-        );
-
-
-    if (index === -1) {
-
-        openLesson(
-            state.lessons[0].id
-        );
-
-        return;
-
-    }
-
-
-    let nextIndex =
-        index + direction;
-
-
-    if (
-        nextIndex < 0
-    ) {
-
-        nextIndex =
-            state.lessons.length - 1;
-
-    }
-
-
-    if (
-        nextIndex >=
-        state.lessons.length
-    ) {
-
-        nextIndex = 0;
-
-    }
-
-
-    openLesson(
-        state.lessons[nextIndex].id
-    );
-
-}
-
-
-/* =========================================================
-   37. NAVIGATION BUTTON STATE
-========================================================= */
-
-function updateNavigationButtons() {
-
-    const previous =
-        $("#prev-btn");
-
-    const next =
-        $("#next-btn");
-
-
-    if (!state.lessons.length) {
-
-        if (previous) {
-            previous.disabled = true;
-        }
-
-        if (next) {
-            next.disabled = true;
-        }
-
-        return;
-
-    }
-
-
-    if (previous) {
-
-        previous.disabled =
-            false;
-
-    }
-
-
-    if (next) {
-
-        next.disabled =
-            false;
-
-    }
-
-}
-
-
-/* =========================================================
-   38. DROPDOWNS
-========================================================= */
-
-function initializeDropdowns() {
-
-    $all(".dropdown")
-        .forEach(
-            dropdown => {
-
-                const icon =
-                    dropdown.querySelector(
-                        ".dropdown-btn"
-                    );
-
-                if (!icon) {
-                    return;
-                }
-
-
-                icon.addEventListener(
-                    "click",
-                    event => {
-
-                        event.stopPropagation();
-
-
-                        $all(
-                            ".dropdown.show"
-                        ).forEach(
-                            other => {
-
-                                if (
-                                    other !==
-                                    dropdown
-                                ) {
-
-                                    other.classList.remove(
-                                        "show"
-                                    );
-
-                                }
-
-                            }
-                        );
-
-
-                        dropdown.classList.toggle(
-                            "show"
-                        );
-
-                    }
-                );
-
-            }
-        );
-
-
-    document.addEventListener(
-        "click",
-        () => {
-
-            $all(
-                ".dropdown.show"
-            ).forEach(
-                dropdown =>
-                    dropdown.classList.remove(
-                        "show"
-                    )
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   39. AUDIO
-========================================================= */
-
-function initializeAudio() {
-
-    const audio =
-        $("#slide-audio");
-
-    const button =
-        $("#audio-btn");
-
-    const hide =
-        $("#hide-audio-btn");
-
-
-    if (button && audio) {
-
-        button.addEventListener(
-            "click",
-            event => {
-
-                event.preventDefault();
-
-                if (
-                    audio.style.display ===
-                    "none"
-                ) {
-
-                    audio.style.display =
-                        "block";
-
-                } else {
-
-                    audio.style.display =
-                        "none";
-
-                    audio.pause();
-
-                }
-
-            }
-        );
-
-    }
-
-
-    if (hide && audio) {
-
-        hide.addEventListener(
-            "click",
-            () => {
-
-                audio.pause();
-
-                audio.style.display =
-                    "none";
-
-            }
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   40. VIDEO
-========================================================= */
-
-function initializeVideo() {
-
-    const video =
-        $("#slide-video");
-
-    const button =
-        $("#video-btn");
-
-    const hide =
-        $("#hide-video-btn");
-
-
-    if (button && video) {
-
-        button.addEventListener(
-            "click",
-            event => {
-
-                event.preventDefault();
-
-                if (
-                    video.style.display ===
-                    "none"
-                ) {
-
-                    video.style.display =
-                        "block";
-
-                } else {
-
-                    video.pause();
-
-                    video.style.display =
-                        "none";
-
-                }
-
-            }
-        );
-
-    }
-
-
-    if (hide && video) {
-
-        hide.addEventListener(
-            "click",
-            () => {
-
-                video.pause();
-
-                video.style.display =
-                    "none";
-
-            }
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   41. LEGACY BUTTONS
-========================================================= */
-
-function initializeLegacyButtons() {
-
-    const whiteboard =
-        $("#whiteboard-btn");
-
-    const whiteboardElement =
-        $("#whiteboard");
-
-
-    if (
-        whiteboard &&
-        whiteboardElement
-    ) {
-
-        whiteboard.addEventListener(
-            "click",
-            event => {
-
-                event.preventDefault();
-
-                whiteboardElement.classList.toggle(
-                    "visible"
-                );
-
-            }
-        );
-
-    }
-
-
-    const edit =
-        $("#edit-btn");
-
-    const tray =
-        $("#edit-tray");
-
-
-    if (
-        edit &&
-        tray
-    ) {
-
-        edit.addEventListener(
-            "click",
-            event => {
-
-                event.preventDefault();
-
-                tray.classList.toggle(
-                    "visible"
-                );
-
-            }
-        );
-
-    }
-
-
-    const home =
-        $("#home-btn");
-
-
-    if (home) {
-
-        home.addEventListener(
-            "click",
-            event => {
-
-                event.preventDefault();
-
-                closeFocusedCard();
-
-                window.scrollTo({
-                    top: 0,
-                    behavior: "smooth"
-                });
-
-            }
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   42. WHITEBOARD
-========================================================= */
-
-function initializeWhiteboard() {
-
-    const canvas =
-        $("#whiteboard-canvas");
-
-    if (!canvas) {
-
-        return;
-
-    }
-
-
-    const context =
-        canvas.getContext("2d");
-
-
-    function resizeCanvas() {
-
-        const rect =
-            canvas.getBoundingClientRect();
-
-        const ratio =
-            window.devicePixelRatio || 1;
-
-
-        canvas.width =
-            rect.width * ratio;
-
-        canvas.height =
-            rect.height * ratio;
-
-
-        context.setTransform(
-            ratio,
-            0,
-            0,
-            ratio,
-            0,
-            0
-        );
-
-
-        context.lineCap =
-            "round";
-
-        context.lineJoin =
-            "round";
-
-    }
-
-
-    resizeCanvas();
-
-
-    window.addEventListener(
-        "resize",
-        resizeCanvas
-    );
-
-
-    function getPosition(event) {
-
-        const rect =
-            canvas.getBoundingClientRect();
-
+document.addEventListener(
+    "keydown",
+    event => {
 
         if (
-            event.touches &&
-            event.touches.length
-        ) {
-
-            return {
-
-                x:
-                    event.touches[0].clientX -
-                    rect.left,
-
-                y:
-                    event.touches[0].clientY -
-                    rect.top
-
-            };
-
-        }
-
-
-        return {
-
-            x:
-                event.clientX -
-                rect.left,
-
-            y:
-                event.clientY -
-                rect.top
-
-        };
-
-    }
-
-
-    function startDrawing(event) {
-
-        state.drawing =
-            true;
-
-
-        const position =
-            getPosition(event);
-
-
-        context.beginPath();
-
-
-        context.moveTo(
-            position.x,
-            position.y
-        );
-
-
-        context.strokeStyle =
-            state.pencilColor;
-
-
-        context.lineWidth =
-            state.pencilSize;
-
-
-        event.preventDefault();
-
-    }
-
-
-    function draw(event) {
-
-        if (
-            !state.drawing
-        ) {
-
-            return;
-
-        }
-
-
-        const position =
-            getPosition(event);
-
-
-        context.lineTo(
-            position.x,
-            position.y
-        );
-
-
-        context.stroke();
-
-
-        event.preventDefault();
-
-    }
-
-
-    function stopDrawing() {
-
-        state.drawing =
-            false;
-
-        context.closePath();
-
-    }
-
-
-    canvas.addEventListener(
-        "mousedown",
-        startDrawing
-    );
-
-    canvas.addEventListener(
-        "mousemove",
-        draw
-    );
-
-    canvas.addEventListener(
-        "mouseup",
-        stopDrawing
-    );
-
-    canvas.addEventListener(
-        "mouseleave",
-        stopDrawing
-    );
-
-
-    canvas.addEventListener(
-        "touchstart",
-        startDrawing,
-        {
-            passive: false
-        }
-    );
-
-    canvas.addEventListener(
-        "touchmove",
-        draw,
-        {
-            passive: false
-        }
-    );
-
-    canvas.addEventListener(
-        "touchend",
-        stopDrawing
-    );
-
-
-    const clear =
-        $("#clear-tool");
-
-
-    if (clear) {
-
-        clear.addEventListener(
-            "click",
-            () => {
-
-                context.clearRect(
-                    0,
-                    0,
-                    canvas.width,
-                    canvas.height
-                );
-
-            }
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   43. KEYBOARD
-========================================================= */
-
-function initializeKeyboard() {
-
-    document.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key === "Escape"
-            ) {
-
-                if (
-                    state.cardOpen
-                ) {
-
-                    closeFocusedCard();
-
-                    return;
-
-                }
-
-
-                closeUploadModal();
-
-                return;
-
-            }
-
-
-            if (
-                event.key === "ArrowLeft"
-            ) {
-
-                if (
-                    !isTypingTarget(
-                        event.target
-                    )
-                ) {
-
-                    navigateLesson(-1);
-
-                }
-
-            }
-
-
-            if (
-                event.key === "ArrowRight"
-            ) {
-
-                if (
-                    !isTypingTarget(
-                        event.target
-                    )
-                ) {
-
-                    navigateLesson(1);
-
-                }
-
-            }
-
-        }
-    );
-
-}
-
-
-function isTypingTarget(element) {
-
-    if (!element) {
-        return false;
-    }
-
-
-    const tag =
-        element.tagName?.toLowerCase();
-
-
-    return (
-        tag === "input" ||
-        tag === "textarea" ||
-        tag === "select" ||
-        element.isContentEditable
-    );
-
-}
-
-
-/* =========================================================
-   44. LOCAL PROGRESS
-========================================================= */
-
-function saveCurrentLessonLocally() {
-
-    if (
-        !state.currentLessonId
-    ) {
-
-        return;
-
-    }
-
-
-    try {
-
-        localStorage.setItem(
-            "poliglotaCurrentLesson",
-            state.currentLessonId
-        );
-
-    } catch (error) {
-
-        console.warn(
-            "Could not save lesson:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   45. RESTORE LESSON
-========================================================= */
-
-function restoreLastLesson() {
-
-    try {
-
-        const id =
-            localStorage.getItem(
-                "poliglotaCurrentLesson"
-            );
-
-
-        if (
-            id &&
-            state.lessons.some(
-                lesson =>
-                    String(lesson.id) ===
-                    String(id)
+            event.key === "Escape" &&
+            lessonFocusOverlay.classList.contains(
+                "open"
             )
         ) {
 
-            openLesson(id);
-
-            return true;
+            closeLessonPart();
 
         }
 
-    } catch (error) {
+    }
+);
+// ==========================
+// SAVE CURRENT PAGE STATE
+// ==========================
+function saveCurrentState(bookType, unit, pageNum) {
+    localStorage.setItem("pptkb1State", JSON.stringify({ bookType, unit, pageNum }));
+}
+// ==========================
+// DROPDOWN TOGGLE
+// ==========================
+dropdownBtns.forEach(btn => {
+    btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const parentDropdown = btn.parentElement;
+        document.querySelectorAll('.dropdown').forEach(d => {
+            if(d !== parentDropdown) d.classList.remove('show');
+        });
+        parentDropdown.classList.toggle('show');
+    });
+});
 
-        console.warn(
-            "Could not restore lesson:",
-            error
-        );
+window.addEventListener("click", (e) => {
 
+    if (
+        e.target.closest(".dropdown") ||
+        e.target.closest(".lesson-dropdown")
+    ) {
+        return;
     }
 
+    document.querySelectorAll(".dropdown").forEach(d => {
+        d.classList.remove("show");
+    });
 
-    return false;
+    document.querySelectorAll(".lesson-dropdown").forEach(menu => {
+        menu.classList.remove("show");
+    });
 
+});
+
+// ==========================
+// LOAD IMAGE FUNCTION
+// ==========================
+function autoFitImage() {
+    const containerWidth = slideContainer.clientWidth;
+    const containerHeight = slideContainer.clientHeight;
+    const imgWidth = slideImage.naturalWidth;
+    const imgHeight = slideImage.naturalHeight;
+
+    const scaleX = containerWidth / imgWidth;
+    const scaleY = containerHeight / imgHeight;
+
+    currentScale = Math.min(scaleX, scaleY);
+
+    slideImage.style.width = imgWidth * currentScale + "px";
+    slideImage.style.height = imgHeight * currentScale + "px";
+}
+
+function loadImage(src) {
+
+    slideImage.style.display = "none";
+
+    slideImage.onload = function() {
+        slideImage.style.display = "block";
+        autoFitImage();
+        resizeEditCanvas();
+    };
+
+    slideImage.onerror = function() {
+        console.error("Failed to load image:", src);
+        slideImage.style.display = "none";
+    };
+
+    slideImage.src = src;
+}
+
+// ==========================
+// HOME PAGE
+// ==========================
+function loadHome() {
+    currentImages = [];
+    currentIndex = 0;
+    loadImage("images/homepage.jpg");
+    prevBtn.style.display = "none";
+    nextBtn.style.display = "none";
+}
+
+// ==========================
+// STUDENT BOOK
+// ==========================
+function loadStudentUnit(unitNumber) {
+    currentImages = [];
+    currentIndex = 0;
+
+    const folderName = "unit_" + unitNumber;
+    const basePath = `images/student-book-pages/${folderName}/`;
+
+    let pageNumbers = [];
+    switch(unitNumber) {
+        case "1": pageNumbers = [10,11,12,13,14,15,16,17,18]; break;
+        case "2": pageNumbers = [12,13,14,15,16,17]; break;
+        case "3": pageNumbers = [18,19,20,21,22,23,24,25]; break;
+        case "4": pageNumbers = [26,27,28,29,30,31]; break;
+        case "5": pageNumbers = [32,33,34,35,36,37]; break;
+        case "6": pageNumbers = [38,39,40,41,42,43,44,45]; break;
+        case "7": pageNumbers = [46,47,48,49,50,51]; break;
+        case "8": pageNumbers = [52,53,54,55,56,57]; break;
+        case "9": pageNumbers = [58,59,60,61,62,63,64,65]; break;
+        case "10": pageNumbers = [66,67,68,69,70,71]; break;
+        case "11": pageNumbers = [72,73,74,75,76,77]; break;
+        case "12": pageNumbers = [78,79,80,81,82,83,84,85]; break;
+        default: pageNumbers = []; break;
+    }
+
+    pageNumbers.forEach(num => {
+        currentImages.push(basePath + "page" + num + ".jpg");
+    });
+
+    loadImage(currentImages[currentIndex]);
+    prevBtn.style.display = "block";
+    nextBtn.style.display = "block";
+}
+
+// ==========================
+// ACTIVITY BOOK
+// ==========================
+function loadActivityUnit(unitNumber) {
+    currentImages = [];
+    currentIndex = 0;
+
+    const folderName = "unit_" + unitNumber;
+    const basePath = `images/activity-book-pages/${folderName}/`;
+
+    let pageNumbers = [];
+    switch(unitNumber) {
+        case "1": pageNumbers = [106,107]; break;
+        case "2": pageNumbers = [108,109]; break;
+        case "3": pageNumbers = [110,111]; break;
+        case "4": pageNumbers = [112,113]; break;
+        case "5": pageNumbers = [114,115]; break;
+        case "6": pageNumbers = [116,117]; break;
+        case "7": pageNumbers = [118,119]; break;
+        case "8": pageNumbers = [120,121]; break;
+        case "9": pageNumbers = [122,123]; break;
+        case "10": pageNumbers = [124,125]; break;
+        case "11": pageNumbers = [126,127]; break;
+        case "12": pageNumbers = [128,129]; break;
+        default: pageNumbers = []; break;
+    }
+
+    pageNumbers.forEach(num => {
+        currentImages.push(basePath + "page" + num + ".JPG");
+    });
+
+    if (currentImages.length > 1) {
+        prevBtn.style.display = "block";
+        nextBtn.style.display = "block";
+    } else {
+        prevBtn.style.display = "none";
+        nextBtn.style.display = "none";
+    }
+
+    loadImage(currentImages[currentIndex]);
 }
 
 
-/* =========================================================
-   46. FILE HELPERS
-========================================================= */
 
-function sanitizeFileName(filename) {
 
-    return filename
 
-        .normalize("NFD")
 
-        .replace(
-            /[\u0300-\u036f]/g,
-            ""
-        )
+// ==========================
+// DROPDOWN EVENTS
+// ==========================
 
-        .replace(
-            /[^a-zA-Z0-9._-]/g,
-            "-"
-        )
+studentDropdownLinks.forEach(link => {
 
-        .replace(
-            /-+/g,
-            "-"
-        );
+    link.addEventListener("click", (e) => {
 
+        e.preventDefault();
+        e.stopPropagation();
+
+        const unit = link.getAttribute("data-unit");
+
+        // Find the lesson submenu belonging to this unit
+        const lessonMenu = link.parentElement.querySelector(".lesson-dropdown");
+
+        if (!lessonMenu) {
+            console.log("No lesson dropdown found for Unit " + unit);
+            return;
+        }
+
+        // Close other lesson menus
+        document.querySelectorAll(".lesson-dropdown").forEach(menu => {
+            if (menu !== lessonMenu) {
+                menu.classList.remove("show");
+            }
+        });
+
+        // Toggle this unit's lesson menu
+        lessonMenu.classList.toggle("show");
+
+    });
+
+});
+// ==========================
+// GET LESSON PAGES
+// ==========================
+
+function getLessonPages(unit, lesson) {
+
+    const lessonMap = {
+
+        1: {
+            1: [ 6, 7],
+            2: [8, 9],
+            3: [10],
+            4: [11],
+            5: [106,107]
+        },
+
+        2: {
+            1: [12, 13],
+            2: [14,15],
+            3: [16],
+            4: [17],
+            5: [108,109]
+        },
+        3: {
+            1: [18, 19],
+            2: [20,21],
+            3: [22,23],
+            4: [24,25],
+            5: [110,111]
+        },
+       4: {
+            1: [26, 27],
+            2: [28,29],
+            3: [30],
+            4: [31],
+            5: [112,113]
+        },
+       5: {
+            1: [32,33],
+            2: [34,35],
+            3: [36],
+            4: [37],
+            5: [114,115]
+        },
+        6: {
+            1: [38,39],
+            2: [40,41],
+            3: [42,43],
+            4: [44,45],
+            5: [116,117]
+        }, 
+         7: {
+            1: [46,47],
+            2: [48,49],
+            3: [50],
+            4: [51],
+            5: [118,119]
+        },   
+          8: {
+            1: [52,53],
+            2: [54,55],
+            3: [56],
+            4: [57],
+            5: [120,121]
+        },   
+          9: {
+            1: [58,59],
+            2: [60,61],
+            3: [62,63],
+            4: [64,65],
+            5: [122,123]
+        },   
+          10: {
+            1: [66,67],
+            2: [68,69],
+            3: [70],
+            4: [71],
+            5: [124,125]
+        },   
+          11: {
+            1: [72,73],
+            2: [74,75],
+            3: [76],
+            4: [77],
+            5: [126,127]
+        },   
+          12: {
+            1: [78,79],
+            2: [80,81],
+            3: [82,83],
+            4: [84,85],
+            5: [128,129]
+        },     
+    };
+
+    return lessonMap[unit]?.[lesson] || [];
 }
+// ==========================
+// LESSON MENU
+// ==========================
+const lessonDropdownLinks = document.querySelectorAll(".lesson-dropdown a");
 
+// ============================================================
+// LESSON MENU
+// ============================================================
 
-function formatFileSize(bytes) {
-
-    if (!bytes) {
-        return "0 KB";
-    }
-
-
-    const units = [
-        "B",
-        "KB",
-        "MB",
-        "GB"
-    ];
-
-
-    const index =
-        Math.floor(
-            Math.log(bytes) /
-            Math.log(1024)
-        );
-
-
-    return (
-        bytes /
-        Math.pow(
-            1024,
-            index
-        )
-    ).toFixed(
-        index === 0 ? 0 : 1
-    ) +
-    " " +
-    units[index];
-
-}
-
-
-/* =========================================================
-   47. UPLOAD STATUS
-========================================================= */
-
-function showUploadProgress(
-    message
-) {
-
-    const progress =
-        $("#upload-progress");
-
-
-    if (progress) {
-
-        progress.textContent =
-            message;
-
-    }
-
-
-    showUploadStatus(
-        message
+const lessonDropdownLinks =
+    document.querySelectorAll(
+        ".lesson-dropdown a"
     );
 
-}
+
+lessonDropdownLinks.forEach(
+    link => {
+
+        link.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+
+                event.stopPropagation();
 
 
-function showUploadStatus(
-    message
-) {
-
-    let status =
-        $("#upload-status");
-
-
-    if (!status) {
-
-        status =
-            document.createElement(
-                "div"
-            );
-
-        status.id =
-            "upload-status";
-
-        status.className =
-            "upload-status";
-
-        document.body.appendChild(
-            status
-        );
-
-    }
+                const unit =
+                    parseInt(
+                        link.getAttribute(
+                            "data-unit"
+                        ),
+                        10
+                    );
 
 
-    status.textContent =
-        message;
-
-    status.classList.add(
-        "visible"
-    );
-
-
-    clearTimeout(
-        status._timer
-    );
+                const lesson =
+                    parseInt(
+                        link.getAttribute(
+                            "data-lesson"
+                        ),
+                        10
+                    );
 
 
-    status._timer =
-        setTimeout(
-            () => {
-
-                status.classList.remove(
-                    "visible"
+                console.log(
+                    "Opening lesson:",
+                    unit,
+                    lesson
                 );
 
-            },
-            4000
+
+                // ------------------------------------------------
+                // NEW BEHAVIOUR:
+                // DO NOT LOAD THE PAGE IMAGE.
+                // OPEN THE LESSON CARD VIEW.
+                // ------------------------------------------------
+
+                showLessonView(
+                    unit,
+                    lesson
+                );
+
+
+                // Close menus
+
+                document
+                    .querySelectorAll(
+                        ".lesson-dropdown"
+                    )
+                    .forEach(
+                        menu => {
+
+                            menu.classList.remove(
+                                "show"
+                            );
+
+                        }
+                    );
+
+
+                document
+                    .querySelectorAll(
+                        ".dropdown"
+                    )
+                    .forEach(
+                        dropdown => {
+
+                            dropdown.classList.remove(
+                                "show"
+                            );
+
+                        }
+                    );
+
+            }
         );
-
-}
-
-
-/* =========================================================
-   48. CURRENT USER
-========================================================= */
-
-async function getCurrentUser() {
-
-    if (!supabaseClient) {
-
-        return null;
 
     }
-
-
-    try {
-
-        const {
-            data
-        } =
-            await supabaseClient
-                .auth
-                .getUser();
-
-
-        return (
-            data?.user ||
-            null
-        );
-
-    } catch (error) {
-
-        console.warn(
-            "Auth check failed:",
-            error
-        );
-
-        return null;
-
-    }
-
-}
-
-
-/* =========================================================
-   49. PUBLIC API
-========================================================= */
-
-window.PoliglotaLesson = {
-
-    state,
-
-    loadLessons,
-
-    loadMedia,
-
-    openLesson,
-
-    openLessonCard,
-
-    closeLessonCard:
-        closeFocusedCard,
-
-    createLessonCard,
-
-    updateLessonCard,
-
-    deleteLessonCard,
-
-    uploadMedia,
-
-    assignMediaToCard,
-
-    getCurrentUser
-
-};
-
-
-window.poliglotaState =
-    state;
-
-
-console.log(
-    "Academia Poliglota — Lesson Card System loaded."
 );
+        // ==========================
+        // NEW LESSON FOLDER PATH
+        // ==========================
+
+        const lessonPath =
+            `images/student-book-pages/unit_${unit}/lesson_${lesson}/`;
+
+        /*
+         * IMPORTANT:
+         * JavaScript cannot automatically discover the files
+         * inside a folder on Vercel/server hosting.
+         *
+         * Therefore, we define which pages belong to each lesson.
+         */
+
+        const lessonPages = getLessonPages(unit, lesson);
+
+        if (lessonPages.length === 0) {
+            console.warn(
+                `No pages found for Unit ${unit}, Lesson ${lesson}`
+            );
+            return;
+        }
+
+        // Build the NEW paths
+        currentImages = lessonPages.map(page =>
+            `${lessonPath}page${page}.jpg`
+        );
+
+        // Start at the FIRST page of the lesson
+        currentIndex = 0;
+
+        loadImage(currentImages[currentIndex]);
+
+        prevBtn.style.display = "block";
+        nextBtn.style.display = "block";
+
+        // Save current state
+        saveCurrentState(
+            "student",
+            unit,
+            lessonPages[0]
+        );
+
+        console.log(
+            "Opening:",
+            currentImages[currentIndex]
+        );
+
+        // Close lesson menus
+        document.querySelectorAll(".lesson-dropdown").forEach(menu => {
+            menu.classList.remove("show");
+        });
+
+    });
+
+});
+
+
+activityDropdownLinks.forEach(link => {
+    link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const unit = link.getAttribute("data-unit");
+        loadActivityUnit(unit);
+        // Save state
+        saveCurrentState(
+            "activity",
+            unit,
+            parseInt(currentImages[currentIndex].match(/page(\d+)/)[1])
+        );
+    });
+});
+
+// ==========================
+// NAVIGATION
+// ==========================
+prevBtn.addEventListener("click", () => {
+    if (currentIndex > 0) {
+        currentIndex--;
+        loadImage(currentImages[currentIndex]);
+         // Save state
+        saveCurrentState(
+            currentImages[currentIndex].includes("student-book-pages") ? "student" : "activity",
+            currentImages[currentIndex].match(/unit_(\d+)/)[1],
+            currentImages[currentIndex].match(/page(\d+)/)[1]
+        );
+    }
+});
+
+nextBtn.addEventListener("click", () => {
+    if (currentIndex < currentImages.length - 1) {
+        currentIndex++;
+        loadImage(currentImages[currentIndex]);
+         // Save state
+        saveCurrentState(
+            currentImages[currentIndex].includes("student-book-pages") ? "student" : "activity",
+            currentImages[currentIndex].match(/unit_(\d+)/)[1],
+            currentImages[currentIndex].match(/page(\d+)/)[1]
+        );
+    }
+});
+
+// ==========================
+// ZOOM SYSTEM
+// ==========================
+
+// Minimum and maximum zoom
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 5;
+
+// Apply zoom ONLY to the slide image
+function applyZoom() {
+
+    if (!slideImage.naturalWidth || !slideImage.naturalHeight) {
+        return;
+    }
+
+    slideImage.style.width =
+        (slideImage.naturalWidth * currentScale) + "px";
+
+    slideImage.style.height =
+        (slideImage.naturalHeight * currentScale) + "px";
+
+    resizeEditCanvas();
+}
+
+
+// ==========================
+// COMPUTER — CTRL + MOUSE WHEEL
+// ==========================
+
+slideContainer.addEventListener("wheel", function(e) {
+
+    if (!e.ctrlKey) return;
+
+    e.preventDefault();
+
+    if (e.deltaY < 0) {
+
+        currentScale += 0.1;
+
+    } else {
+
+        currentScale -= 0.1;
+    }
+
+    currentScale = Math.max(
+        MIN_ZOOM,
+        Math.min(MAX_ZOOM, currentScale)
+    );
+
+    applyZoom();
+
+}, { passive: false });
+
+
+// ==========================
+// ANDROID / TOUCH — PINCH ZOOM
+// ==========================
+
+let pinchStartDistance = null;
+let pinchStartScale = 1;
+
+
+// Calculate distance between two fingers
+function getTouchDistance(touch1, touch2) {
+
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+
+    return Math.sqrt(
+        dx * dx + dy * dy
+    );
+}
+
+
+// Start pinch
+slideContainer.addEventListener("touchstart", function(e) {
+
+    if (e.touches.length !== 2) return;
+
+    e.preventDefault();
+
+    pinchStartDistance = getTouchDistance(
+        e.touches[0],
+        e.touches[1]
+    );
+
+    // Remember the zoom level when the pinch begins
+    pinchStartScale = currentScale;
+
+}, { passive: false });
+
+
+// Continue pinch
+slideContainer.addEventListener("touchmove", function(e) {
+
+    if (e.touches.length !== 2) return;
+
+    e.preventDefault();
+
+    const currentDistance = getTouchDistance(
+        e.touches[0],
+        e.touches[1]
+    );
+
+    if (!pinchStartDistance) return;
+
+    // How much the fingers moved apart/together
+    const scaleChange =
+        currentDistance / pinchStartDistance;
+
+    // Calculate new zoom
+    currentScale =
+        pinchStartScale * scaleChange;
+
+    // Limit zoom
+    currentScale = Math.max(
+        MIN_ZOOM,
+        Math.min(MAX_ZOOM, currentScale)
+    );
+
+    applyZoom();
+
+}, { passive: false });
+
+
+// Finish pinch
+slideContainer.addEventListener("touchend", function(e) {
+
+    if (e.touches.length < 2) {
+
+        pinchStartDistance = null;
+
+        // currentScale is deliberately NOT reset
+        // The zoom remains exactly where the user left it.
+    }
+
+}, { passive: false });
+
+
+// Also handle cancelled touches
+slideContainer.addEventListener("touchcancel", function() {
+
+    pinchStartDistance = null;
+
+}, { passive: false });
+// ==========================
+// HOME BUTTON
+// ==========================
+homeBtn.addEventListener("click", function(e) {
+    e.preventDefault();
+    loadHome();
+});
+
+window.addEventListener("load", () => {
+    const navigationEntries = performance.getEntriesByType("navigation");
+    const isReload = navigationEntries.length > 0 && navigationEntries[0].type === "reload";
+
+    if (isReload) {
+        // Page was refreshed → restore previous state if exists
+        const savedState = localStorage.getItem("pptkb1State");
+        if (savedState) {
+            const { bookType, unit, pageNum } = JSON.parse(savedState);
+            if (bookType === "student") {
+                loadStudentUnit(unit);
+                currentIndex = currentImages.findIndex(src => src.includes(`page${pageNum}.JPG`));
+                if (currentIndex >= 0) loadImage(currentImages[currentIndex]);
+            } else if (bookType === "activity") {
+                loadActivityUnit(unit);
+                currentIndex = currentImages.findIndex(src => src.includes(`page${pageNum}.JPG`));
+                if (currentIndex >= 0) loadImage(currentImages[currentIndex]);
+            }
+        } else {
+            loadHome(); // fallback if nothing saved
+        }
+    } else {
+        // First time opening → always Home
+        loadHome();
+    }
+});
+
+// ==========================
+// AUDIO FUNCTIONALITY FOR ALL UNITS
+// ==========================
+
+audioBtn.addEventListener("click", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  // TOGGLE: hide if already visible
+    if (audioListContainer.style.display === "flex") {
+        audioListContainer.style.display = "none";
+        return;
+    }
+    // Clear previous buttons
+    audioListContainer.innerHTML = "";
+    audioListContainer.style.display = "flex";
+
+    if (currentImages.length === 0) return;
+
+    const pageSrc = currentImages[currentIndex];
+
+    // Determine if Student or Activity Book
+    let bookType;
+    if (pageSrc.includes("student-book-pages")) bookType = "student";
+    else if (pageSrc.includes("activity-book-pages")) bookType = "activity";
+    else return;
+
+    // Extract unit number
+    const unitMatch = pageSrc.match(/unit_(\d+)/i);
+    if (!unitMatch) return;
+    const unit = parseInt(unitMatch[1]);
+
+    // Extract page number
+    const pageMatch = pageSrc.match(/page(\d+)/i);
+    if (!pageMatch) return;
+    const pageNum = parseInt(pageMatch[1]);
+
+    // Define audio tracks for all units (Student Book)
+    const studentBookAudioTracks = {
+        1: {8:["page8_Track_1.1"],9:["page9_Track_1.2","page9_Track_1.3"],10:["br2_003_a1_4"]},
+        2: {13:["br2_003_a2_1"],15:["br2_003_a2_2"],16:["br2_003_a2_3"]},
+        3: {19:["br2_003_a3_1"],20:["br2_003_a3_2"],21:["br2_003_a3_3","br2_003_a3_4"],22:["br2_003_a3_5"]},
+        4: {27:["br2_003_a4_1"],28:["br2_003_a4_2"],29:["br2_003_a4_3"],30:["br2_003_a4_4"]},
+        5: {34:["br2_003_a5_1"],35:["br2_003_a5_2","br2_003_a5_3"],36:["br2_003_a5_4","br2_003_a5_5","br2_003_a5_6"]},
+        6: {38:["br2_003_a6_1"],41:["br2_003_a6_2","br2_003_a6_3"],42:["br2_003_a6_4"],43:["br2_003_a6_5"]},
+        7: {47:["br2_003_a7_1"],49:["br2_003_a7_2","br2_003_a7_3"],50:["br2_003_a7_4"]},
+        8: {54:["br2_003_a8_1"],55:["br2_003_a8_2"],56:["br2_003_a8_3"]},
+        9: {59:["br2_003_a9_1"],60:["br2_003_a9_2"],61:["br2_003_a9_3"],62:["br2_003_a9_4"],},
+        10: {67:["br2_003_a10_1"],68:["br2_003_a10_2"],69:["br2_003_a10_3"],70:["br2_003_a10_4"]},
+        11: {72:["br2_003_a11_1"],73:["br2_003_a11_1"],75:["br2_003_a11_2"],76:["br2_003_a11_3","br2_003_a11_4"]},
+        12: {79:["br2_003_a12_1"],81:["br2_003_a12_2"],82:["br2_003_a12_3","br2_003_a12_4","br2_003_a12_5"],83:["br2_003_a12_6"]},
+    };
+
+    // Define audio tracks for all units (Activity Book)
+    const activityBookAudioTracks = {
+        1: {4:["page4_Track_02"],15:["br2_003_a2_2"],7:["page7_Track_04"]},
+        2: {13:["br2_003_a2_1"],12:["page12_Track_06"],16:["page16_Track_07"]},
+        3: {18:["page18_Track_08"],19:["page19_Track_09"],20:["page20_Track_10"],21:["page21_Track_11"],22:["page22_Track_12"]},
+        4: {24:["page24_Track_13"],25:["page25_Track_14"],26:["page26_Track_15"],28:["page28_Track_16"]},
+        5: {34:["page34_Track_18"],36:["page36_Track_19"],38:["page38_Track_20"]},
+        6: {40:["page40_Track_21"],41:["page41_Track_22"],42:["page42_Track_23"],46:["page46_Track_24"]},
+        7: {48:["page48_Track_25"],50:["page50_Track_26"],52:["page52_Track_27"]},
+        8: {54:["page54_Track_28"],55:["page55_Track_29"],56:["page56_Track_30","page56_Track_31"],57:["page57_Track_32"],60:["page60_Track_33"],62:["page62_Track_34"]},
+        9: {64:["page64_Track_35"],66:["page66_Track_36"]},
+        10: {70:["page70_Track_37"],72:["page72_Track_38"],73:["page73_Track_39"]},
+        11: {78:["page78_Track_40"],80:["page80_Track_41"]},
+        12: {84:["page84_Track_42"],86:["page86_Track_43"],87:["page87_Track_44"] }
+    };
+
+    // Pick the correct track list
+    let tracks;
+    if (bookType === "student") tracks = studentBookAudioTracks[unit] ? studentBookAudioTracks[unit][pageNum] || [] : [];
+    else tracks = activityBookAudioTracks[unit] ? activityBookAudioTracks[unit][pageNum] || [] : [];
+
+    if (tracks.length === 0) {
+        
+        return;
+    }
+
+    // Create buttons for each track
+    tracks.forEach(track => {
+        const btn = document.createElement("button");
+        const trackNumber = track.split("_")[2]; // get number
+        btn.textContent = `Audio ${trackNumber}`;
+
+        btn.addEventListener("click", () => {
+            const folder = bookType === "student" ? "student-book-audios" : "activity-book-audios";
+            audioSource.src = `audios/${folder}/unit_${unit}/${track}.mp3`;
+            audioPlayer.load();
+            showAudioPlayer(); // <-- use the new function
+            audioPlayer.controls = true;
+        });
+
+        audioListContainer.appendChild(btn);
+    });
+});
+
+// Hide audio list if click outside
+window.addEventListener("click", () => {
+    audioListContainer.style.display = "none";
+});
+// ==========================
+// VIDEO FUNCTIONALITY FOR UNIT 1
+// ==========================
+
+const videoBtn = document.querySelector('a img[alt="Videos"]').parentElement;
+const videoListContainer = document.createElement("div");
+videoListContainer.id = "video-list-container";
+document.body.appendChild(videoListContainer);
+
+const videoPlayer = document.getElementById("slide-video");
+const videoSource = document.getElementById("video-source");
+const hideVideoBtn = document.getElementById("hide-video-btn");
+
+// Show video player and hide button
+function showVideoPlayer() {
+    videoPlayer.style.display = "block";
+    hideVideoBtn.style.display = "inline-block";
+}
+
+// Hide video player when hide button is clicked
+hideVideoBtn.addEventListener("click", () => {
+    videoPlayer.pause();
+    videoPlayer.style.display = "none";
+    hideVideoBtn.style.display = "none";
+});
+
+// Double-click to toggle fullscreen
+videoPlayer.addEventListener("dblclick", () => {
+    if (!document.fullscreenElement) {
+        videoPlayer.requestFullscreen().catch(err => console.log(err));
+    } else {
+        document.exitFullscreen();
+    }
+});
+
+// Define videos for Unit 1
+// Define videos for Unit 1
+const unitVideos = {
+    1: {
+        10: ["presentation1"],
+        },
+    3: {
+        24: ["br2_004_v1_1","br2_004_v1_2"],
+        25: ["br2_004_v1_3"]
+    },
+
+    6: {
+        44: ["br2_004_v2_1"],
+        45: ["br2_004_v2_2","br2_004_v2_3"]
+    },
+
+    9: {
+        64: ["br2_004_v3_1", "br2_004_v3_2"],
+        65: ["br2_004_v3_3","br2_004_v3_4","br2_004_v3_5","br2_004_v3_6"]
+    },
+
+    12: {
+        84: ["br2_004_v4_1"],
+        85: ["br2_004_v4_2","br2_004_v4_3","br2_004_v4_4"]
+    }
+};
+// Click event for video icon (Student Book only)
+videoBtn.addEventListener("click", function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+   // TOGGLE: hide if already visible
+    if (videoListContainer.style.display === "flex") {
+        videoListContainer.style.display = "none";
+        return;
+    }
+
+    // Clear previous buttons
+    videoListContainer.innerHTML = "";
+    videoListContainer.style.display = "flex";
+
+    if (currentImages.length === 0) return;
+
+    const pageSrc = currentImages[currentIndex];
+
+    // ONLY show videos for Student Book pages
+    if (!pageSrc.includes("student-book-pages")) return; // <- key change
+
+    // Extract unit number
+    const unitMatch = pageSrc.match(/unit_(\d+)/i);
+    if (!unitMatch) return;
+    const unit = parseInt(unitMatch[1]);
+
+    // Extract page number
+    const pageMatch = pageSrc.match(/page(\d+)/i);
+    if (!pageMatch) return;
+    const pageNum = parseInt(pageMatch[1]);
+
+    // Get videos for this page
+    const tracks = unitVideos[unit] ? unitVideos[unit][pageNum] || [] : [];
+
+    if (tracks.length === 0) return; // <- do nothing if no videos
+
+    tracks.forEach((track, index) => {
+        const btn = document.createElement("button");
+        btn.textContent = `Video ${index + 1}`;
+
+        btn.addEventListener("click", () => {
+            videoSource.src = `video/unit_${unit}/${track}.mp4`;
+            videoPlayer.load();
+            showVideoPlayer();
+        });
+
+        videoListContainer.appendChild(btn);
+    });
+});
+
+// Hide video list if click outside
+window.addEventListener("click", () => {
+    videoListContainer.style.display = "none";
+});
+
+// ==========================
+// DRAWING TARGET SYSTEM (NEW CORE FIX)
+// ==========================
+
+const editCanvas = document.getElementById("edit-canvas");
+const editCtx = editCanvas.getContext("2d");
+
+const whiteboardCanvas = document.getElementById("whiteboard-canvas");
+const whiteboardCtx = whiteboardCanvas.getContext("2d");
+
+// ACTIVE CANVAS
+let drawingCanvas = editCanvas;
+let drawingCtx = editCtx;
+
+// Switch drawing target
+function setDrawingTarget(type) {
+
+    if (type === "whiteboard") {
+        drawingCanvas = whiteboardCanvas;
+        drawingCtx = whiteboardCtx;
+    } else {
+        drawingCanvas = editCanvas;
+        drawingCtx = editCtx;
+    }
+
+    updateCursor();
+}
+
+// ==========================
+// EDIT TRAY TOGGLE SYSTEM
+// ==========================
+
+const editBtn = document.getElementById("edit-btn");
+const editTray = document.getElementById("edit-tray");
+const pencilTool = document.getElementById("pencil-tool");
+
+editBtn.addEventListener("click", function(e) {
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    editTray.style.display =
+        editTray.style.display === "flex"
+            ? "none"
+            : "flex";
+});
+
+// ==========================
+// WHITEBOARD TOGGLE
+// ==========================
+
+const whiteboardBtn = document.getElementById("whiteboard-btn");
+const whiteboard = document.getElementById("whiteboard");
+
+whiteboardBtn.addEventListener("click", function(e) {
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (whiteboard.style.display === "flex") {
+
+        whiteboard.style.display = "none";
+        editTray.style.display = "none";
+
+        setDrawingTarget("slide");
+
+    } else {
+
+        whiteboard.style.display = "flex";
+        editTray.style.display = "flex";
+
+        resizeWhiteboardCanvas();
+
+        setDrawingTarget("whiteboard");
+    }
+});
+
+// Hide whiteboard when changing pages
+studentDropdownLinks.forEach(link => {
+
+    link.addEventListener("click", () => {
+
+        whiteboard.style.display = "none";
+        editTray.style.display = "none";
+
+        setDrawingTarget("slide");
+    });
+});
+
+activityDropdownLinks.forEach(link => {
+
+    link.addEventListener("click", () => {
+
+        whiteboard.style.display = "none";
+        editTray.style.display = "none";
+
+        setDrawingTarget("slide");
+    });
+});
+
+// ==========================
+// TOOL SYSTEM
+// ==========================
+
+let currentTool = null;
+function setTool(tool) {
+
+    // toggle OFF
+    if (currentTool === tool) {
+
+        currentTool = null;
+
+    } else {
+
+        currentTool = tool;
+    }
+
+    updateToolUI();
+    updateCursor();
+}
+const penTool = document.getElementById("pen-tool");
+const eraserTool = document.getElementById("eraser-tool");
+const highlightTool = document.getElementById("highlight-tool");
+const textTool = document.getElementById("text-tool");
+const clearTool = document.getElementById("clear-tool");
+
+pencilTool.addEventListener("click", () => setTool("pencil"));
+penTool.addEventListener("click", () => setTool("pen"));
+eraserTool.addEventListener("click", () => setTool("eraser"));
+highlightTool.addEventListener("click", () => setTool("marker"));
+
+textTool.addEventListener("click", () => setTool("text"));
+function updateToolUI() {
+
+    const tools = {
+        pencil: pencilTool,
+        pen: penTool,
+        eraser: eraserTool,
+        marker: highlightTool,
+        text: textTool
+    };
+
+    Object.values(tools).forEach(btn => {
+        if (btn) btn.classList.remove("active-tool");
+    });
+
+    if (tools[currentTool]) {
+        tools[currentTool].classList.add("active-tool");
+    }
+}
+// ==========================
+// CLEAR CURRENT CANVAS
+// ==========================
+
+clearTool.addEventListener("click", () => {
+
+    const currentCanvasId = drawingCanvas.id;
+
+    // Remove only strokes from current canvas
+    strokes = strokes.filter(stroke => {
+        return stroke.canvas !== currentCanvasId;
+    });
+
+    // Clear actual canvas
+    if (currentCanvasId === "whiteboard-canvas") {
+
+        whiteboardCtx.clearRect(
+            0,
+            0,
+            whiteboardCanvas.width,
+            whiteboardCanvas.height
+        );
+
+    } else {
+
+        editCtx.clearRect(
+            0,
+            0,
+            editCanvas.width,
+            editCanvas.height
+        );
+    }
+
+    redrawStrokes();
+});
+// ==========================
+// CURSOR SYSTEM
+// ==========================
+
+function updateCursor() {
+
+    if (currentTool === "text") {
+
+        drawingCanvas.style.cursor = "text";
+
+        // allow clicking textboxes
+        editCanvas.style.pointerEvents = "none";
+
+    } else {
+
+        editCanvas.style.pointerEvents = "auto";
+
+        if (currentTool === "eraser") {
+            drawingCanvas.style.cursor = "crosshair";
+        }
+
+        else if (currentTool === "marker") {
+            drawingCanvas.style.cursor = "cell";
+        }
+
+        else {
+            drawingCanvas.style.cursor = "default";
+        }
+    }
+}
+// ==========================
+// DRAWING ENGINE
+// ==========================
+
+let strokes = [];
+let currentStroke = null;
+let drawing = false;
+
+let pencilSize = 3;
+
+// ==========================
+// RESIZE SYSTEM
+// ==========================
+
+function resizeEditCanvas() {
+
+    const rect = slideImage.getBoundingClientRect();
+
+    editCanvas.width = rect.width;
+    editCanvas.height = rect.height;
+
+    editCanvas.style.left = slideImage.offsetLeft + "px";
+    editCanvas.style.top = slideImage.offsetTop + "px";
+
+    redrawStrokes();
+    rerenderAllTextBoxes();
+}
+
+function resizeWhiteboardCanvas() {
+
+    whiteboardCanvas.width = whiteboard.offsetWidth;
+    whiteboardCanvas.height = whiteboard.offsetHeight;
+
+    redrawStrokes();
+}
+
+window.addEventListener("resize", () => {
+
+    resizeEditCanvas();
+    resizeWhiteboardCanvas();
+});
+
+// ==========================
+// POSITION SYSTEM
+// ==========================
+
+function getPos(e, canvas) {
+
+    const rect = canvas.getBoundingClientRect();
+
+    return {
+        x: (e.clientX - rect.left) / canvas.width,
+        y: (e.clientY - rect.top) / canvas.height
+    };
+}
+
+// ==========================
+// DRAW START
+// ==========================
+
+function startDrawing(e, canvas) {
+if (!currentTool) return;
+    const { x, y } = getPos(e, canvas);
+
+    if (currentTool === "eraser") {
+
+        drawing = true;
+
+        eraseAt(x, y, canvas.id);
+
+        redrawStrokes();
+
+        return;
+    }
+
+    drawing = true;
+
+    let color = "red";
+    let size = pencilSize;
+
+    if (currentTool === "pen") {
+
+        color = "blue";
+        size = 4;
+    }
+
+    if (currentTool === "marker") {
+
+        color = "rgba(255,255,0,0.4)";
+        size = 18;
+    }
+
+    currentStroke = {
+        type: "stroke",
+        canvas: canvas.id,
+        color,
+        size,
+        points: [{ x, y }]
+    };
+
+    strokes.push(currentStroke);
+}
+
+// ==========================
+// DRAW MOVE
+// ==========================
+
+function moveDrawing(e, canvas) {
+
+    if (!drawing) return;
+
+    const { x, y } = getPos(e, canvas);
+
+    if (currentTool === "eraser") {
+
+        eraseAt(x, y, canvas.id);
+
+        redrawStrokes();
+
+        return;
+    }
+
+    currentStroke.points.push({ x, y });
+
+    redrawStrokes();
+}
+
+// ==========================
+// DRAW STOP
+// ==========================
+
+function stopDrawing() {
+
+    drawing = false;
+}
+
+// ==========================
+// EDIT CANVAS EVENTS
+// ==========================
+
+editCanvas.addEventListener("mousedown", (e) => {
+    startDrawing(e, editCanvas);
+});
+
+editCanvas.addEventListener("mousemove", (e) => {
+    moveDrawing(e, editCanvas);
+});
+
+editCanvas.addEventListener("mouseup", stopDrawing);
+
+editCanvas.addEventListener("mouseleave", stopDrawing);
+
+// ==========================
+// WHITEBOARD EVENTS
+// ==========================
+
+whiteboardCanvas.addEventListener("mousedown", (e) => {
+    startDrawing(e, whiteboardCanvas);
+});
+
+whiteboardCanvas.addEventListener("mousemove", (e) => {
+    moveDrawing(e, whiteboardCanvas);
+});
+
+whiteboardCanvas.addEventListener("mouseup", stopDrawing);
+
+whiteboardCanvas.addEventListener("mouseleave", stopDrawing);
+
+// ==========================
+// ERASER SYSTEM
+// ==========================
+
+function eraseAt(x, y, canvasId) {
+
+    const radius = 0.01;
+
+    strokes = strokes.flatMap(stroke => {
+
+        if (stroke.canvas !== canvasId) return [stroke];
+
+        let newStrokes = [];
+        let temp = [];
+
+        for (let p of stroke.points) {
+
+            const dx = p.x - x;
+            const dy = p.y - y;
+
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > radius) {
+
+                temp.push(p);
+
+            } else {
+
+                if (temp.length) {
+
+                    newStrokes.push({
+                        type: "stroke",
+                        canvas: stroke.canvas,
+                        color: stroke.color,
+                        size: stroke.size,
+                        points: temp
+                    });
+
+                    temp = [];
+                }
+            }
+        }
+
+        if (temp.length) {
+
+            newStrokes.push({
+                type: "stroke",
+                canvas: stroke.canvas,
+                color: stroke.color,
+                size: stroke.size,
+                points: temp
+            });
+        }
+
+        return newStrokes;
+    });
+}
+
+// ==========================
+// REDRAW SYSTEM
+// ==========================
+
+function redrawStrokes() {
+
+    editCtx.clearRect(0, 0, editCanvas.width, editCanvas.height);
+
+    whiteboardCtx.clearRect(
+        0,
+        0,
+        whiteboardCanvas.width,
+        whiteboardCanvas.height
+    );
+
+    strokes.forEach(item => {
+
+        let ctx;
+        let canvas;
+
+        if (item.canvas === "whiteboard-canvas") {
+
+            ctx = whiteboardCtx;
+            canvas = whiteboardCanvas;
+
+        } else {
+
+            ctx = editCtx;
+            canvas = editCanvas;
+        }
+
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = item.size;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        ctx.beginPath();
+
+        item.points.forEach((p, i) => {
+
+            const x = p.x * canvas.width;
+            const y = p.y * canvas.height;
+
+            if (i === 0) {
+
+                ctx.moveTo(x, y);
+
+            } else {
+
+                ctx.lineTo(x, y);
+            }
+        });
+
+        ctx.stroke();
+    });
+}
+
+// ==========================
+// TEXT TOOL (FIXED VERSION)
+// ==========================
+
+let activeTextBox = null;
+
+// click handler
+editCanvas.addEventListener("click", handleTextClick);
+whiteboardCanvas.addEventListener("click", handleTextClick);
+
+function handleTextClick(e) {
+    if (currentTool !== "text") return;
+
+    const canvas = drawingCanvas;
+    const rect = canvas.getBoundingClientRect();
+
+    // FIX: correct absolute positioning (no shift left anymore)
+const x = (e.clientX - rect.left) / rect.width;
+const y = (e.clientY - rect.top) / rect.height;
+
+    createTextBox(x, y, canvas);
+}
+
+// ==========================
+// CREATE TEXT BOX (FIXED)
+// ==========================
+function createTextBox(x, y, canvas) {
+
+    const box = document.createElement("div");
+
+    box.contentEditable = true;
+    box.classList.add("slide-textbox");
+
+    box.dataset.x = x;
+    box.dataset.y = y;
+    box.dataset.canvas = canvas.id;
+
+    box.style.position = "absolute";
+
+    // POSITION
+    const rect = canvas.getBoundingClientRect();
+
+    box.style.left = (x * rect.width) + "px";
+    box.style.top = (y * rect.height) + "px";
+
+    // STYLE
+    box.style.minWidth = "50px";
+    box.style.minHeight = "20px";
+    box.style.color = "red";
+    box.style.fontSize = "28px";
+    box.style.fontWeight = "bold";
+    box.style.outline = "none";
+    box.style.cursor = "move";
+    box.style.zIndex = "999999"; // VERY IMPORTANT
+    box.style.pointerEvents = "auto"; // VERY IMPORTANT
+
+    // allow interaction
+    box.style.userSelect = "text";
+
+    canvas.parentElement.appendChild(box);
+
+    box.focus();
+
+    activeTextBox = box;
+
+    showTextToolbar(box);
+
+    enableDrag(box);
+}
+
+// ==========================
+// TOOLBAR (FIXED POSITIONING)
+// ==========================
+const textToolbar = document.createElement("div");
+
+textToolbar.style.position = "absolute";
+textToolbar.style.display = "none";
+textToolbar.style.gap = "6px";
+textToolbar.style.padding = "5px";
+textToolbar.style.background = "#fff";
+textToolbar.style.border = "1px solid #ccc";
+textToolbar.style.zIndex = "99999";
+textToolbar.style.borderRadius = "6px";
+
+document.body.appendChild(textToolbar);
+
+function showTextToolbar(box) {
+
+    textToolbar.innerHTML = "";
+
+    textToolbar.style.display = "flex";
+
+    // FIX: real screen position (not offsetLeft/Top)
+    const rect = box.getBoundingClientRect();
+
+    textToolbar.style.left = rect.left + "px";
+    textToolbar.style.top = (rect.top - 40) + "px";
+
+    // DELETE
+    const del = document.createElement("button");
+    del.innerText = "🗑️";
+    del.onclick = () => {
+        box.remove();
+        textToolbar.style.display = "none";
+    };
+
+    // SIZE +
+    const plus = document.createElement("button");
+    plus.innerText = "A+";
+    plus.onclick = () => {
+        let size = parseInt(window.getComputedStyle(box).fontSize);
+        box.style.fontSize = (size + 2) + "px";
+    };
+
+    // SIZE -
+    const minus = document.createElement("button");
+    minus.innerText = "A-";
+    minus.onclick = () => {
+        let size = parseInt(window.getComputedStyle(box).fontSize);
+        if (size > 10) box.style.fontSize = (size - 2) + "px";
+    };
+
+    // COLORS
+    const red = document.createElement("button");
+    red.innerText = "🔴";
+    red.onclick = () => box.style.color = "red";
+
+    const black = document.createElement("button");
+    black.innerText = "⚫";
+    black.onclick = () => box.style.color = "black";
+
+    const blue = document.createElement("button");
+    blue.innerText = "🔵";
+    blue.onclick = () => box.style.color = "blue";
+
+    textToolbar.append(del, plus, minus, red, black, blue);
+}
+
+// hide toolbar when clicking outside
+document.addEventListener("click", (e) => {
+    if (e.target.contentEditable === "true") {
+        activeTextBox = e.target;
+        showTextToolbar(e.target);
+    } else if (!textToolbar.contains(e.target)) {
+        textToolbar.style.display = "none";
+    }
+});
+
+// ==========================
+// DRAG TEXT BOX (NEW FEATURE)
+// ==========================
+function enableDrag(el) {
+    let offsetX = 0;
+    let offsetY = 0;
+    let dragging = false;
+
+    el.addEventListener("mousedown", (e) => {
+        dragging = true;
+
+        const rect = el.getBoundingClientRect();
+
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        document.body.style.userSelect = "none";
+    });
+
+    document.addEventListener("mousemove", (e) => {
+        if (!dragging) return;
+
+        const parentRect = el.parentElement.getBoundingClientRect();
+
+        el.style.left = (e.clientX - parentRect.left - offsetX) + "px";
+        el.style.top = (e.clientY - parentRect.top - offsetY) + "px";
+    });
+
+    document.addEventListener("mouseup", () => {
+        dragging = false;
+        document.body.style.userSelect = "auto";
+    });
+}
+// ==========================
+// INITIAL SETUP
+// ==========================
+
+window.addEventListener("load", () => {
+
+    setDrawingTarget("slide");
+
+    resizeEditCanvas();
+    resizeWhiteboardCanvas();
+
+    updateCursor(); // safe initial call
+
+});
+
+// ==========================
+// CURSOR SYSTEM
+// ==========================
+
+function updateCursor() {
+
+    if (!drawingCanvas) return;
+
+    // NO TOOL SELECTED
+    if (!currentTool) {
+        drawingCanvas.style.cursor = "default";
+        return;
+    }
+
+    // ERASER
+    if (currentTool === "eraser") {
+        drawingCanvas.style.cursor = "crosshair";
+    }
+
+    // TEXT TOOL
+    else if (currentTool === "text") {
+        drawingCanvas.style.cursor = "text";
+    }
+
+    // MARKER / HIGHLIGHT
+    else if (currentTool === "marker") {
+        drawingCanvas.style.cursor = "cell";
+    }
+
+    // DEFAULT FOR ALL OTHER TOOLS
+    else {
+        drawingCanvas.style.cursor = "pointer";
+    }
+}
+
+
+
