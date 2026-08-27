@@ -741,12 +741,41 @@ window.addEventListener("load", function() {
 
 <!-- Slide container -->
 <div class="slide-container">
-    <div class="slide-wrapper">
-    <img id="slide-image" alt="Slide Image" style="display: none;">
-    <canvas id="edit-canvas"></canvas>
-</div>
-    <button id="prev-btn">&#9664;</button>
-    <button id="next-btn">&#9654;</button>
+
+    <div id="lesson-cards-container">
+
+        <div class="lesson-card">
+            <div class="lesson-card-header">
+                <span>1</span>
+                <h3>Lesson Part 1</h3>
+            </div>
+
+            <div class="lesson-card-content">
+                <!-- uploaded content appears here -->
+            </div>
+
+            <button class="add-content-btn">
+                +
+            </button>
+        </div>
+
+        <div class="lesson-card">
+            <div class="lesson-card-header">
+                <span>2</span>
+                <h3>Lesson Part 2</h3>
+            </div>
+
+            <div class="lesson-card-content"></div>
+
+            <button class="add-content-btn">
+                +
+            </button>
+        </div>
+
+        <!-- cards 3–8 -->
+
+    </div>
+
 </div>
 <!-- WHITEBOARD -->
 <div id="whiteboard">
