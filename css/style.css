@@ -3161,3 +3161,118 @@ select:focus-visible {
     }
 
 }
+
+/* =========================================
+   STUDENT BOOK — LESSON CARD AREA
+   ========================================= */
+
+#lesson-card-grid {
+    display: none;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    align-content: start;
+    gap: 20px;
+    box-sizing: border-box;
+    min-height: 100vh;
+    padding: 35px;
+    color: #ffffff;
+}
+
+.lesson-heading {
+    grid-column: 1 / -1;
+    margin-bottom: 8px;
+}
+
+.lesson-heading h1 {
+    margin: 0 0 8px;
+    color: #ffffff;
+    font-size: clamp(24px, 3vw, 36px);
+    font-weight: 700;
+}
+
+.lesson-heading p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.lesson-content-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 10px;
+    min-height: 170px;
+    padding: 24px;
+    color: #ffffff;
+    text-align: left;
+    background: linear-gradient(
+        145deg,
+        rgba(18, 38, 47, 0.98),
+        rgba(8, 27, 35, 0.98)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.lesson-content-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(72, 224, 130, 0.65);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
+}
+
+.lesson-content-card:focus-visible {
+    outline: 2px solid #48e082;
+    outline-offset: 3px;
+}
+
+.lesson-content-card h2 {
+    margin: 0;
+    color: #48e082;
+    font-size: 19px;
+    font-weight: 700;
+}
+
+.lesson-content-card p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.lesson-empty-state {
+    grid-column: 1 / -1;
+    align-self: start;
+    padding: 28px;
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(8, 27, 35, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    line-height: 1.7;
+}
+
+.lesson-empty-state h2 {
+    margin-top: 0;
+    color: #48e082;
+    font-size: 20px;
+}
+
+@media (max-width: 600px) {
+    #lesson-card-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 20px 16px;
+    }
+
+    .lesson-content-card {
+        min-height: 130px;
+        padding: 20px;
+    }
+}
+
