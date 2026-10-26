@@ -504,22 +504,29 @@ box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
         showError("");
 
         try {
-            const response = await fetch(AUTH_FUNCTION_URL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "apikey": window.supabaseClientKey || ""
-                },
-                body: JSON.stringify({ username, password })
-            });
-
-            const result = await response.json();
-
-            if (!response.ok || !result.success || !result.session) {
-                throw new Error(
-                    result.error || "Invalid username or password."
-                );
+          const { data: result, error: invokeError } =
+    await window.supabaseClient.functions.invoke(
+        "poliglota-auth",
+        {
+            body: {
+                username: username,
+                password: password
             }
+        }
+    );
+
+if (invokeError) {
+    console.error("Supabase function error:", invokeError);
+    throw new Error(
+        "Login service error. Please check the browser console."
+    );
+}
+
+if (!result || !result.success || !result.session) {
+    throw new Error(
+        result?.error || "Invalid username or password."
+    );
+}
 
             if (!result.user || !result.user.id || !result.user.role) {
                 throw new Error("The server returned an invalid user profile.");
