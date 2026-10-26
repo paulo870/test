@@ -90,7 +90,6 @@ function loadHome() {
     nextBtn.style.display = "none";
 }
 
-```javascript
 // ==========================
 // STUDENT BOOK — LESSON SYSTEM
 // ==========================
@@ -290,7 +289,6 @@ function loadStudentUnit(unitNumber) {
 
     container.appendChild(message);
 }
-```
 
 // ==========================
 // ACTIVITY BOOK
@@ -335,10 +333,7 @@ function loadActivityUnit(unitNumber) {
 }
 
 
-// ==========================
-// DROPDOWN EVENTS
-// ==========================
-```javascript
+
 // ==========================
 // STUDENT BOOK LESSON SELECTION
 // ==========================
@@ -376,7 +371,7 @@ studentDropdownLinks.forEach(link => {
         }
     });
 });
-```
+
 
 
 activityDropdownLinks.forEach(link => {
