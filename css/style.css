@@ -3276,3 +3276,87 @@ select:focus-visible {
     }
 }
 
+
+/* ==========================
+   LESSON CARD FULLSCREEN VIEWER
+========================== */
+
+#lesson-card-viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px 24px;
+    box-sizing: border-box;
+    background: rgba(10, 20, 24, 0.97);
+    overflow: auto;
+}
+
+.lesson-viewer-close {
+    position: fixed;
+    top: 16px;
+    right: 22px;
+    z-index: 10001;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: #48e082;
+    color: #10231a;
+    font-size: 32px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.lesson-viewer-close:hover {
+    filter: brightness(1.1);
+}
+
+.lesson-viewer-content {
+    width: min(1100px, 100%);
+    max-height: 100%;
+    overflow: auto;
+    color: #fff;
+    text-align: center;
+}
+
+.lesson-viewer-content h2 {
+    margin: 0 0 24px;
+    color: #48e082;
+}
+
+.lesson-viewer-media {
+    display: block;
+    max-width: 100%;
+    max-height: 70vh;
+    margin: 0 auto 20px;
+    object-fit: contain;
+}
+
+.lesson-viewer-text {
+    max-width: 900px;
+    margin: 20px auto;
+    color: #fff;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+    #lesson-card-viewer {
+        padding: 70px 14px 20px;
+    }
+
+    .lesson-viewer-close {
+        top: 12px;
+        right: 12px;
+    }
+
+    .lesson-viewer-content h2 {
+        font-size: 1.3rem;
+    }
+}
+
