@@ -503,24 +503,36 @@ box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
         submitButton.textContent = "Signing in...";
         showError("");
 
-        try {
-          const { data: result, error: invokeError } =
-    await window.supabaseClient.functions.invoke(
-        "poliglota-auth",
-        {
+try {
+    const supabase = window.supabaseClient;
+
+    if (!supabase || !supabase.functions) {
+        throw new Error(
+            "Supabase client is not loaded. Check js/supabase.js."
+        );
+    }
+
+    const { data: result, error: invokeError } =
+        await supabase.functions.invoke("poliglota-auth", {
             body: {
                 username: username,
                 password: password
             }
-        }
-    );
+        });
 
-if (invokeError) {
-    console.error("Supabase function error:", invokeError);
-    throw new Error(
-        "Login service error. Please check the browser console."
-    );
-}
+    if (invokeError) {
+        console.error("Supabase login function error:", invokeError);
+        console.error("Error details:", {
+            message: invokeError.message,
+            name: invokeError.name,
+            context: invokeError.context
+        });
+
+        throw new Error(
+            "Login request failed. Open the browser console (F12) for details."
+        );
+    }
+
 
 if (!result || !result.success || !result.session) {
     throw new Error(
