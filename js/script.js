@@ -90,41 +90,207 @@ function loadHome() {
     nextBtn.style.display = "none";
 }
 
+```javascript
 // ==========================
-// STUDENT BOOK
+// STUDENT BOOK — LESSON SYSTEM
 // ==========================
-function loadStudentUnit(unitNumber) {
-    currentImages = [];
-    currentIndex = 0;
 
-    const folderName = "unit_" + unitNumber;
-    const basePath = `images/student-book-pages/${folderName}/`;
+// Keep track of the selected lesson.
+let activeStudentUnit = null;
+let activeStudentLesson = null;
 
-    let pageNumbers = [];
-    switch(unitNumber) {
-        case "1": pageNumbers = [7,8,9,10,11,12,13,14]; break;
-        case "2": pageNumbers = [15,16,17,18,19,20,21,22]; break;
-        case "3": pageNumbers = [23,24,25,25,26,27,28,29,30]; break;
-        case "4": pageNumbers = [31,32,33,34,35,36,37,38,39,40]; break;
-        case "5": pageNumbers = [41,42,43,44,45,46,47,48,49,50]; break;
-        case "6": pageNumbers = [51,52,53,54,55,56,57,58,59,60]; break;
-        case "7": pageNumbers = [61,62,63,64,65,66,67,68,69,70]; break;
-        case "8": pageNumbers = [71,72,73,74,75,76,77,78,79,80]; break;
-        case "9": pageNumbers = [81,82,83,84,85,86,87,88,89,90]; break;
-        case "10": pageNumbers = [91,92,93,94,95,96,97,98,99,100]; break;
-        case "11": pageNumbers = [101,102,103,104,105,106,107,108,109,110]; break;
-        case "12": pageNumbers = [111,112,113,114,115,116,117,118,119,120]; break;
-        default: pageNumbers = []; break;
+// The lesson-card area is created dynamically so that
+// we do not need to replace the existing slide HTML.
+function getLessonCardContainer() {
+    let container = document.getElementById("lesson-card-grid");
+
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "lesson-card-grid";
+        container.setAttribute("aria-live", "polite");
+
+        slideContainer.appendChild(container);
     }
 
-    pageNumbers.forEach(num => {
-        currentImages.push(basePath + "page" + num + ".jpg");
-    });
-
-    loadImage(currentImages[currentIndex]);
-    prevBtn.style.display = "block";
-    nextBtn.style.display = "block";
+    return container;
 }
+
+
+// Hide the lesson-card view and restore the original
+// slide presentation interface.
+function hideLessonCardView() {
+    const container = document.getElementById("lesson-card-grid");
+    const slideWrapper = document.querySelector(".slide-wrapper");
+
+    if (container) {
+        container.style.display = "none";
+    }
+
+    if (slideWrapper) {
+        slideWrapper.style.display = "";
+    }
+
+    prevBtn.style.display = "";
+    nextBtn.style.display = "";
+}
+
+
+// Display the lesson area instead of the scanned page.
+function showLessonCardView() {
+    const container = getLessonCardContainer();
+    const slideWrapper = document.querySelector(".slide-wrapper");
+
+    if (slideWrapper) {
+        slideWrapper.style.display = "none";
+    }
+
+    prevBtn.style.display = "none";
+    nextBtn.style.display = "none";
+
+    // Close any previous image/audio/video lesson interface.
+    audioListContainer.style.display = "none";
+
+    const videoList = document.getElementById("video-list-container");
+
+    if (videoList) {
+        videoList.style.display = "none";
+    }
+
+    container.style.display = "grid";
+
+    return container;
+}
+
+
+// Temporary lesson-content source.
+//
+// The next implementation stage will load this content
+// from Supabase instead of localStorage.
+function getSavedLessonCards(unitNumber, lessonNumber) {
+    try {
+        const saved = localStorage.getItem("poliglotaLessonCards");
+
+        if (!saved) {
+            return [];
+        }
+
+        const lessonData = JSON.parse(saved);
+
+        const cards = lessonData?.[unitNumber]?.[lessonNumber];
+
+        if (!Array.isArray(cards)) {
+            return [];
+        }
+
+        // Never display more than eight cards per lesson.
+        return cards.slice(0, 8);
+
+    } catch (error) {
+        console.error("Unable to load lesson cards:", error);
+        return [];
+    }
+}
+
+
+// Display the cards belonging to the selected lesson.
+function renderStudentLesson(unitNumber, lessonNumber) {
+    const container = showLessonCardView();
+
+    activeStudentUnit = String(unitNumber);
+    activeStudentLesson = String(lessonNumber);
+
+    container.replaceChildren();
+
+    // Lesson heading.
+    const heading = document.createElement("div");
+    heading.className = "lesson-heading";
+
+    const title = document.createElement("h1");
+    title.textContent = `Unit ${unitNumber} — Lesson ${lessonNumber}`;
+
+    const subtitle = document.createElement("p");
+    subtitle.textContent = "Select a card to view its content.";
+
+    heading.append(title, subtitle);
+    container.appendChild(heading);
+
+    const cards = getSavedLessonCards(
+        String(unitNumber),
+        String(lessonNumber)
+    );
+
+    // Empty-state message until the teacher adds content.
+    if (cards.length === 0) {
+        const emptyState = document.createElement("div");
+        emptyState.className = "lesson-empty-state";
+
+        const emptyTitle = document.createElement("h2");
+        emptyTitle.textContent = "Lesson content coming soon";
+
+        const emptyMessage = document.createElement("p");
+        emptyMessage.textContent =
+            "There is no content available for this lesson yet.";
+
+        emptyState.append(emptyTitle, emptyMessage);
+        container.appendChild(emptyState);
+
+        return;
+    }
+
+    cards.forEach((card, index) => {
+        const cardElement = document.createElement("button");
+
+        cardElement.type = "button";
+        cardElement.className = "lesson-content-card";
+
+        const cardTitle = document.createElement("h2");
+        cardTitle.textContent = card.title || `Card ${index + 1}`;
+
+        const cardDescription = document.createElement("p");
+        cardDescription.textContent =
+            card.description || "Open this card to view its content.";
+
+        cardElement.append(cardTitle, cardDescription);
+
+        cardElement.addEventListener("click", () => {
+            openLessonCard(card, index);
+        });
+
+        container.appendChild(cardElement);
+    });
+}
+
+
+// Select a unit without loading its old scanned pages.
+function loadStudentUnit(unitNumber) {
+    activeStudentUnit = String(unitNumber);
+    activeStudentLesson = null;
+
+    const container = showLessonCardView();
+
+    container.replaceChildren();
+
+    const heading = document.createElement("div");
+    heading.className = "lesson-heading";
+
+    const title = document.createElement("h1");
+    title.textContent = `Unit ${unitNumber}`;
+
+    const subtitle = document.createElement("p");
+    subtitle.textContent =
+        "Choose a lesson from the Student Book menu.";
+
+    heading.append(title, subtitle);
+    container.appendChild(heading);
+
+    const message = document.createElement("div");
+    message.className = "lesson-empty-state";
+    message.textContent =
+        "Select Lesson 1, Lesson 2, Lesson 3, Lesson 4 or Lesson 5.";
+
+    container.appendChild(message);
+}
+```
 
 // ==========================
 // ACTIVITY BOOK
@@ -172,19 +338,46 @@ function loadActivityUnit(unitNumber) {
 // ==========================
 // DROPDOWN EVENTS
 // ==========================
+```javascript
+// ==========================
+// STUDENT BOOK LESSON SELECTION
+// ==========================
+
 studentDropdownLinks.forEach(link => {
     link.addEventListener("click", (e) => {
         e.preventDefault();
+        e.stopPropagation();
+
         const unit = link.getAttribute("data-unit");
-        loadStudentUnit(unit);
-        // Save state
-        saveCurrentState(
-            "student",
-            unit,
-            parseInt(currentImages[currentIndex].match(/page(\d+)/)[1])
-        );
+        const lesson = link.getAttribute("data-lesson");
+
+        // Selecting a lesson loads its cards.
+        if (lesson) {
+            renderStudentLesson(unit, lesson);
+
+            saveCurrentState(
+                "student",
+                unit,
+                `lesson-${lesson}`
+            );
+
+            // Close the first dropdown after selection.
+            document.querySelectorAll(".dropdown").forEach(dropdown => {
+                dropdown.classList.remove("show");
+            });
+
+            return;
+        }
+
+        // Selecting a unit displays its lesson-selection screen.
+        // It no longer loads the old scanned pages.
+        if (unit) {
+            loadStudentUnit(unit);
+        }
     });
 });
+```
+
 
 activityDropdownLinks.forEach(link => {
     link.addEventListener("click", (e) => {
