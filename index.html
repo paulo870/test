@@ -504,8 +504,7 @@ box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
         showError("");
 
 try {
-    const supabase = window.supabaseClient;
-
+    const supabaseClient = window.supabaseClient;
     if (!supabase || !supabase.functions) {
         throw new Error(
             "Supabase client is not loaded. Check js/supabase.js."
