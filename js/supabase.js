@@ -6,7 +6,7 @@ const SUPABASE_URL =
     "https://wshwnpsivmmkbtabklna.supabase.co";
 
 const SUPABASE_ANON_KEY =
-    "sb_publishable_Ev1CDyzOV5e3-EQGOFef_A_45wcHoXQ;
+    "sb_publishable_Ev1CDyzOV5e3-EQGOFef_A_45wcHoXQ";
 
 
 // ============================================================
