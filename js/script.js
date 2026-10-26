@@ -261,6 +261,98 @@ function renderStudentLesson(unitNumber, lessonNumber) {
 }
 
 
+// ==========================
+// LESSON CARD FULLSCREEN VIEWER
+// ==========================
+function openLessonCard(card, index) {
+    // Remove an existing viewer, if one is open
+    const existingViewer = document.getElementById("lesson-card-viewer");
+    if (existingViewer) existingViewer.remove();
+
+    const viewer = document.createElement("div");
+    viewer.id = "lesson-card-viewer";
+
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "lesson-viewer-close";
+    closeButton.textContent = "×";
+    closeButton.setAttribute("aria-label", "Close lesson card");
+
+    const contentArea = document.createElement("div");
+    contentArea.className = "lesson-viewer-content";
+
+    const title = document.createElement("h2");
+    title.textContent = card.title || card.name || `Lesson Card ${index + 1}`;
+    contentArea.appendChild(title);
+
+    const cardType = (card.type || "").toLowerCase();
+    const fileUrl = card.url || card.fileUrl || card.file_url || "";
+    const textContent = card.content || card.description || card.text || "";
+
+    if (fileUrl) {
+        let mediaElement = null;
+
+        if (cardType === "image" || /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(fileUrl)) {
+            mediaElement = document.createElement("img");
+            mediaElement.src = fileUrl;
+            mediaElement.alt = card.title || "Lesson image";
+        } else if (cardType === "video" || /\.(mp4|webm|ogg)(\?.*)?$/i.test(fileUrl)) {
+            mediaElement = document.createElement("video");
+            mediaElement.src = fileUrl;
+            mediaElement.controls = true;
+            mediaElement.playsInline = true;
+        } else if (cardType === "audio" || /\.(mp3|wav|m4a|aac|oga)(\?.*)?$/i.test(fileUrl)) {
+            mediaElement = document.createElement("audio");
+            mediaElement.src = fileUrl;
+            mediaElement.controls = true;
+        } else {
+            mediaElement = document.createElement("a");
+            mediaElement.href = fileUrl;
+            mediaElement.target = "_blank";
+            mediaElement.rel = "noopener noreferrer";
+            mediaElement.textContent = card.fileName || card.file_name || "Open lesson file";
+        }
+
+        mediaElement.className = "lesson-viewer-media";
+        contentArea.appendChild(mediaElement);
+    }
+
+    if (textContent) {
+        const text = document.createElement("div");
+        text.className = "lesson-viewer-text";
+        text.textContent = textContent;
+        contentArea.appendChild(text);
+    }
+
+    if (!fileUrl && !textContent) {
+        const message = document.createElement("p");
+        message.textContent = "This card does not have any content yet.";
+        contentArea.appendChild(message);
+    }
+
+    function closeViewer() {
+        viewer.remove();
+        document.removeEventListener("keydown", handleEscape);
+    }
+
+    function handleEscape(event) {
+        if (event.key === "Escape") closeViewer();
+    }
+
+    closeButton.addEventListener("click", closeViewer);
+
+    viewer.addEventListener("click", function (event) {
+        if (event.target === viewer) closeViewer();
+    });
+
+    document.addEventListener("keydown", handleEscape);
+
+    viewer.appendChild(closeButton);
+    viewer.appendChild(contentArea);
+    document.body.appendChild(viewer);
+}
+
+
 // Select a unit without loading its old scanned pages.
 function loadStudentUnit(unitNumber) {
     activeStudentUnit = String(unitNumber);
