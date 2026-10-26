@@ -472,6 +472,7 @@ box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
 </style>
 
 
+
 <script>
 (function () {
     const loginForm = document.getElementById("teacher-login-form");
@@ -480,9 +481,6 @@ box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
     const passwordInput = document.getElementById("teacher-password");
     const errorElement = document.getElementById("password-error");
     const submitButton = document.getElementById("login-submit-btn");
-
-    const AUTH_FUNCTION_URL =
-        "https://wshwnpsivmmkbtabklna.supabase.co/functions/v1/poliglota-auth";
 
     function showError(message) {
         errorElement.textContent = message;
@@ -503,53 +501,60 @@ box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
         submitButton.textContent = "Signing in...";
         showError("");
 
-try {
-    const supabaseClient = window.supabaseClient;
-    if (!supabase || !supabase.functions) {
-        throw new Error(
-            "Supabase client is not loaded. Check js/supabase.js."
-        );
-    }
+        try {
+            const supabaseClient = window.supabaseClient;
 
-    const { data: result, error: invokeError } =
-        await supabase.functions.invoke("poliglota-auth", {
-            body: {
-                username: username,
-                password: password
+            if (!supabaseClient || !supabaseClient.functions) {
+                throw new Error(
+                    "Supabase client is not loaded. Check js/supabase.js."
+                );
             }
-        });
 
-    if (invokeError) {
-        console.error("Supabase login function error:", invokeError);
-        console.error("Error details:", {
-            message: invokeError.message,
-            name: invokeError.name,
-            context: invokeError.context
-        });
+            const { data: result, error: invokeError } =
+                await supabaseClient.functions.invoke("poliglota-auth", {
+                    body: {
+                        username: username,
+                        password: password
+                    }
+                });
 
-        throw new Error(
-            "Login request failed. Open the browser console (F12) for details."
-        );
-    }
+            if (invokeError) {
+                console.error(
+                    "Supabase login function error:",
+                    invokeError
+                );
 
+                console.error("Error details:", {
+                    message: invokeError.message,
+                    name: invokeError.name,
+                    context: invokeError.context
+                });
 
-if (!result || !result.success || !result.session) {
-    throw new Error(
-        result?.error || "Invalid username or password."
-    );
-}
+                throw new Error(
+                    "Login request failed. Open the browser console (F12) for details."
+                );
+            }
+
+            if (!result || !result.success || !result.session) {
+                throw new Error(
+                    result?.error || "Invalid username or password."
+                );
+            }
 
             if (!result.user || !result.user.id || !result.user.role) {
-                throw new Error("The server returned an invalid user profile.");
+                throw new Error(
+                    "The server returned an invalid user profile."
+                );
             }
 
             if (!["admin", "teacher", "student"].includes(result.user.role)) {
-                throw new Error("Your account has an unrecognized role.");
+                throw new Error(
+                    "Your account has an unrecognized role."
+                );
             }
 
             /*
-             * Store the authenticated Supabase session using the
-             * existing Supabase client.
+             * Establish the authenticated Supabase session.
              */
             if (
                 !window.supabase ||
@@ -558,32 +563,28 @@ if (!result || !result.success || !result.session) {
                 throw new Error("The Supabase library did not load.");
             }
 
-            const supabase = window.supabaseClient;
-
-            if (!supabase || !supabase.auth) {
-                throw new Error("The Supabase client is not configured.");
-            }
-
             const { error: sessionError } =
-                await supabase.auth.setSession({
+                await supabaseClient.auth.setSession({
                     access_token: result.session.access_token,
                     refresh_token: result.session.refresh_token
                 });
 
             if (sessionError) {
-                throw new Error("Unable to establish your login session.");
+                console.error(
+                    "Supabase session error:",
+                    sessionError
+                );
+
+                throw new Error(
+                    "Unable to establish your login session."
+                );
             }
 
             /*
-             * The server has verified the account and returned its role.
-             * The existing shared-password mechanism is no longer used.
+             * Authentication succeeded.
              */
             loginScreen.style.display = "none";
 
-            /*
-             * Keep the role available to the existing application code.
-             * Database policies must still enforce authorization.
-             */
             window.poliglotaCurrentUser = result.user;
 
             document.dispatchEvent(
@@ -594,11 +595,13 @@ if (!result || !result.success || !result.session) {
 
         } catch (error) {
             console.error("Poliglota login failed:", error);
+
             showError(
                 error.message === "Failed to fetch"
                     ? "Unable to connect. Please check your connection and try again."
                     : error.message || "Login failed. Please try again."
             );
+
         } finally {
             submitButton.disabled = false;
             submitButton.textContent = "Sign In";
@@ -606,13 +609,14 @@ if (!result || !result.success || !result.session) {
     });
 
     /*
-     * Always require authentication when the page is loaded.
-     * A previous shared-password session is no longer accepted.
+     * Require authentication when the page is loaded.
      */
     sessionStorage.removeItem("poliglotaTeacherAccess");
     loginScreen.style.display = "flex";
 })();
 </script>
+
+
 
 
     
