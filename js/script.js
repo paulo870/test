@@ -15,6 +15,7 @@ const audioPlayer = document.getElementById("slide-audio");
 const audioSource = document.getElementById("audio-source");
 const hideAudioBtn = document.getElementById("hide-audio-btn");
 
+
 // Show audio player and hide button
 function showAudioPlayer() {
     audioPlayer.style.display = "block";
