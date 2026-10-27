@@ -1,1 +1,573 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Academia Poliglota | Content Manager</title>
+
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+
+<body>
+
+    <div class="admin-shell">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+
+            <div class="brand">
+                <img
+                    src="images/logo.jpg"
+                    alt="Academia Poliglota"
+                    class="brand-logo"
+                >
+
+                <span>Content Manager</span>
+            </div>
+
+            <nav class="sidebar-navigation">
+
+                <button
+                    class="nav-item active"
+                    type="button"
+                    data-panel="lessons"
+                >
+                    Lessons & Media
+                </button>
+
+                <button
+                    class="nav-item admin-only"
+                    type="button"
+                    data-panel="users"
+                    hidden
+                >
+                    Accounts & Roles
+                </button>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+
+                <div id="signed-in-user">
+                    Checking session...
+                </div>
+
+                <a href="index.html" class="back-link">
+                    ← Return to classroom
+                </a>
+
+                <button
+                    id="sign-out-btn"
+                    class="button button-quiet"
+                    type="button"
+                >
+                    Sign out
+                </button>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <header class="page-header">
+
+                <div>
+                    <p class="eyebrow">
+                        ACADEMIA POLIGLOTA
+                    </p>
+
+                    <h1 id="page-title">
+                        Lessons & Media
+                    </h1>
+
+                    <p class="muted">
+                        Create lessons, manage cards and add learning resources.
+                    </p>
+                </div>
+
+                <span id="role-badge" class="role-badge">
+                    Verifying role
+                </span>
+
+            </header>
+
+
+            <!-- NOTIFICATIONS -->
+            <div
+                id="notice"
+                class="notice"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></div>
+
+
+            <!-- LESSON MANAGEMENT PANEL -->
+            <section id="panel-lessons" class="panel">
+
+                <div class="panel-grid">
+
+
+                    <!-- LESSON CATALOGUE -->
+                    <section class="card">
+
+                        <div class="section-heading">
+
+                            <div>
+                                <h2>Lesson Catalogue</h2>
+
+                                <p class="muted">
+                                    Choose a unit and lesson to manage.
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-row">
+
+                            <label>
+                                Unit Number
+
+                                <input
+                                    id="unit-number"
+                                    type="number"
+                                    min="1"
+                                    max="99"
+                                    value="1"
+                                    required
+                                >
+                            </label>
+
+
+                            <label>
+                                Lesson Number
+
+                                <input
+                                    id="lesson-number"
+                                    type="number"
+                                    min="1"
+                                    max="99"
+                                    value="1"
+                                    required
+                                >
+                            </label>
+
+                        </div>
+
+
+                        <label>
+                            Lesson Title
+
+                            <input
+                                id="lesson-title"
+                                type="text"
+                                maxlength="160"
+                                placeholder="e.g. Greetings and Introductions"
+                            >
+                        </label>
+
+
+                        <label>
+                            Lesson Description
+
+                            <textarea
+                                id="lesson-description"
+                                rows="3"
+                                placeholder="What will students learn?"
+                            ></textarea>
+                        </label>
+
+
+                        <div class="form-row form-actions">
+
+                            <button
+                                id="save-lesson-btn"
+                                class="button button-primary admin-only"
+                                type="button"
+                                hidden
+                            >
+                                Create Lesson
+                            </button>
+
+                            <button
+                                id="load-lesson-btn"
+                                class="button button-secondary"
+                                type="button"
+                            >
+                                Load Lesson
+                            </button>
+
+                        </div>
+
+
+                        <div class="divider"></div>
+
+
+                        <!-- LESSON CARDS -->
+                        <div class="section-heading">
+
+                            <div>
+                                <h3>Lesson Cards</h3>
+
+                                <p class="muted">
+                                    Each lesson can contain up to eight cards.
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        <div id="cards-list" class="cards-list">
+
+                            <p class="empty-state">
+                                Load a lesson to see its cards.
+                            </p>
+
+                        </div>
+
+
+                        <div class="form-row">
+
+                            <label>
+                                New Card Title
+
+                                <input
+                                    id="new-card-title"
+                                    type="text"
+                                    maxlength="160"
+                                    placeholder="Card title"
+                                >
+                            </label>
+
+
+                            <label>
+                                Card Number
+
+                                <select id="new-card-number">
+
+                                    <option value="1">Card 1</option>
+                                    <option value="2">Card 2</option>
+                                    <option value="3">Card 3</option>
+                                    <option value="4">Card 4</option>
+                                    <option value="5">Card 5</option>
+                                    <option value="6">Card 6</option>
+                                    <option value="7">Card 7</option>
+                                    <option value="8">Card 8</option>
+
+                                </select>
+
+                            </label>
+
+                        </div>
+
+
+                        <button
+                            id="add-card-btn"
+                            class="button button-primary admin-only"
+                            type="button"
+                            hidden
+                        >
+                            Add Card
+                        </button>
+
+                    </section>
+
+
+
+                    <!-- CONTENT MANAGEMENT -->
+                    <section class="card">
+
+                        <div class="section-heading">
+
+                            <div>
+                                <h2>Add Learning Content</h2>
+
+                                <p class="muted">
+                                    Attach text or media to the selected card.
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        <p
+                            id="selected-card-label"
+                            class="selected-card"
+                        >
+                            No card selected
+                        </p>
+
+
+                        <label>
+                            Content Title
+
+                            <input
+                                id="content-title"
+                                type="text"
+                                maxlength="160"
+                                placeholder="e.g. Listen and Repeat"
+                            >
+                        </label>
+
+
+                        <label>
+                            Content Type
+
+                            <select id="content-type">
+
+                                <option value="text">
+                                    Text / Instructions
+                                </option>
+
+                                <option value="image">
+                                    Image
+                                </option>
+
+                                <option value="audio">
+                                    Audio
+                                </option>
+
+                                <option value="video">
+                                    Video
+                                </option>
+
+                                <option value="game">
+                                    Game / Interactive Resource
+                                </option>
+
+                                <option value="file">
+                                    Other File / PDF
+                                </option>
+
+                            </select>
+
+                        </label>
+
+
+                        <label>
+                            Text or Instructions
+
+                            <textarea
+                                id="text-content"
+                                rows="5"
+                                placeholder="Optional instructions or learning content"
+                            ></textarea>
+                        </label>
+
+
+                        <label id="file-label">
+                            Attach File
+
+                            <input
+                                id="content-file"
+                                type="file"
+                                accept="image/*,audio/*,video/*,.pdf,.html,.zip"
+                            >
+                        </label>
+
+
+                        <p class="hint">
+                            Uploaded files will be stored in the private
+                            Supabase lesson-media bucket.
+                        </p>
+
+
+                        <button
+                            id="add-content-btn"
+                            class="button button-primary"
+                            type="button"
+                            disabled
+                        >
+                            Add Content to Selected Card
+                        </button>
+
+
+                        <div class="divider"></div>
+
+
+                        <h3>Selected Card Content</h3>
+
+
+                        <div id="content-list" class="content-list">
+
+                            <p class="empty-state">
+                                Select a card to view its content.
+                            </p>
+
+                        </div>
+
+                    </section>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ACCOUNT MANAGEMENT PANEL -->
+            <section
+                id="panel-users"
+                class="panel"
+                hidden
+            >
+
+                <div class="panel-grid">
+
+
+                    <!-- CREATE ACCOUNT -->
+                    <section class="card">
+
+                        <h2>Create an Account</h2>
+
+                        <p class="muted">
+                            Only administrators can create accounts and assign roles.
+                        </p>
+
+
+                        <form id="create-user-form">
+
+                            <label>
+                                Full Name
+
+                                <input
+                                    id="new-user-fullname"
+                                    type="text"
+                                    maxlength="160"
+                                    autocomplete="name"
+                                    required
+                                >
+                            </label>
+
+
+                            <label>
+                                Username
+
+                                <input
+                                    id="new-user-username"
+                                    type="text"
+                                    maxlength="60"
+                                    pattern="[A-Za-z0-9._-]+"
+                                    autocomplete="username"
+                                    required
+                                >
+                            </label>
+
+
+                            <label>
+                                Email Address
+
+                                <input
+                                    id="new-user-email"
+                                    type="email"
+                                    autocomplete="email"
+                                    required
+                                >
+                            </label>
+
+
+                            <label>
+                                Temporary Password
+
+                                <input
+                                    id="new-user-password"
+                                    type="password"
+                                    minlength="10"
+                                    autocomplete="new-password"
+                                    required
+                                >
+                            </label>
+
+
+                            <label>
+                                Account Role
+
+                                <select id="new-user-role">
+
+                                    <option value="student">
+                                        Student
+                                    </option>
+
+                                    <option value="teacher">
+                                        Teacher
+                                    </option>
+
+                                    <option value="admin">
+                                        Administrator
+                                    </option>
+
+                                </select>
+
+                            </label>
+
+
+                            <button
+                                class="button button-primary"
+                                type="submit"
+                                id="create-user-btn"
+                            >
+                                Create Account
+                            </button>
+
+                        </form>
+
+                    </section>
+
+
+
+                    <!-- EXISTING ACCOUNTS -->
+                    <section class="card">
+
+                        <h2>Existing Accounts</h2>
+
+                        <p class="muted">
+                            Manage user roles and account status.
+                        </p>
+
+
+                        <button
+                            id="refresh-users-btn"
+                            class="button button-secondary"
+                            type="button"
+                        >
+                            Refresh Accounts
+                        </button>
+
+
+                        <div id="users-list" class="users-list">
+
+                            <p class="empty-state">
+                                Select refresh to load accounts.
+                            </p>
+
+                        </div>
+
+                    </section>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- EXISTING PROJECT CONFIGURATION -->
+    <script src="js/supabase.js"></script>
+
+    <!-- ADMIN DASHBOARD LOGIC -->
+    <script src="js/admin.js"></script>
+
+</body>
+</html>
+```
 
