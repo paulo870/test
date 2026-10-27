@@ -569,17 +569,26 @@ box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
                 );
             }
 
-            // Make the authenticated user available to the application.
-            window.poliglotaCurrentUser = data.user;
+          
+// Make the authenticated user available to the application.
+window.poliglotaCurrentUser = data.user;
 
-            // Hide the login screen only after successful authentication.
-            loginScreen.style.display = "none";
+// Administrators go directly to the admin dashboard.
+if (data.user.role === "admin") {
+    window.location.replace("admin.html");
+    return;
+}
 
-            document.dispatchEvent(
-                new CustomEvent("poliglota:login", {
-                    detail: { user: data.user }
-                })
-            );
+// Teachers and students stay on the teaching platform.
+loginScreen.style.display = "none";
+
+document.dispatchEvent(
+    new CustomEvent("poliglota:login", {
+        detail: { user: data.user }
+    })
+);
+
+
 
         } catch (error) {
             console.error("Poliglota login failed:", error);
