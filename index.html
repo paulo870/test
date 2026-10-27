@@ -572,7 +572,14 @@ box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
           
 // Make the authenticated user available to the application.
 window.poliglotaCurrentUser = data.user;
+// Show the admin navigation button only to administrators.
+const adminDashboardLink =
+    document.getElementById("admin-dashboard-link");
 
+if (adminDashboardLink) {
+    adminDashboardLink.style.display =
+        data.user.role === "admin" ? "inline-flex" : "none";
+}
 // Administrators go directly to the admin dashboard.
 if (data.user.role === "admin") {
     window.location.replace("admin.html");
