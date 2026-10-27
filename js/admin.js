@@ -1,37 +1,15 @@
-/* =========================================================
-   ACADEMIA POLIGLOTA — ADMIN DASHBOARD
-   File: js/admin.js
-
-   Uses the existing window.supabaseClient.
-
-   IMPORTANT:
-   - Does not replace the existing login system.
-   - Does not assume an undocumented Edge Function API.
-   - Teachers must not be able to edit or delete existing content.
-   ========================================================= */
-
 (() => {
     "use strict";
+
+    // =========================================================
+    // CONFIGURATION
+    // =========================================================
 
     const MAX_CARDS_PER_LESSON = 8;
     const STORAGE_BUCKET = "lesson-media";
     const EDGE_FUNCTION_NAME = "hyper-handler";
 
-    const state = {
-        user: null,
-        profile: null,
-        role: null,
-
-        currentLesson: null,
-        currentCard: null,
-
-        lessons: [],
-        cards: [],
-        content: [],
-        users: [],
-
-        busy: false
-    };
+    const client = window.supabaseClient;
 
     const $ = (selector, root = document) =>
         root.querySelector(selector);
@@ -39,15 +17,23 @@
     const $$ = (selector, root = document) =>
         Array.from(root.querySelectorAll(selector));
 
-    function getClient() {
-        if (!window.supabaseClient) {
-            throw new Error(
-                "Supabase client not found. Check js/supabase.js and make sure it loads before js/admin.js."
-            );
-        }
+    const state = {
+        user: null,
+        profile: null,
+        role: null,
+        currentLesson: null,
+        currentCard: null,
+        lessons: [],
+        cards: [],
+        content: [],
+        users: []
+    };
 
-        return window.supabaseClient;
-    }
+    let noticeTimeout = null;
+
+    // =========================================================
+    // GENERAL HELPERS
+    // =========================================================
 
     function escapeHTML(value) {
         return String(value ?? "").replace(/[&<>"']/g, character => {
@@ -56,7 +42,7 @@
                 "<": "&lt;",
                 ">": "&gt;",
                 '"': "&quot;",
-                "'": "&#39;"
+                "'": "&#039;"
             };
 
             return entities[character];
@@ -64,25 +50,26 @@
     }
 
     function formatBytes(bytes) {
-        const size = Number(bytes);
-
-        if (!Number.isFinite(size) || size < 0) {
+        if (
+            bytes === null ||
+            bytes === undefined ||
+            !Number.isFinite(Number(bytes)) ||
+            Number(bytes) < 0
+        ) {
             return "";
         }
 
-        if (size < 1024) {
-            return `${size} B`;
+        const value = Number(bytes);
+
+        if (value < 1024) {
+            return `${value} B`;
         }
 
-        if (size < 1024 * 1024) {
-            return `${(size / 1024).toFixed(1)} KB`;
+        if (value < 1024 * 1024) {
+            return `${(value / 1024).toFixed(1)} KB`;
         }
 
-        if (size < 1024 * 1024 * 1024) {
-            return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-        }
-
-        return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+        return `${(value / (1024 * 1024)).toFixed(2)} MB`;
     }
 
     function setNotice(message, type = "info") {
@@ -93,43 +80,34 @@
             return;
         }
 
+        clearTimeout(noticeTimeout);
+
         notice.textContent = message;
-        notice.className = "";
+        notice.className = `notice notice-${type}`;
+        notice.hidden = false;
 
-        if (type) {
-            notice.classList.add(type);
-        }
-
-        notice.style.display = "block";
-    }
-
-    function clearNotice() {
-        const notice = $("#notice");
-
-        if (notice) {
-            notice.textContent = "";
-            notice.className = "";
-            notice.style.display = "none";
-        }
+        noticeTimeout = setTimeout(() => {
+            notice.hidden = true;
+        }, type === "error" ? 8000 : 5000);
     }
 
     function showLoading(container, message = "Loading...") {
         if (!container) return;
 
         container.innerHTML = `
-            <div class="admin-loading">
-                ${escapeHTML(message)}
+            <div class="loading-state" role="status">
+                <span class="loading-spinner" aria-hidden="true"></span>
+                <span>${escapeHTML(message)}</span>
             </div>
         `;
     }
 
-    function showEmpty(container, title, description = "") {
+    function showEmpty(container, message) {
         if (!container) return;
 
         container.innerHTML = `
-            <div class="admin-empty-state">
-                <h3>${escapeHTML(title)}</h3>
-                <p>${escapeHTML(description)}</p>
+            <div class="empty-state">
+                ${escapeHTML(message)}
             </div>
         `;
     }
@@ -138,19 +116,26 @@
         if (!button) return;
 
         if (busy) {
-            if (!button.dataset.originalText) {
+            if (!button.hasAttribute("aria-busy")) {
                 button.dataset.originalText = button.textContent;
+                button.dataset.originalDisabled = String(button.disabled);
             }
 
-            button.disabled = true;
             button.textContent = busyText;
+            button.disabled = true;
+            button.setAttribute("aria-busy", "true");
         } else {
-            button.disabled = false;
+            button.textContent =
+                button.dataset.originalText || button.textContent;
 
-            if (button.dataset.originalText) {
-                button.textContent = button.dataset.originalText;
-                delete button.dataset.originalText;
-            }
+            const wasDisabled =
+                button.dataset.originalDisabled === "true";
+
+            delete button.dataset.originalText;
+            delete button.dataset.originalDisabled;
+
+            button.disabled = wasDisabled;
+            button.removeAttribute("aria-busy");
         }
     }
 
@@ -158,78 +143,71 @@
         return state.role === "admin";
     }
 
-    function isTeacherOrAdmin() {
-        return state.role === "admin" || state.role === "teacher";
+    function isTeacher() {
+        return state.role === "teacher";
     }
 
-    function requireAdmin() {
-        if (!isAdmin()) {
-            setNotice(
-                "This operation is restricted to administrators.",
-                "error"
-            );
-
-            return false;
-        }
-
-        return true;
-    }
-
-    function requireTeacherOrAdmin() {
-        if (!isTeacherOrAdmin()) {
-            setNotice(
-                "You do not have permission to perform this operation.",
-                "error"
-            );
-
-            return false;
-        }
-
-        return true;
-    }
-
-    function getFriendlyError(error) {
-        if (!error) {
-            return "An unexpected error occurred.";
-        }
-
-        if (typeof error === "string") {
-            return error;
-        }
-
-        return error.message ||
-            error.error_description ||
-            error.details ||
-            "An unexpected error occurred.";
-    }
-
-    function assertNoError(result) {
-        if (result?.error) {
-            throw result.error;
-        }
-
-        return result?.data;
+    function canManageContent() {
+        return isAdmin() || isTeacher();
     }
 
     function normalizeRole(role) {
         return String(role || "").trim().toLowerCase();
     }
 
-    /* =====================================================
-       AUTHENTICATION AND ROLE VERIFICATION
-       ===================================================== */
+    function getErrorMessage(error) {
+        if (!error) {
+            return "An unexpected error occurred.";
+        }
+
+        return (
+            error.message ||
+            error.details ||
+            error.hint ||
+            String(error)
+        );
+    }
+
+    function requireClient() {
+        if (!client) {
+            throw new Error(
+                "Supabase is not initialized. Check js/supabase.js and ensure it defines window.supabaseClient."
+            );
+        }
+    }
+
+    function generateFileId() {
+        if (
+            window.crypto &&
+            typeof window.crypto.randomUUID === "function"
+        ) {
+            return window.crypto.randomUUID();
+        }
+
+        return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+
+    // =========================================================
+    // SESSION AND ROLE VERIFICATION
+    // =========================================================
+
+    function redirectToLogin() {
+        window.location.replace("index.html");
+    }
 
     async function verifySession() {
-        const client = getClient();
+        requireClient();
 
         const {
-            data: { session },
+            data: sessionData,
             error: sessionError
         } = await client.auth.getSession();
 
         if (sessionError) {
             throw sessionError;
         }
+
+        const session = sessionData?.session;
 
         if (!session?.user) {
             redirectToLogin();
@@ -243,8 +221,8 @@
             error: profileError
         } = await client
             .from("profiles")
-            .select("*")
-            .eq("id", state.user.id)
+            .select("id, username, full_name, role, active")
+            .eq("id", session.user.id)
             .maybeSingle();
 
         if (profileError) {
@@ -252,143 +230,166 @@
         }
 
         if (!profile) {
-            setNotice(
-                "Your account profile could not be found. Contact the administrator.",
-                "error"
-            );
-
-            disableDashboard();
+            await client.auth.signOut();
+            redirectToLogin();
             return false;
         }
 
         if (profile.active === false) {
             await client.auth.signOut();
-            redirectToLogin();
+
+            setNotice(
+                "Your account is inactive. Please contact an administrator.",
+                "error"
+            );
+
+            setTimeout(redirectToLogin, 1800);
             return false;
         }
 
         state.profile = profile;
         state.role = normalizeRole(profile.role);
 
-        if (!["admin", "teacher", "student"].includes(state.role)) {
-            setNotice(
-                "Your account has an unrecognized role. Contact the administrator.",
-                "error"
-            );
-
-            disableDashboard();
+        if (!["admin", "teacher"].includes(state.role)) {
+            redirectToLogin();
             return false;
         }
-
-        if (state.role === "student") {
-            window.location.replace("index.html");
-            return false;
-        }
-
-        updateIdentity();
-        applyRolePermissions();
-
-        return true;
-    }
-
-    function redirectToLogin() {
-        const loginPage = "index.html";
-
-        if (!window.location.pathname.endsWith("/index.html")) {
-            window.location.replace(loginPage);
-        } else {
-            window.location.replace(loginPage);
-        }
-    }
-
-    function disableDashboard() {
-        $$("button, input, select, textarea").forEach(element => {
-            if (element.id !== "sign-out-btn") {
-                element.disabled = true;
-            }
-        });
-    }
-
-    function updateIdentity() {
-        const name =
-            state.profile?.full_name ||
-            state.profile?.username ||
-            state.user?.email ||
-            "User";
 
         const signedInUser = $("#signed-in-user");
         const roleBadge = $("#role-badge");
 
         if (signedInUser) {
-            signedInUser.textContent = name;
+            signedInUser.textContent =
+                profile.full_name ||
+                profile.username ||
+                session.user.email ||
+                "Signed in";
         }
 
         if (roleBadge) {
-            roleBadge.textContent = state.role;
-            roleBadge.className = "admin-role-badge";
+            roleBadge.textContent =
+                state.role === "admin"
+                    ? "Administrator"
+                    : "Teacher";
+
+            roleBadge.className =
+                `role-badge role-badge-${state.role}`;
         }
+
+        document.body.dataset.role = state.role;
+
+        applyRolePermissions();
+
+        return true;
     }
 
+    // =========================================================
+    // ROLE-BASED INTERFACE
+    // =========================================================
+
     function applyRolePermissions() {
-        const adminOnlyElements = $$("[data-admin-only]");
+        const adminOnlyElements = $$(".admin-only, [data-admin-only]");
 
         adminOnlyElements.forEach(element => {
             element.hidden = !isAdmin();
         });
 
-        const teacherOrAdminElements = $$("[data-teacher-or-admin]");
+        const usersNavigation = $('[data-panel="users"]');
 
-        teacherOrAdminElements.forEach(element => {
-            element.hidden = !isTeacherOrAdmin();
-        });
+        if (usersNavigation) {
+            usersNavigation.hidden = !isAdmin();
+        }
 
-        const usersPanel = $('[data-panel="users"]');
+        const saveLessonButton = $("#save-lesson-btn");
+        const addCardButton = $("#add-card-btn");
 
-        if (usersPanel) {
-            usersPanel.hidden = !isAdmin();
+        if (saveLessonButton) {
+            saveLessonButton.hidden = !isAdmin();
+        }
+
+        if (addCardButton) {
+            addCardButton.hidden = !isAdmin();
         }
 
         const createUserForm = $("#create-user-form");
 
-        if (createUserForm && !isAdmin()) {
-            createUserForm.hidden = true;
+        if (createUserForm) {
+            createUserForm.hidden = !isAdmin();
         }
 
-        /*
-         * The database must also enforce these permissions.
-         * Hiding an element is not a security boundary.
-         */
+        const usersPanel = $("#panel-users");
+
+        if (usersPanel && !isAdmin()) {
+            usersPanel.hidden = true;
+        }
+
+        const cardTitle = $("#new-card-title");
+        const cardNumber = $("#new-card-number");
+
+        if (cardTitle) {
+            cardTitle.disabled =
+                !isAdmin() || !state.currentLesson;
+        }
+
+        if (cardNumber) {
+            cardNumber.disabled =
+                !isAdmin() || !state.currentLesson;
+        }
+
+        updateCardControls();
+        updateContentControls();
     }
 
-    /* =====================================================
-       DASHBOARD NAVIGATION
-       ===================================================== */
+    function updateContentControls() {
+        const contentButton = $("#add-content-btn");
+
+        if (!contentButton) return;
+
+        contentButton.disabled =
+            !canManageContent() ||
+            !state.currentLesson ||
+            !state.currentCard ||
+            contentButton.getAttribute("aria-busy") === "true";
+    }
+
+    // =========================================================
+    // NAVIGATION
+    // =========================================================
 
     function initializeNavigation() {
-        const navButtons = $$("[data-panel]");
-
-        navButtons.forEach(button => {
+        $$("[data-panel]").forEach(button => {
             button.addEventListener("click", async () => {
                 const panelName = button.dataset.panel;
 
-                if (!panelName) return;
-
-                if (panelName === "users" && !isAdmin()) {
+                if (
+                    panelName === "users" &&
+                    !isAdmin()
+                ) {
                     setNotice(
-                        "Only administrators can manage user accounts.",
+                        "Only administrators can access account management.",
                         "error"
                     );
 
                     return;
                 }
 
-                navButtons.forEach(item => {
+                $$("[data-panel]").forEach(item => {
                     item.classList.toggle("active", item === button);
                 });
 
                 $$("[id^='panel-']").forEach(panel => {
-                    panel.hidden = panel.id !== `panel-${panelName}`;
+                    panel.hidden =
+                        panel.id !== `panel-${panelName}`;
                 });
+
+                const pageTitle = $("#page-title");
+
+                if (pageTitle) {
+                    pageTitle.textContent =
+                        panelName === "users"
+                            ? "Accounts & Roles"
+                            : "Lessons & Media";
+                }
 
                 if (panelName === "lessons") {
                     await loadLessons();
@@ -401,9 +402,9 @@
         });
     }
 
-    /* =====================================================
-       LESSONS
-       ===================================================== */
+    // =========================================================
+    // LESSON CATALOGUE
+    // =========================================================
 
     function readLessonForm() {
         const unitInput = $("#unit-number");
@@ -417,8 +418,14 @@
         const title = titleInput?.value.trim() || "";
         const description = descriptionInput?.value.trim() || "";
 
-        if (!Number.isInteger(unitNumber) || unitNumber < 1 || unitNumber > 12) {
-            throw new Error("Unit number must be between 1 and 12.");
+        if (
+            !Number.isInteger(unitNumber) ||
+            unitNumber < 1 ||
+            unitNumber > 12
+        ) {
+            throw new Error(
+                "Unit number must be between 1 and 12."
+            );
         }
 
         if (
@@ -426,94 +433,100 @@
             lessonNumber < 1 ||
             lessonNumber > 5
         ) {
-            throw new Error("Lesson number must be between 1 and 5.");
+            throw new Error(
+                "Lesson number must be between 1 and 5."
+            );
         }
 
         if (!title) {
-            throw new Error("Enter a lesson title.");
+            throw new Error("Please enter a lesson title.");
         }
 
         return {
             unit_number: unitNumber,
             lesson_number: lessonNumber,
             title,
-            description: description || null
+            description
         };
     }
 
     async function loadLessons() {
-        const container = $("#load-lesson-btn")
-            ? $("#cards-list")
-            : null;
+        const lessonList = $("#lesson-list");
 
         try {
-            const client = getClient();
+            if (lessonList) {
+                showLoading(lessonList, "Loading lessons...");
+            }
 
-            const { data, error } = await client
+            const {
+                data,
+                error
+            } = await client
                 .from("lessons")
                 .select("*")
                 .order("unit_number", { ascending: true })
                 .order("lesson_number", { ascending: true });
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             state.lessons = data || [];
 
             renderLessonOptions();
             renderLessonList();
 
-            if (container && !state.currentLesson) {
+        } catch (error) {
+            console.error("Could not load lessons:", error);
+
+            if (lessonList) {
                 showEmpty(
-                    container,
-                    "Select a lesson",
-                    "Choose a lesson before managing its cards."
+                    lessonList,
+                    "Unable to load the lesson catalogue."
                 );
             }
 
-            return state.lessons;
-        } catch (error) {
             setNotice(
-                `Could not load lessons: ${getFriendlyError(error)}`,
+                `Could not load lessons: ${getErrorMessage(error)}`,
                 "error"
             );
-
-            return [];
         }
     }
 
     function renderLessonOptions() {
-        const unitSelect = $("#unit-number");
-        const lessonSelect = $("#lesson-number");
+        const unitInput = $("#unit-number");
+        const lessonInput = $("#lesson-number");
 
-        if (unitSelect && !unitSelect.options.length) {
-            unitSelect.innerHTML = Array.from(
-                { length: 12 },
-                (_, index) => {
-                    const unit = index + 1;
-
-                    return `
-                        <option value="${unit}">
-                            Unit ${unit}
-                        </option>
-                    `;
-                }
-            ).join("");
+        if (!unitInput || !lessonInput) {
+            return;
         }
 
-        if (lessonSelect && !lessonSelect.options.length) {
-            lessonSelect.innerHTML = Array.from(
-                { length: 5 },
-                (_, index) => {
-                    const lesson = index + 1;
+        let currentUnit = Number(unitInput.value);
+        let currentLessonNumber = Number(lessonInput.value);
 
-                    return `
-                        <option value="${lesson}">
-                            Lesson ${lesson}
-                        </option>
-                    `;
-                }
-            ).join("");
+        if (
+            !Number.isInteger(currentUnit) ||
+            currentUnit < 1 ||
+            currentUnit > 12
+        ) {
+            currentUnit = 1;
         }
+
+        if (
+            !Number.isInteger(currentLessonNumber) ||
+            currentLessonNumber < 1 ||
+            currentLessonNumber > 5
+        ) {
+            currentLessonNumber = 1;
+        }
+
+        unitInput.min = "1";
+        unitInput.max = "12";
+        unitInput.value = String(currentUnit);
+
+        lessonInput.min = "1";
+        lessonInput.max = "5";
+        lessonInput.value = String(currentLessonNumber);
     }
 
     function renderLessonList() {
@@ -524,73 +537,62 @@
         if (!state.lessons.length) {
             showEmpty(
                 container,
-                "No lessons yet",
-                "Create your first lesson using the lesson form."
+                "No lessons have been created yet."
             );
 
             return;
         }
 
         container.innerHTML = state.lessons.map(lesson => `
-            <div class="admin-list-item">
-                <div>
-                    <h3>
-                        Unit ${lesson.unit_number} ·
-                        Lesson ${lesson.lesson_number}
-                    </h3>
+            <button
+                type="button"
+                class="lesson-list-item"
+                data-lesson-id="${escapeHTML(lesson.id)}"
+            >
+                <span class="lesson-list-item-title">
+                    ${escapeHTML(lesson.title || "Untitled lesson")}
+                </span>
 
-                    <p>${escapeHTML(lesson.title)}</p>
-
-                    <div class="lesson-meta">
-                        <span class="${
-                            lesson.published
-                                ? "lesson-status-published"
-                                : "lesson-status-draft"
-                        }">
-                            ${lesson.published ? "Published" : "Draft"}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="admin-item-actions">
-                    <button
-                        type="button"
-                        class="admin-button admin-button-secondary admin-button-small"
-                        data-load-lesson="${escapeHTML(lesson.id)}"
-                    >
-                        Load
-                    </button>
-                </div>
-            </div>
+                <span class="lesson-list-item-meta">
+                    Unit ${escapeHTML(lesson.unit_number)}
+                    · Lesson ${escapeHTML(lesson.lesson_number)}
+                </span>
+            </button>
         `).join("");
 
-        $$("[data-load-lesson]", container).forEach(button => {
+        $$("[data-lesson-id]", container).forEach(button => {
             button.addEventListener("click", async () => {
-                await loadLessonById(button.dataset.loadLesson);
+                await loadLessonById(button.dataset.lessonId);
             });
         });
     }
 
     async function saveLesson() {
-        if (!requireAdmin()) return;
+        if (!isAdmin()) {
+            setNotice(
+                "Only administrators can create or edit lessons.",
+                "error"
+            );
+
+            return;
+        }
 
         const button = $("#save-lesson-btn");
 
         try {
-            setButtonBusy(button, true, "Saving...");
+            const lessonData = readLessonForm();
 
-            const client = getClient();
-            const form = readLessonForm();
+            setButtonBusy(button, true, "Saving lesson...");
 
             const duplicate = state.lessons.find(lesson =>
-                Number(lesson.unit_number) === form.unit_number &&
-                Number(lesson.lesson_number) === form.lesson_number &&
-                lesson.id !== state.currentLesson?.id
+                Number(lesson.unit_number) === lessonData.unit_number &&
+                Number(lesson.lesson_number) === lessonData.lesson_number &&
+                String(lesson.id) !== String(state.currentLesson?.id || "")
             );
 
             if (duplicate) {
                 throw new Error(
-                    "A lesson already exists for this unit and lesson number."
+                    "A lesson already exists with this unit and lesson number."
                 );
             }
 
@@ -599,10 +601,7 @@
             if (state.currentLesson?.id) {
                 result = await client
                     .from("lessons")
-                    .update({
-                        ...form,
-                        updated_at: new Date().toISOString()
-                    })
+                    .update(lessonData)
                     .eq("id", state.currentLesson.id)
                     .select()
                     .single();
@@ -610,25 +609,32 @@
                 result = await client
                     .from("lessons")
                     .insert({
-                        ...form,
-                        published: false,
+                        ...lessonData,
                         created_by: state.user.id
                     })
                     .select()
                     .single();
             }
 
-            const savedLesson = assertNoError(result);
+            if (result.error) {
+                throw result.error;
+            }
 
-            state.currentLesson = savedLesson;
-
-            setNotice("Lesson saved successfully.", "success");
+            state.currentLesson = result.data;
 
             await loadLessons();
-            await loadLessonById(savedLesson.id);
-        } catch (error) {
+            await loadLessonById(result.data.id);
+
             setNotice(
-                `Could not save lesson: ${getFriendlyError(error)}`,
+                "Lesson saved successfully.",
+                "success"
+            );
+
+        } catch (error) {
+            console.error("Could not save lesson:", error);
+
+            setNotice(
+                `Could not save lesson: ${getErrorMessage(error)}`,
                 "error"
             );
         } finally {
@@ -637,264 +643,348 @@
     }
 
     async function loadSelectedLesson() {
-        const unitNumber = Number($("#unit-number")?.value);
-        const lessonNumber = Number($("#lesson-number")?.value);
-
-        const lesson = state.lessons.find(item =>
-            Number(item.unit_number) === unitNumber &&
-            Number(item.lesson_number) === lessonNumber
-        );
-
-        if (!lesson) {
-            setNotice(
-                "No saved lesson exists for this unit and lesson number.",
-                "warning"
-            );
-
-            return;
-        }
-
-        await loadLessonById(lesson.id);
-    }
-
-    async function loadLessonById(lessonId) {
         try {
-            const client = getClient();
+            const unitNumber = Number($("#unit-number")?.value);
+            const lessonNumber = Number($("#lesson-number")?.value);
 
             const lesson = state.lessons.find(item =>
-                item.id === lessonId
+                Number(item.unit_number) === unitNumber &&
+                Number(item.lesson_number) === lessonNumber
             );
 
             if (!lesson) {
-                throw new Error("Lesson not found.");
+                state.currentLesson = null;
+                state.currentCard = null;
+                state.cards = [];
+                state.content = [];
+
+                if ($("#lesson-title")) {
+                    $("#lesson-title").value = "";
+                }
+
+                if ($("#lesson-description")) {
+                    $("#lesson-description").value = "";
+                }
+
+                if ($("#save-lesson-btn")) {
+                    $("#save-lesson-btn").textContent = "Create lesson";
+                }
+
+                if ($("#selected-card-label")) {
+                    $("#selected-card-label").textContent =
+                        "No card selected";
+                }
+
+                renderCards();
+                renderContent();
+                updateContentControls();
+
+                setNotice(
+                    "No lesson exists for this unit and lesson number.",
+                    "error"
+                );
+
+                return;
             }
 
-            state.currentLesson = lesson;
-            state.currentCard = null;
+            await loadLessonById(lesson.id);
 
-            if ($("#unit-number")) {
-                $("#unit-number").value = String(lesson.unit_number);
-            }
-
-            if ($("#lesson-number")) {
-                $("#lesson-number").value = String(lesson.lesson_number);
-            }
-
-            if ($("#lesson-title")) {
-                $("#lesson-title").value = lesson.title || "";
-            }
-
-            if ($("#lesson-description")) {
-                $("#lesson-description").value = lesson.description || "";
-            }
-
-            const { data, error } = await client
-                .from("lesson_cards")
-                .select("*")
-                .eq("lesson_id", lessonId)
-                .order("card_number", { ascending: true });
-
-            if (error) throw error;
-
-            state.cards = data || [];
-
-            renderCards();
-
-            const label = $("#selected-card-label");
-
-            if (label) {
-                label.textContent = "No card selected";
-            }
-
-            showEmpty(
-                $("#content-list"),
-                "Select a card",
-                "Choose a card to view its content."
-            );
-
-            setNotice(
-                `Loaded Unit ${lesson.unit_number}, Lesson ${lesson.lesson_number}.`,
-                "success"
-            );
         } catch (error) {
             setNotice(
-                `Could not load lesson: ${getFriendlyError(error)}`,
+                `Could not load lesson: ${getErrorMessage(error)}`,
                 "error"
             );
         }
     }
 
-    /* =====================================================
-       LESSON CARDS
-       ===================================================== */
+    async function loadLessonById(lessonId) {
+        const lesson = state.lessons.find(item =>
+            String(item.id) === String(lessonId)
+        );
+
+        if (!lesson) {
+            setNotice(
+                "The selected lesson could not be found.",
+                "error"
+            );
+
+            return;
+        }
+
+        state.currentLesson = lesson;
+        state.currentCard = null;
+        state.cards = [];
+        state.content = [];
+
+        if ($("#unit-number")) {
+            $("#unit-number").value = lesson.unit_number;
+        }
+
+        if ($("#lesson-number")) {
+            $("#lesson-number").value = lesson.lesson_number;
+        }
+
+        if ($("#lesson-title")) {
+            $("#lesson-title").value = lesson.title || "";
+        }
+
+        if ($("#lesson-description")) {
+            $("#lesson-description").value =
+                lesson.description || "";
+        }
+
+        const saveButton = $("#save-lesson-btn");
+
+        if (saveButton) {
+            saveButton.textContent = "Save Lesson";
+        }
+
+        const newLessonButton = $("#new-lesson-btn");
+
+        if (newLessonButton) {
+            newLessonButton.hidden = !isAdmin();
+        }
+
+        renderCards();
+        renderContent();
+        updateContentControls();
+
+        try {
+            showLoading(
+                $("#cards-list"),
+                "Loading lesson cards..."
+            );
+
+            const {
+                data,
+                error
+            } = await client
+                .from("lesson_cards")
+                .select("*")
+                .eq("lesson_id", lesson.id)
+                .order("card_number", { ascending: true });
+
+            if (error) {
+                throw error;
+            }
+
+            state.cards = data || [];
+
+            renderCards();
+
+            setNotice(
+                `Loaded Unit ${lesson.unit_number}, Lesson ${lesson.lesson_number}.`,
+                "success"
+            );
+
+        } catch (error) {
+            console.error(
+                "Could not load lesson cards:",
+                error
+            );
+
+            showEmpty(
+                $("#cards-list"),
+                "Unable to load lesson cards."
+            );
+
+            setNotice(
+                `Could not load cards: ${getErrorMessage(error)}`,
+                "error"
+            );
+        }
+    }
+
+    // =========================================================
+    // LESSON CARDS
+    // =========================================================
 
     function renderCards() {
         const container = $("#cards-list");
+        const numberInput = $("#new-card-number");
+        const countLabel = $("#cards-count");
 
-        if (!container) return;
-
-        if (!state.currentLesson) {
-            showEmpty(
-                container,
-                "No lesson selected",
-                "Load or create a lesson first."
-            );
-
-            return;
+        if (countLabel) {
+            countLabel.textContent =
+                `${state.cards.length} / ${MAX_CARDS_PER_LESSON}`;
         }
 
-        const cardSelect = $("#new-card-number");
+        if (container) {
+            if (!state.currentLesson) {
+                showEmpty(
+                    container,
+                    "Load a lesson to see its cards."
+                );
+            } else if (!state.cards.length) {
+                showEmpty(
+                    container,
+                    "No cards have been added to this lesson."
+                );
+            } else {
+                container.innerHTML = state.cards.map(card => `
+                    <button
+                        type="button"
+                        class="lesson-card-item ${
+                            String(state.currentCard?.id) === String(card.id)
+                                ? "active"
+                                : ""
+                        }"
+                        data-card-id="${escapeHTML(card.id)}"
+                    >
+                        <span class="lesson-card-number">
+                            ${escapeHTML(card.card_number)}
+                        </span>
 
-        if (cardSelect) {
-            cardSelect.innerHTML = Array.from(
-                { length: MAX_CARDS_PER_LESSON },
-                (_, index) => {
-                    const number = index + 1;
+                        <span class="lesson-card-title">
+                            ${escapeHTML(
+                                card.title || `Card ${card.card_number}`
+                            )}
+                        </span>
+                    </button>
+                `).join("");
 
-                    return `
-                        <option value="${number}">
-                            Card ${number}
-                        </option>
-                    `;
-                }
-            ).join("");
-
-            const existingNumbers = new Set(
-                state.cards.map(card => Number(card.card_number))
-            );
-
-            const firstAvailable = Array.from(
-                { length: MAX_CARDS_PER_LESSON },
-                (_, index) => index + 1
-            ).find(number => !existingNumbers.has(number));
-
-            if (firstAvailable) {
-                cardSelect.value = String(firstAvailable);
+                $$("[data-card-id]", container).forEach(button => {
+                    button.addEventListener("click", async () => {
+                        await selectCard(button.dataset.cardId);
+                    });
+                });
             }
         }
 
-        if (!state.cards.length) {
-            showEmpty(
-                container,
-                "No cards yet",
-                "Add cards to this lesson. Each lesson supports up to eight cards."
+        if (numberInput) {
+            const usedNumbers = new Set(
+                state.cards.map(card => Number(card.card_number))
             );
 
-            return;
+            numberInput.min = "1";
+            numberInput.max = String(MAX_CARDS_PER_LESSON);
+
+            const currentNumber = Number(numberInput.value);
+
+            if (
+                !Number.isInteger(currentNumber) ||
+                currentNumber < 1 ||
+                currentNumber > MAX_CARDS_PER_LESSON ||
+                usedNumbers.has(currentNumber)
+            ) {
+                const firstAvailable = Array.from(
+                    { length: MAX_CARDS_PER_LESSON },
+                    (_, index) => index + 1
+                ).find(number => !usedNumbers.has(number));
+
+                numberInput.value =
+                    firstAvailable ? String(firstAvailable) : "";
+            }
         }
-
-        container.innerHTML = state.cards.map(card => `
-            <div class="lesson-card-item ${
-                state.currentCard?.id === card.id ? "selected" : ""
-            }">
-                <div class="lesson-card-main">
-                    <div class="lesson-card-number">
-                        ${escapeHTML(card.card_number)}
-                    </div>
-
-                    <div>
-                        <h3>${escapeHTML(card.title || `Card ${card.card_number}`)}</h3>
-                        <p>Lesson card ${escapeHTML(card.card_number)} of ${MAX_CARDS_PER_LESSON}</p>
-                    </div>
-                </div>
-
-                <div class="lesson-card-actions">
-                    <button
-                        type="button"
-                        class="admin-button admin-button-secondary admin-button-small"
-                        data-select-card="${escapeHTML(card.id)}"
-                    >
-                        Select
-                    </button>
-                </div>
-            </div>
-        `).join("");
-
-        $$("[data-select-card]", container).forEach(button => {
-            button.addEventListener("click", async () => {
-                await selectCard(button.dataset.selectCard);
-            });
-        });
 
         updateCardControls();
     }
 
     function updateCardControls() {
-        const addButton = $("#add-card-btn");
-        const cardSelect = $("#new-card-number");
-        const cardTitle = $("#new-card-title");
+        const addCardButton = $("#add-card-btn");
+        const titleInput = $("#new-card-title");
+        const numberInput = $("#new-card-number");
 
-        const existingNumbers = new Set(
-            state.cards.map(card => Number(card.card_number))
-        );
+        const canAdd =
+            isAdmin() &&
+            Boolean(state.currentLesson) &&
+            state.cards.length < MAX_CARDS_PER_LESSON;
 
-        const allCardsExist =
-            state.cards.length >= MAX_CARDS_PER_LESSON;
+        if (addCardButton) {
+            addCardButton.disabled = !canAdd;
 
-        if (addButton) {
-            addButton.disabled = !isAdmin() ||
-                !state.currentLesson ||
-                allCardsExist;
+            addCardButton.title =
+                state.cards.length >= MAX_CARDS_PER_LESSON
+                    ? "This lesson already has eight cards."
+                    : "";
         }
 
-        if (cardSelect) {
-            Array.from(cardSelect.options).forEach(option => {
-                const number = Number(option.value);
-
-                option.disabled = existingNumbers.has(number);
-            });
+        if (titleInput) {
+            titleInput.disabled = !canAdd;
         }
 
-        if (cardTitle) {
-            cardTitle.disabled = !isAdmin() || !state.currentLesson;
+        if (numberInput) {
+            numberInput.disabled = !canAdd;
         }
+
+        updateContentControls();
     }
 
     async function addCard() {
-        if (!requireAdmin()) return;
+        if (!isAdmin()) {
+            setNotice(
+                "Only administrators can create lesson cards.",
+                "error"
+            );
+
+            return;
+        }
 
         if (!state.currentLesson) {
-            setNotice("Load or create a lesson first.", "warning");
+            setNotice(
+                "Load a lesson before adding a card.",
+                "error"
+            );
+
             return;
         }
 
         if (state.cards.length >= MAX_CARDS_PER_LESSON) {
             setNotice(
                 "Each lesson can contain a maximum of eight cards.",
-                "warning"
+                "error"
             );
 
             return;
         }
 
+        const titleInput = $("#new-card-title");
+        const numberInput = $("#new-card-number");
         const button = $("#add-card-btn");
 
+        const title = titleInput?.value.trim() || "";
+        const cardNumber = Number(numberInput?.value);
+
+        if (!title) {
+            setNotice(
+                "Please enter a title for the new card.",
+                "error"
+            );
+
+            return;
+        }
+
+        if (
+            !Number.isInteger(cardNumber) ||
+            cardNumber < 1 ||
+            cardNumber > MAX_CARDS_PER_LESSON
+        ) {
+            setNotice(
+                "Choose a card number between 1 and 8.",
+                "error"
+            );
+
+            return;
+        }
+
+        if (state.cards.some(card =>
+            Number(card.card_number) === cardNumber
+        )) {
+            setNotice(
+                "That card number is already in use.",
+                "error"
+            );
+
+            return;
+        }
+
         try {
-            setButtonBusy(button, true, "Adding...");
+            setButtonBusy(button, true, "Adding card...");
 
-            const cardNumber = Number($("#new-card-number")?.value);
-
-            const title =
-                $("#new-card-title")?.value.trim() ||
-                `Card ${cardNumber}`;
-
-            if (
-                !Number.isInteger(cardNumber) ||
-                cardNumber < 1 ||
-                cardNumber > MAX_CARDS_PER_LESSON
-            ) {
-                throw new Error("Choose a card number between 1 and 8.");
-            }
-
-            if (state.cards.some(card =>
-                Number(card.card_number) === cardNumber
-            )) {
-                throw new Error("That card number already exists.");
-            }
-
-            const client = getClient();
-
-            const { data, error } = await client
+            const {
+                data,
+                error
+            } = await client
                 .from("lesson_cards")
                 .insert({
                     lesson_id: state.currentLesson.id,
@@ -904,7 +994,9 @@
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             state.cards.push(data);
 
@@ -912,219 +1004,302 @@
                 Number(a.card_number) - Number(b.card_number)
             );
 
-            if ($("#new-card-title")) {
-                $("#new-card-title").value = "";
+            if (titleInput) {
+                titleInput.value = "";
             }
 
             renderCards();
 
-            setNotice("Lesson card added successfully.", "success");
-        } catch (error) {
+            await selectCard(data.id);
+
             setNotice(
-                `Could not add card: ${getFriendlyError(error)}`,
+                "Lesson card added successfully.",
+                "success"
+            );
+
+        } catch (error) {
+            console.error(
+                "Could not add card:",
+                error
+            );
+
+            setNotice(
+                `Could not add card: ${getErrorMessage(error)}`,
                 "error"
             );
         } finally {
             setButtonBusy(button, false);
+            updateCardControls();
         }
     }
 
     async function selectCard(cardId) {
-        const card = state.cards.find(item => item.id === cardId);
+        const card = state.cards.find(item =>
+            String(item.id) === String(cardId)
+        );
 
         if (!card) {
-            setNotice("The selected card could not be found.", "error");
-            return;
-        }
-
-        state.currentCard = card;
-
-        const label = $("#selected-card-label");
-
-        if (label) {
-            label.textContent =
-                `Unit ${state.currentLesson.unit_number} · ` +
-                `Lesson ${state.currentLesson.lesson_number} · ` +
-                `Card ${card.card_number}: ${card.title}`;
-        }
-
-        renderCards();
-
-        await loadCardContent(card.id);
-    }
-
-    /* =====================================================
-       CARD CONTENT
-       ===================================================== */
-
-    function getContentType() {
-        return $("#content-type")?.value || "text";
-    }
-
-    function getFileContentType(file) {
-        if (!file) return "file";
-
-        if (file.type.startsWith("image/")) return "image";
-        if (file.type.startsWith("audio/")) return "audio";
-        if (file.type.startsWith("video/")) return "video";
-
-        return "file";
-    }
-
-    function validateFile(file) {
-        if (!file) {
-            throw new Error("Choose a file to upload.");
-        }
-
-        if (file.size <= 0) {
-            throw new Error("The selected file is empty.");
-        }
-
-        /*
-         * Set an appropriate file-size limit in your deployment.
-         * Supabase Storage limits also apply.
-         */
-    }
-
-    function safeFilename(filename) {
-        return String(filename || "upload")
-            .normalize("NFKD")
-            .replace(/[^\w.-]+/g, "_")
-            .replace(/^_+|_+$/g, "")
-            .slice(0, 150) || "upload";
-    }
-
-    async function uploadContentFile(file, contentType) {
-        const client = getClient();
-
-        const filename = safeFilename(file.name);
-
-        const storagePath = [
-            state.currentLesson.id,
-            state.currentCard.id,
-            crypto.randomUUID(),
-            filename
-        ].join("/");
-
-        const { data, error } = await client
-            .storage
-            .from(STORAGE_BUCKET)
-            .upload(storagePath, file, {
-                cacheControl: "3600",
-                upsert: false,
-                contentType: file.type || "application/octet-stream"
-            });
-
-        if (error) throw error;
-
-        return {
-            storage_path: data.path,
-            original_filename: file.name,
-            mime_type: file.type || null,
-            file_size: file.size,
-            content_type: contentType
-        };
-    }
-
-    async function addContent() {
-        if (!requireTeacherOrAdmin()) return;
-
-        if (!state.currentLesson || !state.currentCard) {
             setNotice(
-                "Select a lesson and a card before adding content.",
-                "warning"
+                "The selected card could not be found.",
+                "error"
             );
 
             return;
         }
 
+        state.currentCard = card;
+        state.content = [];
+
+        const selectedLabel = $("#selected-card-label");
+
+        if (selectedLabel) {
+            selectedLabel.textContent =
+                `Unit ${state.currentLesson.unit_number} · ` +
+                `Lesson ${state.currentLesson.lesson_number} · ` +
+                `Card ${card.card_number}: ${card.title || "Untitled"}`;
+        }
+
+        renderCards();
+        renderContent();
+        updateContentControls();
+
+        await loadCardContent();
+    }
+
+    // =========================================================
+    // CONTENT TYPE CONTROLS
+    // =========================================================
+
+    function initializeContentTypeControls() {
+        const typeSelect = $("#content-type");
+
+        if (!typeSelect) return;
+
+        typeSelect.addEventListener(
+            "change",
+            updateContentTypeFields
+        );
+
+        updateContentTypeFields();
+    }
+
+    function updateContentTypeFields() {
+        const type = $("#content-type")?.value || "text";
+        const fileInput = $("#content-file");
+        const textInput = $("#text-content");
+        const fileLabel = $("#file-label");
+
+        const textLabel = textInput?.closest("label");
+
+        if (fileLabel) {
+            fileLabel.hidden = type === "text";
+        }
+
+        if (textLabel) {
+            textLabel.hidden = false;
+        }
+
+        if (fileInput) {
+            fileInput.value = "";
+
+            const acceptByType = {
+                image: "image/*",
+                audio: "audio/*",
+                video: "video/*",
+                file: ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.html",
+                game: ".html,.zip"
+            };
+
+            fileInput.accept =
+                acceptByType[type] ||
+                "image/*,audio/*,video/*,.pdf,.html,.zip";
+        }
+    }
+
+    // =========================================================
+    // ADD CONTENT TO A CARD
+    // =========================================================
+
+    function getActualFileType(file) {
+        if (!file) {
+            return "text";
+        }
+
+        const mime = String(file.type || "").toLowerCase();
+        const name = String(file.name || "").toLowerCase();
+
+        if (
+            mime.startsWith("image/") ||
+            /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i.test(name)
+        ) {
+            return "image";
+        }
+
+        if (
+            mime.startsWith("audio/") ||
+            /\.(mp3|wav|ogg|m4a|aac|flac|opus)$/i.test(name)
+        ) {
+            return "audio";
+        }
+
+        if (
+            mime.startsWith("video/") ||
+            /\.(mp4|webm|mov|m4v|ogv|avi)$/i.test(name)
+        ) {
+            return "video";
+        }
+
+        return "file";
+    }
+
+    async function uploadContentFile(file) {
+        if (!file) {
+            throw new Error("Choose a file to upload.");
+        }
+
+        const safeName = file.name.replace(
+            /[^a-zA-Z0-9._-]/g,
+            "_"
+        );
+
+        const path = [
+            state.currentLesson.id,
+            state.currentCard.id,
+            `${generateFileId()}-${safeName}`
+        ].join("/");
+
+        const {
+            data,
+            error
+        } = await client.storage
+            .from(STORAGE_BUCKET)
+            .upload(path, file, {
+                cacheControl: "3600",
+                upsert: false,
+                contentType:
+                    file.type || "application/octet-stream"
+            });
+
+        if (error) {
+            throw error;
+        }
+
+        return {
+            path: data.path || path,
+            file_name: file.name,
+            file_size: file.size,
+            mime_type:
+                file.type || "application/octet-stream"
+        };
+    }
+
+    async function addContent() {
+        if (!canManageContent()) {
+            setNotice(
+                "You do not have permission to add content.",
+                "error"
+            );
+
+            return;
+        }
+
+        if (!state.currentLesson || !state.currentCard) {
+            setNotice(
+                "Select a lesson and a card first.",
+                "error"
+            );
+
+            return;
+        }
+
+        const title = $("#content-title")?.value.trim() || "";
+        const requestedType = $("#content-type")?.value || "text";
+        const text = $("#text-content")?.value.trim() || "";
+        const file = $("#content-file")?.files?.[0] || null;
         const button = $("#add-content-btn");
 
-        let uploadedPath = null;
+        if (!title) {
+            setNotice(
+                "Please enter a content title.",
+                "error"
+            );
+
+            return;
+        }
+
+        if (requestedType === "text" && !text) {
+            setNotice(
+                "Enter the text or instructions for this content.",
+                "error"
+            );
+
+            return;
+        }
+
+        if (requestedType !== "text" && !file) {
+            setNotice(
+                "Choose a file to upload for this content type.",
+                "error"
+            );
+
+            return;
+        }
+
+        let uploadedFile = null;
 
         try {
-            setButtonBusy(button, true, "Saving...");
+            setButtonBusy(button, true, "Saving content...");
 
-            const client = getClient();
+            let actualType = requestedType;
 
-            const title =
-                $("#content-title")?.value.trim() || "";
+            if (file) {
+                const detectedType = getActualFileType(file);
+                const name = String(file.name || "").toLowerCase();
 
-            const requestedType = getContentType();
+                if (requestedType === "game") {
+                    if (
+                        !name.endsWith(".html") &&
+                        !name.endsWith(".zip")
+                    ) {
+                        throw new Error(
+                            "Game resources must be an .html or .zip file."
+                        );
+                    }
 
-            const textContent =
-                $("#text-content")?.value.trim() || "";
-
-            const file = $("#content-file")?.files?.[0] || null;
-
-            if (!title) {
-                throw new Error("Enter a title for the content.");
+                    actualType = "game";
+                } else if (requestedType === "file") {
+                    actualType = "file";
+                } else if (detectedType !== requestedType) {
+                    throw new Error(
+                        `The selected file does not appear to be ${requestedType}. Please choose a matching file.`
+                    );
+                }
             }
 
-            if (requestedType === "text" && !textContent) {
-                throw new Error("Enter the text content.");
+            if (file) {
+                uploadedFile = await uploadContentFile(file);
             }
 
-            let record = {
+            const contentData = {
+                lesson_id: state.currentLesson.id,
                 card_id: state.currentCard.id,
-                content_type: requestedType,
                 title,
-                text_content: null,
-                storage_path: null,
-                original_filename: null,
-                mime_type: null,
-                file_size: null,
+                content_type: actualType,
+                text_content: text || null,
+                storage_path: uploadedFile?.path || null,
+                file_name: uploadedFile?.file_name || null,
+                file_size: uploadedFile?.file_size ?? null,
+                mime_type: uploadedFile?.mime_type || null,
                 created_by: state.user.id
             };
 
-            if (requestedType === "text") {
-                record.text_content = textContent;
-            } else {
-                validateFile(file);
-
-                const actualType = getFileContentType(file);
-
-                if (
-                    requestedType !== "file" &&
-                    requestedType !== actualType
-                ) {
-                    throw new Error(
-                        `The selected file is ${actualType}, but the chosen content type is ${requestedType}.`
-                    );
-                }
-
-                const uploaded = await uploadContentFile(
-                    file,
-                    requestedType === "file" ? actualType : requestedType
-                );
-
-                uploadedPath = uploaded.storage_path;
-
-                record = {
-                    ...record,
-                    content_type: uploaded.content_type,
-                    storage_path: uploaded.storage_path,
-                    original_filename: uploaded.original_filename,
-                    mime_type: uploaded.mime_type,
-                    file_size: uploaded.file_size
-                };
-            }
-
-            const { data, error } = await client
+            const {
+                error
+            } = await client
                 .from("lesson_content")
-                .insert(record)
-                .select()
-                .single();
+                .insert(contentData);
 
             if (error) {
-                /*
-                 * If the database insert fails after upload, do not
-                 * automatically delete the uploaded object.
-                 *
-                 * This avoids accidental removal and follows the
-                 * requirement that uploaded media must not be deleted
-                 * by teachers.
-                 */
                 throw error;
             }
 
@@ -1140,181 +1315,326 @@
                 $("#content-file").value = "";
             }
 
-            await loadCardContent(state.currentCard.id);
-
-            setNotice("Content added successfully.", "success");
-
-            return data;
-        } catch (error) {
-            const message = getFriendlyError(error);
+            await loadCardContent();
 
             setNotice(
-                `Could not add content: ${message}` +
-                (
-                    uploadedPath
-                        ? " A file may already have been uploaded to Storage. An administrator can check the lesson-media bucket."
-                        : ""
-                ),
+                "Content added successfully.",
+                "success"
+            );
+
+        } catch (error) {
+            console.error(
+                "Could not add content:",
+                error
+            );
+
+            setNotice(
+                `Could not add content: ${getErrorMessage(error)}`,
                 "error"
             );
+
+            if (uploadedFile?.path) {
+                console.warn(
+                    "The file may have uploaded successfully, but its database record was not saved. Storage path:",
+                    uploadedFile.path
+                );
+            }
         } finally {
             setButtonBusy(button, false);
+            updateContentControls();
         }
     }
 
-    async function loadCardContent(cardId) {
+    // =========================================================
+    // LOAD AND DISPLAY CARD CONTENT
+    // =========================================================
+
+    async function loadCardContent() {
+        if (!state.currentCard) {
+            state.content = [];
+            renderContent();
+            updateContentControls();
+            return;
+        }
+
         const container = $("#content-list");
 
-        if (!container) return;
-
-        showLoading(container, "Loading card content...");
-
         try {
-            const client = getClient();
+            showLoading(
+                container,
+                "Loading card content..."
+            );
 
-            const { data, error } = await client
+            const {
+                data,
+                error
+            } = await client
                 .from("lesson_content")
                 .select("*")
-                .eq("card_id", cardId)
+                .eq("card_id", state.currentCard.id)
                 .order("created_at", { ascending: true });
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
-            state.content = data || [];
+            state.content = await Promise.all(
+                (data || []).map(async item => {
+                    if (!item.storage_path) {
+                        return item;
+                    }
+
+                    try {
+                        const {
+                            data: signedData,
+                            error: signedError
+                        } = await client.storage
+                            .from(STORAGE_BUCKET)
+                            .createSignedUrl(
+                                item.storage_path,
+                                3600
+                            );
+
+                        if (signedError) {
+                            throw signedError;
+                        }
+
+                        return {
+                            ...item,
+                            signed_url: signedData?.signedUrl || null
+                        };
+
+                    } catch (signedError) {
+                        console.warn(
+                            "Could not create a temporary media link:",
+                            signedError
+                        );
+
+                        return {
+                            ...item,
+                            signed_url: null
+                        };
+                    }
+                })
+            );
 
             renderContent();
+
         } catch (error) {
+            console.error(
+                "Could not load card content:",
+                error
+            );
+
             showEmpty(
                 container,
-                "Could not load content",
-                getFriendlyError(error)
+                "Unable to load content for this card."
+            );
+
+            setNotice(
+                `Could not load card content: ${getErrorMessage(error)}`,
+                "error"
             );
         }
-    }
-
-    function getContentTypeClass(type) {
-        const normalized = String(type || "file").toLowerCase();
-
-        if (["text", "image", "audio", "video"].includes(normalized)) {
-            return `content-type-${normalized}`;
-        }
-
-        return "content-type-file";
     }
 
     function renderContent() {
         const container = $("#content-list");
+        const countLabel = $("#content-count");
 
-        if (!container) return;
+        if (countLabel) {
+            countLabel.textContent =
+                `${state.content.length} ` +
+                `${state.content.length === 1 ? "item" : "items"}`;
+        }
 
-        if (!state.content.length) {
+        if (!container) {
+            return;
+        }
+
+        if (!state.currentCard) {
             showEmpty(
                 container,
-                "No content added",
-                "Add text, images, audio, video or other files to this card."
+                "Select a card to view its content."
             );
 
             return;
         }
 
-        container.innerHTML = state.content.map(item => `
-            <article class="content-item">
-                <div class="content-item-main">
-                    <h3>${escapeHTML(item.title)}</h3>
+        if (!state.content.length) {
+            showEmpty(
+                container,
+                "This card does not contain any content yet."
+            );
 
-                    <div class="content-item-meta">
-                        <span class="content-type-label ${getContentTypeClass(item.content_type)}">
-                            ${escapeHTML(item.content_type)}
-                        </span>
+            return;
+        }
 
-                        ${
-                            item.original_filename
-                                ? `<span class="admin-tag">${escapeHTML(item.original_filename)}</span>`
-                                : ""
-                        }
+        const typeLabels = {
+            text: "Text / Instructions",
+            image: "Image",
+            audio: "Audio",
+            video: "Video",
+            file: "File",
+            game: "Game / Interactive Resource"
+        };
 
-                        ${
-                            item.file_size
-                                ? `<span class="admin-tag">${escapeHTML(formatBytes(item.file_size))}</span>`
-                                : ""
-                        }
+        container.innerHTML = state.content.map(item => {
+            const type = String(
+                item.content_type || "text"
+            ).toLowerCase();
+
+            const signedUrl = item.signed_url
+                ? escapeHTML(item.signed_url)
+                : "";
+
+            const safeTitle = escapeHTML(
+                item.title || "Untitled content"
+            );
+
+            const safeFileName = escapeHTML(
+                item.file_name || "Lesson resource"
+            );
+
+            let preview = "";
+
+            if (signedUrl && type === "image") {
+                preview = `
+                    <img
+                        class="content-preview content-preview-image"
+                        src="${signedUrl}"
+                        alt="${safeTitle}"
+                        loading="lazy"
+                    >
+                `;
+            } else if (signedUrl && type === "audio") {
+                preview = `
+                    <audio
+                        class="content-preview"
+                        controls
+                        preload="none"
+                        src="${signedUrl}"
+                    >
+                        Your browser does not support audio playback.
+                    </audio>
+                `;
+            } else if (signedUrl && type === "video") {
+                preview = `
+                    <video
+                        class="content-preview content-preview-video"
+                        controls
+                        preload="metadata"
+                        src="${signedUrl}"
+                    >
+                        Your browser does not support video playback.
+                    </video>
+                `;
+            }
+
+            const openLink =
+                signedUrl &&
+                !["image", "audio", "video"].includes(type)
+                    ? `
+                        <p>
+                            <a
+                                class="content-open-link"
+                                href="${signedUrl}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Open / download resource
+                            </a>
+                        </p>
+                    `
+                    : "";
+
+            const linkWarning =
+                item.storage_path && !signedUrl
+                    ? `
+                        <p class="content-item-note">
+                            A temporary link could not be generated.
+                            Check Storage permissions for the private
+                            lesson-media bucket.
+                        </p>
+                    `
+                    : "";
+
+            return `
+                <article class="content-item">
+                    <div class="content-item-header">
+                        <div>
+                            <h4>${safeTitle}</h4>
+
+                            <span class="content-type-badge content-type-${escapeHTML(type)}">
+                                ${escapeHTML(typeLabels[type] || type)}
+                            </span>
+                        </div>
                     </div>
 
                     ${
                         item.text_content
-                            ? `<p>${escapeHTML(item.text_content)}</p>`
+                            ? `
+                                <p class="content-item-text">
+                                    ${escapeHTML(item.text_content)}
+                                </p>
+                            `
                             : ""
                     }
+
+                    ${preview}
 
                     ${
-                        item.storage_path
-                            ? `<p class="admin-muted">Stored securely in the private lesson-media bucket.</p>`
+                        item.file_name
+                            ? `
+                                <p class="content-file-name">
+                                    📎 ${safeFileName}
+                                </p>
+                            `
                             : ""
                     }
-                </div>
 
-                <div class="admin-item-actions">
-                    <span class="admin-tag">Saved</span>
-                </div>
-            </article>
-        `).join("");
+                    ${openLink}
+                    ${linkWarning}
+
+                    ${
+                        item.file_size != null
+                            ? `
+                                <p class="content-file-size">
+                                    ${escapeHTML(formatBytes(item.file_size))}
+                                </p>
+                            `
+                            : ""
+                    }
+
+                    <p class="content-item-note">
+                        Content is retained. Deletion is not available
+                        from this dashboard.
+                    </p>
+                </article>
+            `;
+        }).join("");
     }
 
-    /* =====================================================
-       USER MANAGEMENT
-       ===================================================== */
-
-    async function invokeUserManagement(payload) {
-        if (!requireAdmin()) {
-            throw new Error("Administrator access is required.");
-        }
-
-        const client = getClient();
-
-        /*
-         * This calls the existing function without assuming
-         * undocumented action names or request fields.
-         *
-         * Your existing hyper-handler must explicitly support
-         * the operation requested by the form.
-         */
-        const { data, error } = await client.functions.invoke(
-            EDGE_FUNCTION_NAME,
-            {
-                body: payload
-            }
-        );
-
-        if (error) {
-            throw error;
-        }
-
-        if (data?.error) {
-            throw new Error(
-                typeof data.error === "string"
-                    ? data.error
-                    : JSON.stringify(data.error)
-            );
-        }
-
-        return data;
-    }
+    // =========================================================
+    // ACCOUNT MANAGEMENT — ADMIN ONLY
+    // =========================================================
 
     async function createUser(event) {
         event.preventDefault();
 
-        if (!requireAdmin()) return;
+        if (!isAdmin()) {
+            setNotice(
+                "Only administrators can create accounts.",
+                "error"
+            );
 
-        const form = $("#create-user-form");
-
-        if (!form) return;
-
-        const button = form.querySelector(
-            'button[type="submit"], input[type="submit"]'
-        );
+            return;
+        }
 
         const fullName =
-            $("#new-user-name")?.value.trim() || "";
+            $("#new-user-fullname")?.value.trim() ||
+            $("#new-user-name")?.value.trim() ||
+            "";
 
         const username =
             $("#new-user-username")?.value.trim() || "";
@@ -1325,71 +1645,100 @@
         const password =
             $("#new-user-password")?.value || "";
 
-        const role =
-            normalizeRole($("#new-user-role")?.value);
+        const role = normalizeRole(
+            $("#new-user-role")?.value
+        );
 
-        if (!fullName || !email || !password || !role) {
+        const button = $("#create-user-btn");
+
+        if (!fullName || !username || !email || !password) {
             setNotice(
-                "Complete the required user fields.",
-                "warning"
+                "Complete all account fields before submitting.",
+                "error"
             );
 
             return;
         }
 
-        if (!["teacher", "student", "admin"].includes(role)) {
-            setNotice("Choose a valid account role.", "error");
+        if (password.length < 10) {
+            setNotice(
+                "The temporary password must contain at least 10 characters.",
+                "error"
+            );
+
             return;
         }
 
-        if (password.length < 8) {
+        if (!["admin", "teacher", "student"].includes(role)) {
             setNotice(
-                "Use a password with at least eight characters.",
-                "warning"
+                "Choose a valid account role.",
+                "error"
             );
 
             return;
         }
 
         try {
-            setButtonBusy(button, true, "Creating...");
+            setButtonBusy(
+                button,
+                true,
+                "Creating account..."
+            );
 
             /*
-             * This is a proposed request contract, not a claim
-             * that the existing Edge Function already supports it.
+             * This request requires the deployed hyper-handler Edge
+             * Function to implement the "create_user" action and enforce
+             * administrator permissions on the server.
              *
-             * Only use this payload if hyper-handler has been
-             * implemented to accept action: "create_user" and
-             * to validate the caller's admin role server-side.
-             *
-             * Never put a Supabase service-role key in this file.
+             * Never put a Supabase service-role key in this browser script.
              */
-            const result = await invokeUserManagement({
-                action: "create_user",
-                full_name: fullName,
-                username: username || null,
-                email,
-                password,
-                role
-            });
 
-            if (result?.success === false) {
+            const {
+                data,
+                error
+            } = await client.functions.invoke(
+                EDGE_FUNCTION_NAME,
+                {
+                    body: {
+                        action: "create_user",
+                        full_name: fullName,
+                        username,
+                        email,
+                        password,
+                        role
+                    }
+                }
+            );
+
+            if (error) {
+                throw error;
+            }
+
+            if (!data || data.success !== true) {
                 throw new Error(
-                    result.message || "The user could not be created."
+                    data?.message ||
+                    data?.error ||
+                    "The server did not confirm account creation. Check the Edge Function implementation."
                 );
             }
 
-            form.reset();
+            $("#create-user-form")?.reset();
 
             setNotice(
-                "The request was sent to hyper-handler. Confirm that the new account was created before proceeding.",
+                "Account created successfully.",
                 "success"
             );
 
             await loadUsers();
+
         } catch (error) {
+            console.error(
+                "Could not create account:",
+                error
+            );
+
             setNotice(
-                `User creation failed: ${getFriendlyError(error)}. Check that hyper-handler supports the create_user action.`,
+                `Could not create account: ${getErrorMessage(error)}`,
                 "error"
             );
         } finally {
@@ -1398,36 +1747,48 @@
     }
 
     async function loadUsers() {
-        if (!isAdmin()) return;
+        if (!isAdmin()) {
+            return;
+        }
 
         const container = $("#users-list");
 
-        if (!container) return;
-
-        showLoading(container, "Loading user profiles...");
-
         try {
-            const client = getClient();
+            showLoading(
+                container,
+                "Loading accounts..."
+            );
 
-            /*
-             * RLS must allow administrators to read profiles.
-             * This query does not retrieve passwords or auth secrets.
-             */
-            const { data, error } = await client
+            const {
+                data,
+                error
+            } = await client
                 .from("profiles")
-                .select("id, username, full_name, role, active, created_at")
-                .order("created_at", { ascending: false });
+                .select("id, username, full_name, role, active")
+                .order("full_name", { ascending: true });
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             state.users = data || [];
 
             renderUsers();
+
         } catch (error) {
+            console.error(
+                "Could not load accounts:",
+                error
+            );
+
             showEmpty(
                 container,
-                "Could not load users",
-                getFriendlyError(error)
+                "Unable to load accounts."
+            );
+
+            setNotice(
+                `Could not load accounts: ${getErrorMessage(error)}`,
+                "error"
             );
         }
     }
@@ -1435,91 +1796,92 @@
     function renderUsers() {
         const container = $("#users-list");
 
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         if (!state.users.length) {
             showEmpty(
                 container,
-                "No user profiles found",
-                "User profiles will appear here when they exist."
+                "No accounts were found."
             );
 
             return;
         }
 
-        container.innerHTML = state.users.map(user => {
-            const role = normalizeRole(user.role);
+        container.innerHTML = state.users.map(user => `
+            <article class="user-item">
+                <div class="user-item-main">
+                    <h4>
+                        ${escapeHTML(
+                            user.full_name ||
+                            user.username ||
+                            "Unnamed user"
+                        )}
+                    </h4>
 
-            const roleClass = [
-                "user-role",
-                `user-role-${["admin", "teacher", "student"].includes(role)
-                    ? role
-                    : "student"}`
-            ].join(" ");
+                    <p>
+                        @${escapeHTML(user.username || "no-username")}
+                    </p>
+                </div>
 
-            const statusText = user.active === false
-                ? "Inactive"
-                : "Active";
+                <div class="user-item-details">
+                    <span class="role-badge role-badge-${escapeHTML(normalizeRole(user.role))}">
+                        ${escapeHTML(user.role || "Unknown role")}
+                    </span>
 
-            const statusClass = user.active === false
-                ? "user-status-inactive"
-                : "user-status-active";
-
-            return `
-                <article class="user-item">
-                    <div>
-                        <h3>
-                            ${escapeHTML(
-                                user.full_name ||
-                                user.username ||
-                                "Unnamed user"
-                            )}
-                        </h3>
-
-                        <p>
-                            Username:
-                            ${escapeHTML(user.username || "Not set")}
-                        </p>
-
-                        <div class="content-item-meta">
-                            <span class="${roleClass}">
-                                ${escapeHTML(role || "unknown")}
-                            </span>
-
-                            <span class="${statusClass}">
-                                ${statusText}
-                            </span>
-                        </div>
-                    </div>
-                </article>
-            `;
-        }).join("");
+                    <span class="status-badge ${
+                        user.active === false
+                            ? "status-inactive"
+                            : "status-active"
+                    }">
+                        ${user.active === false ? "Inactive" : "Active"}
+                    </span>
+                </div>
+            </article>
+        `).join("");
     }
 
-    /* =====================================================
-       SIGN OUT
-       ===================================================== */
+    // =========================================================
+    // SIGN OUT
+    // =========================================================
 
     async function signOut() {
-        const client = getClient();
+        const button = $("#sign-out-btn");
 
         try {
+            setButtonBusy(
+                button,
+                true,
+                "Signing out..."
+            );
+
             const { error } = await client.auth.signOut();
 
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
             window.location.replace("index.html");
+
         } catch (error) {
+            console.error(
+                "Could not sign out:",
+                error
+            );
+
             setNotice(
-                `Could not sign out: ${getFriendlyError(error)}`,
+                `Could not sign out: ${getErrorMessage(error)}`,
                 "error"
             );
+
+            setButtonBusy(button, false);
         }
     }
 
-    /* =====================================================
-       EVENT LISTENERS
-       ===================================================== */
+    // =========================================================
+    // EVENT LISTENERS
+    // =========================================================
 
     function initializeEvents() {
         $("#save-lesson-btn")?.addEventListener(
@@ -1557,37 +1919,70 @@
             signOut
         );
 
-        $("#content-type")?.addEventListener("change", () => {
-            const type = getContentType();
+        const resetLessonSelection = () => {
+            state.currentLesson = null;
+            state.currentCard = null;
+            state.cards = [];
+            state.content = [];
 
-            const textField = $("#text-content");
-            const fileField = $("#content-file");
-
-            const textGroup = textField?.closest(
-                ".admin-form-group, .form-group"
-            );
-
-            const fileGroup = fileField?.closest(
-                ".admin-form-group, .form-group"
-            );
-
-            if (textGroup) {
-                textGroup.hidden = type !== "text";
+            if ($("#lesson-title")) {
+                $("#lesson-title").value = "";
             }
 
-            if (fileGroup) {
-                fileGroup.hidden = type === "text";
+            if ($("#lesson-description")) {
+                $("#lesson-description").value = "";
             }
-        });
+
+            const saveButton = $("#save-lesson-btn");
+
+            if (saveButton) {
+                saveButton.textContent = "Create lesson";
+            }
+
+            if ($("#selected-card-label")) {
+                $("#selected-card-label").textContent =
+                    "No card selected";
+            }
+
+            renderCards();
+            renderContent();
+            updateContentControls();
+        };
+
+        $("#unit-number")?.addEventListener(
+            "change",
+            resetLessonSelection
+        );
+
+        $("#lesson-number")?.addEventListener(
+            "change",
+            resetLessonSelection
+        );
+
+        $("#new-lesson-btn")?.addEventListener(
+            "click",
+            () => {
+                resetLessonSelection();
+
+                $("#lesson-title")?.focus();
+
+                setNotice(
+                    "Enter a title and save to create a new lesson.",
+                    "info"
+                );
+            }
+        );
+
+        initializeContentTypeControls();
     }
 
-    /* =====================================================
-       INITIALIZATION
-       ===================================================== */
+    // =========================================================
+    // INITIALIZATION
+    // =========================================================
 
     async function initializeAdmin() {
         try {
-            clearNotice();
+            requireClient();
 
             const authenticated = await verifySession();
 
@@ -1597,39 +1992,34 @@
 
             initializeNavigation();
             initializeEvents();
+
             renderLessonOptions();
+
+            await loadLessons();
 
             if (isAdmin()) {
                 await loadUsers();
             }
 
-            await loadLessons();
-
-            /*
-             * Show the lessons panel by default.
-             */
-            const defaultPanel = $("#panel-lessons");
-
-            if (defaultPanel) {
-                defaultPanel.hidden = false;
-            }
-
-            const usersPanel = $("#panel-users");
-
-            if (usersPanel && !isAdmin()) {
-                usersPanel.hidden = true;
-            }
-
         } catch (error) {
-            setNotice(
-                `Dashboard initialization failed: ${getFriendlyError(error)}`,
-                "error"
+            console.error(
+                "Admin initialization failed:",
+                error
             );
 
-            console.error("Admin initialization error:", error);
+            setNotice(
+                `Could not initialize the dashboard: ${getErrorMessage(error)}`,
+                "error"
+            );
         }
     }
 
-    document.addEventListener("DOMContentLoaded", initializeAdmin);
-
+    if (document.readyState === "loading") {
+        document.addEventListener(
+            "DOMContentLoaded",
+            initializeAdmin
+        );
+    } else {
+        initializeAdmin();
+    }
 })();
