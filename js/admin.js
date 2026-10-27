@@ -1280,18 +1280,20 @@
                 uploadedFile = await uploadContentFile(file);
             }
 
-            const contentData = {
-                lesson_id: state.currentLesson.id,
-                card_id: state.currentCard.id,
-                title,
-                content_type: actualType,
-                text_content: text || null,
-                storage_path: uploadedFile?.path || null,
-                file_name: uploadedFile?.file_name || null,
-                file_size: uploadedFile?.file_size ?? null,
-                mime_type: uploadedFile?.mime_type || null,
-                created_by: state.user.id
-            };
+           const contentData = {
+  card_id: state.currentCard.id,
+  title: title || "",
+  content_type: actualType,
+  text_content: text || null,
+  storage_path: uploadedFile?.path || null,
+  original_filename: uploadedFile?.original_filename
+    || uploadedFile?.file_name
+    || uploadedFile?.name
+    || null,
+  file_size: uploadedFile?.file_size ?? null,
+  mime_type: uploadedFile?.mime_type || null,
+  created_by: state.user.id
+};
 
             const {
                 error
