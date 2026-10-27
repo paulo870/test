@@ -1208,7 +1208,7 @@ padding-left: 42px;
 width: 235px;
 }
 
-```
+
 .main-content {
     margin-left: 235px;
     padding-right: 22px;
@@ -1370,6 +1370,5 @@ grid-template-columns: 1fr;
 .button {
     max-width: 100%;
 }
-```
 
 }
