@@ -1,1 +1,831 @@
+/* ============================================================
+   RESET
+============================================================ */
 
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    background: #111827;
+    color: white;
+}
+
+
+/* ============================================================
+   APP
+============================================================ */
+
+.app {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+}
+
+
+/* ============================================================
+   SIDEBAR
+============================================================ */
+
+.sidebar {
+    width: 230px;
+    min-width: 230px;
+    height: 100vh;
+    background: #172033;
+    padding: 15px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.control-btn,
+.dropdown-btn {
+    width: 100%;
+    min-height: 46px;
+    border: none;
+    border-radius: 10px;
+    background: #26344e;
+    color: white;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    transition: 0.2s ease;
+}
+
+.control-btn:hover,
+.dropdown-btn:hover {
+    background: #354766;
+    transform: translateY(-1px);
+}
+
+.control-btn img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+
+/* ============================================================
+   DROPDOWNS
+============================================================ */
+
+.dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.dropdown-btn {
+    cursor: pointer;
+}
+
+.dropdown-content {
+    display: none;
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 6px;
+    margin-bottom: 8px;
+}
+
+.dropdown.show > .dropdown-content {
+    display: block;
+}
+
+.dropdown-content a {
+    color: #e5e7eb;
+    text-decoration: none;
+    display: block;
+    padding: 9px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.dropdown-content a:hover {
+    background: #273449;
+}
+
+
+/* ============================================================
+   UNIT ITEMS
+============================================================ */
+
+.unit-item {
+    position: relative;
+}
+
+.unit-item > a {
+    font-weight: bold;
+}
+
+.lesson-dropdown {
+    display: none;
+    padding-left: 12px;
+}
+
+.lesson-dropdown.show {
+    display: block;
+}
+
+.lesson-dropdown a {
+    font-size: 13px;
+    color: #cbd5e1;
+}
+
+
+/* ============================================================
+   MAIN CONTENT
+============================================================ */
+
+.main-content {
+    flex: 1;
+    min-width: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+.viewer-header {
+    height: 75px;
+    min-height: 75px;
+    display: flex;
+    align-items: center;
+    padding: 0 25px;
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+}
+
+.viewer-header h1 {
+    font-size: 22px;
+}
+
+.viewer-header p {
+    margin-top: 5px;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+
+/* ============================================================
+   VIEWER
+============================================================ */
+
+.viewer-area {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 20px;
+}
+
+.slide-container {
+    position: relative;
+    width: min(1200px, 100%);
+    height: min(750px, 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #020617;
+    border-radius: 15px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+
+/* ============================================================
+   IMAGE
+============================================================ */
+
+#slide-image {
+    position: absolute;
+    display: none;
+    max-width: none;
+    max-height: none;
+    user-select: none;
+    pointer-events: none;
+}
+
+
+/* ============================================================
+   NAVIGATION BUTTONS
+============================================================ */
+
+.navigation-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 70px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    z-index: 100;
+}
+
+.navigation-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.navigation-btn.previous {
+    left: 10px;
+}
+
+.navigation-btn.next {
+    right: 10px;
+}
+
+
+/* ============================================================
+   LESSON CARDS CONTAINER
+============================================================ */
+
+.lesson-cards-container {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 35px;
+    display: none;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+    overflow-y: auto;
+    perspective: 1200px;
+}
+
+.lesson-cards-container.active {
+    display: grid;
+}
+
+
+/* ============================================================
+   LESSON CARD
+============================================================ */
+
+.lesson-card {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    cursor: pointer;
+    perspective: 1200px;
+}
+
+.lesson-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 190px;
+    transform-style: preserve-3d;
+    transition:
+        transform 0.5s ease,
+        box-shadow 0.3s ease;
+}
+
+
+/* ============================================================
+   CARD FRONT
+============================================================ */
+
+.lesson-card-front {
+    position: absolute;
+    inset: 0;
+    padding: 25px;
+    border-radius: 18px;
+    background: linear-gradient(
+        145deg,
+        #334155,
+        #1e293b
+    );
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow:
+        0 15px 30px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    backface-visibility: hidden;
+
+    transform:
+        rotateX(0deg)
+        rotateY(0deg);
+}
+
+.lesson-card:hover .lesson-card-front {
+    transform: translateY(-5px);
+    box-shadow:
+        0 22px 40px rgba(0,0,0,0.45);
+}
+
+.lesson-card-number {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.12);
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.lesson-card-front h3 {
+    font-size: 18px;
+    text-align: center;
+}
+
+.lesson-card-open {
+    margin-top: 15px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+
+/* ============================================================
+   EXPANDED CARD
+============================================================ */
+
+.lesson-card.expanded {
+    position: fixed;
+    z-index: 5000;
+
+    left: 50%;
+    top: 50%;
+
+    width: min(900px, calc(100vw - 100px));
+    height: min(650px, calc(100vh - 120px));
+
+    transform:
+        translate(-50%, -50%);
+
+    cursor: default;
+}
+
+.lesson-card.expanded .lesson-card-inner {
+    transform: none;
+}
+
+.lesson-card.expanded .lesson-card-front {
+    display: none;
+}
+
+.lesson-card-content {
+    position: absolute;
+    inset: 0;
+    padding: 50px;
+    border-radius: 22px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #f8fafc,
+            #e2e8f0
+        );
+
+    color: #0f172a;
+
+    box-shadow:
+        0 40px 100px rgba(0,0,0,0.6);
+
+    overflow-y: auto;
+    display: none;
+}
+
+.lesson-card.expanded .lesson-card-content {
+    display: block;
+}
+
+
+/* ============================================================
+   CARD CLOSE
+============================================================ */
+
+.lesson-card-close {
+    position: absolute;
+    right: 18px;
+    top: 18px;
+
+    width: 40px;
+    height: 40px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #cbd5e1;
+    color: #0f172a;
+
+    font-size: 25px;
+    cursor: pointer;
+}
+
+.lesson-card-close:hover {
+    background: #94a3b8;
+}
+
+
+/* ============================================================
+   PLACEHOLDER CONTENT
+============================================================ */
+
+.lesson-card-placeholder {
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.placeholder-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 45px;
+    margin-bottom: 20px;
+}
+
+.lesson-card-placeholder h3 {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.lesson-card-placeholder p {
+    color: #64748b;
+}
+
+
+/* ============================================================
+   CARD MEDIA
+============================================================ */
+
+.lesson-text-content {
+    font-size: 20px;
+    line-height: 1.7;
+}
+
+.lesson-audio-content,
+.lesson-video-content,
+.lesson-image-content {
+    width: 100%;
+}
+
+.lesson-audio-content audio {
+    width: 100%;
+    margin-top: 25px;
+}
+
+.lesson-video-content video {
+    width: 100%;
+    max-height: 500px;
+    border-radius: 12px;
+}
+
+.lesson-image-content img {
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+}
+
+
+/* ============================================================
+   AUDIO
+============================================================ */
+
+.media-list {
+    position: absolute;
+    left: 250px;
+    bottom: 30px;
+    display: none;
+    gap: 8px;
+    z-index: 2000;
+    flex-wrap: wrap;
+}
+
+.media-list button {
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    background: #334155;
+    color: white;
+    cursor: pointer;
+}
+
+.audio-player-wrapper,
+.video-player-wrapper {
+    position: fixed;
+    z-index: 3000;
+    display: none;
+    background: #0f172a;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.audio-player-wrapper {
+    bottom: 25px;
+    right: 25px;
+}
+
+.audio-player-wrapper audio {
+    width: 320px;
+}
+
+.audio-player-wrapper button,
+.video-player-wrapper button {
+    margin-left: 8px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+}
+
+
+/* ============================================================
+   VIDEO
+============================================================ */
+
+#video-list-container {
+    position: fixed;
+    right: 30px;
+    bottom: 30px;
+    display: none;
+    gap: 8px;
+    flex-wrap: wrap;
+    z-index: 3500;
+}
+
+#video-list-container button {
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    background: #334155;
+    color: white;
+    cursor: pointer;
+}
+
+.video-player-wrapper {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#slide-video {
+    width: min(900px, 80vw);
+    max-height: 75vh;
+}
+
+
+/* ============================================================
+   EDIT TRAY
+============================================================ */
+
+.edit-tray {
+    position: fixed;
+    left: 250px;
+    bottom: 20px;
+    z-index: 4000;
+
+    display: none;
+    gap: 7px;
+
+    padding: 10px;
+
+    background: #0f172a;
+    border-radius: 12px;
+
+    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+}
+
+.edit-tray button {
+    border: none;
+    border-radius: 7px;
+    padding: 9px 12px;
+    background: #334155;
+    color: white;
+    cursor: pointer;
+}
+
+.edit-tray button:hover,
+.edit-tray button.active-tool {
+    background: #475569;
+}
+
+
+/* ============================================================
+   CANVASES
+============================================================ */
+
+#edit-canvas {
+    position: absolute;
+    z-index: 1500;
+    pointer-events: auto;
+}
+
+.whiteboard {
+    position: absolute;
+    inset: 0;
+    display: none;
+    z-index: 2000;
+    background: white;
+}
+
+#whiteboard-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+
+/* ============================================================
+   TEXT BOX
+============================================================ */
+
+.slide-textbox {
+    position: absolute;
+    min-width: 50px;
+    min-height: 20px;
+    z-index: 999999;
+    color: red;
+    font-size: 28px;
+    font-weight: bold;
+    outline: none;
+    cursor: move;
+    user-select: text;
+}
+
+
+/* ============================================================
+   MOBILE
+============================================================ */
+
+@media (max-width: 900px) {
+
+    .sidebar {
+        width: 180px;
+        min-width: 180px;
+    }
+
+    .lesson-cards-container {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(4, minmax(0, 1fr));
+        padding: 20px;
+        gap: 15px;
+    }
+
+    .lesson-card.expanded {
+        width: calc(100vw - 40px);
+        height: calc(100vh - 100px);
+    }
+
+    .lesson-card-content {
+        padding: 35px 25px;
+    }
+
+    .edit-tray {
+        left: 195px;
+        max-width: calc(100vw - 210px);
+        overflow-x: auto;
+    }
+}
+
+
+@media (max-width: 600px) {
+
+    .sidebar {
+        width: 65px;
+        min-width: 65px;
+        padding: 8px;
+    }
+
+    .sidebar .dropdown-btn span {
+        display: none;
+    }
+
+    .sidebar .dropdown-btn,
+    .sidebar .control-btn {
+        justify-content: center;
+        padding: 8px;
+    }
+
+    .dropdown-content {
+        position: fixed;
+        left: 65px;
+        top: 10px;
+        width: 200px;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .viewer-header {
+        padding: 0 15px;
+    }
+
+    .viewer-header h1 {
+        font-size: 17px;
+    }
+
+    .viewer-area {
+        padding: 8px;
+    }
+
+    .lesson-cards-container {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .lesson-card-front {
+        padding: 10px;
+    }
+
+    .lesson-card-front h3 {
+        font-size: 14px;
+    }
+
+    .lesson-card-number {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .lesson-card-open {
+        display: none;
+    }
+
+    .lesson-card.expanded {
+        width: calc(100vw - 90px);
+        height: calc(100vh - 40px);
+        left: calc(50% + 32px);
+    }
+
+    .lesson-card-content {
+        padding: 45px 18px 20px;
+    }
+
+    .navigation-btn {
+        width: 35px;
+        height: 50px;
+        font-size: 20px;
+    }
+
+    .audio-player-wrapper {
+        left: 75px;
+        right: 10px;
+        bottom: 10px;
+    }
+
+    .audio-player-wrapper audio {
+        width: 100%;
+    }
+
+    .edit-tray {
+        left: 75px;
+        right: 10px;
+        bottom: 10px;
+        max-width: none;
+        overflow-x: auto;
+    }
+}
+
+
+/* ============================================================
+   CARD BACKDROP
+============================================================ */
+
+.lesson-card.expanded::before {
+    content: "";
+    position: fixed;
+    inset: -100vh -100vw;
+    background: rgba(0,0,0,0.72);
+    z-index: -1;
+    pointer-events: none;
+}
