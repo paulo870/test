@@ -91,21 +91,48 @@ function loadHome() {
     nextBtn.style.display = "none";
 }
 
-// ==========================
-// STUDENT BOOK — LESSON SYSTEM
-// ==========================
+// ============================================================
+// STUDENT BOOK — SUPABASE LESSON SYSTEM
+// ============================================================
 
-// Keep track of the selected lesson.
+const MAX_CARDS_PER_LESSON = 8;
+const LESSON_MEDIA_BUCKET = "lesson-media";
+
 let activeStudentUnit = null;
 let activeStudentLesson = null;
 
-// The lesson-card area is created dynamically so that
-// we do not need to replace the existing slide HTML.
+let activeLessonRecord = null;
+let activeLessonCards = [];
+let activeLessonContent = [];
+
+
+// ============================================================
+// SUPABASE CLIENT
+// ============================================================
+
+function getClassroomSupabaseClient() {
+    const client = window.supabaseClient;
+
+    if (!client) {
+        throw new Error(
+            "Supabase is not initialized. Check js/supabase.js."
+        );
+    }
+
+    return client;
+}
+
+
+// ============================================================
+// LESSON CARD CONTAINER
+// ============================================================
+
 function getLessonCardContainer() {
     let container = document.getElementById("lesson-card-grid");
 
     if (!container) {
         container = document.createElement("div");
+
         container.id = "lesson-card-grid";
         container.setAttribute("aria-live", "polite");
 
@@ -116,10 +143,47 @@ function getLessonCardContainer() {
 }
 
 
-// Hide the lesson-card view and restore the original
-// slide presentation interface.
+// ============================================================
+// DISPLAY THE LESSON CARD AREA
+// ============================================================
+
+function showLessonCardView() {
+    const container = getLessonCardContainer();
+
+    const slideWrapper = document.querySelector(".slide-wrapper");
+
+    if (slideWrapper) {
+        slideWrapper.style.display = "none";
+    }
+
+    prevBtn.style.display = "none";
+    nextBtn.style.display = "none";
+
+    if (audioListContainer) {
+        audioListContainer.style.display = "none";
+    }
+
+    const videoList = document.getElementById(
+        "video-list-container"
+    );
+
+    if (videoList) {
+        videoList.style.display = "none";
+    }
+
+    container.style.display = "grid";
+
+    return container;
+}
+
+
+// ============================================================
+// RESTORE THE ORIGINAL PRESENTATION VIEW
+// ============================================================
+
 function hideLessonCardView() {
     const container = document.getElementById("lesson-card-grid");
+
     const slideWrapper = document.querySelector(".slide-wrapper");
 
     if (container) {
@@ -135,125 +199,299 @@ function hideLessonCardView() {
 }
 
 
-// Display the lesson area instead of the scanned page.
-function showLessonCardView() {
-    const container = getLessonCardContainer();
-    const slideWrapper = document.querySelector(".slide-wrapper");
+// ============================================================
+// LESSON VIEW MESSAGES
+// ============================================================
 
-    if (slideWrapper) {
-        slideWrapper.style.display = "none";
+function showLessonMessage(titleText, messageText, isError = false) {
+    const container = showLessonCardView();
+
+    container.replaceChildren();
+
+    const messageBox = document.createElement("div");
+    messageBox.className = "lesson-empty-state";
+
+    const title = document.createElement("h2");
+    title.textContent = titleText;
+
+    const message = document.createElement("p");
+    message.textContent = messageText;
+
+    messageBox.append(title, message);
+
+    if (isError) {
+        messageBox.classList.add("lesson-load-error");
     }
 
-    prevBtn.style.display = "none";
-    nextBtn.style.display = "none";
-
-    // Close any previous image/audio/video lesson interface.
-    audioListContainer.style.display = "none";
-
-    const videoList = document.getElementById("video-list-container");
-
-    if (videoList) {
-        videoList.style.display = "none";
-    }
-
-    container.style.display = "grid";
+    container.appendChild(messageBox);
 
     return container;
 }
 
 
-// Temporary lesson-content source.
-//
-// The next implementation stage will load this content
-// from Supabase instead of localStorage.
-function getSavedLessonCards(unitNumber, lessonNumber) {
+// ============================================================
+// GET A TEMPORARY URL FOR PRIVATE STORAGE FILES
+// ============================================================
+
+async function getLessonContentUrl(content) {
+    if (!content.storage_path) {
+        return null;
+    }
+
+    const client = getClassroomSupabaseClient();
+
+    const { data, error } = await client.storage
+        .from(LESSON_MEDIA_BUCKET)
+        .createSignedUrl(content.storage_path, 3600);
+
+    if (error) {
+        console.error(
+            "Could not create a signed URL for lesson content:",
+            {
+                contentId: content.id,
+                storagePath: content.storage_path,
+                error
+            }
+        );
+
+        return null;
+    }
+
+    return data?.signedUrl || null;
+}
+
+
+// ============================================================
+// LOAD THE CORRECT LESSON FROM SUPABASE
+// ============================================================
+
+async function renderStudentLesson(unitNumber, lessonNumber) {
+    activeStudentUnit = String(unitNumber);
+    activeStudentLesson = String(lessonNumber);
+
+    activeLessonRecord = null;
+    activeLessonCards = [];
+    activeLessonContent = [];
+
+    const container = showLessonCardView();
+
+    container.replaceChildren();
+
+    const loading = document.createElement("div");
+    loading.className = "lesson-empty-state";
+    loading.textContent = "Loading lesson from Supabase...";
+
+    container.appendChild(loading);
+
     try {
-        const saved = localStorage.getItem("poliglotaLessonCards");
+        const client = getClassroomSupabaseClient();
 
-        if (!saved) {
-            return [];
+        // ----------------------------------------------------
+        // STEP 1: FIND THE EXACT LESSON
+        // ----------------------------------------------------
+
+        const { data: lesson, error: lessonError } = await client
+            .from("lessons")
+            .select("*")
+            .eq("unit_number", Number(unitNumber))
+            .eq("lesson_number", Number(lessonNumber))
+            .maybeSingle();
+
+        if (lessonError) {
+            throw lessonError;
         }
 
-        const lessonData = JSON.parse(saved);
+        if (!lesson) {
+            showLessonMessage(
+                `Unit ${unitNumber} — Lesson ${lessonNumber}`,
+                "This lesson has not been created in the Content Manager yet."
+            );
 
-        const cards = lessonData?.[unitNumber]?.[lessonNumber];
-
-        if (!Array.isArray(cards)) {
-            return [];
+            return;
         }
 
-        // Never display more than eight cards per lesson.
-        return cards.slice(0, 8);
+        activeLessonRecord = lesson;
+
+        // ----------------------------------------------------
+        // STEP 2: LOAD THE CARDS BELONGING TO THIS LESSON
+        // ----------------------------------------------------
+
+        const { data: cards, error: cardsError } = await client
+            .from("lesson_cards")
+            .select("*")
+            .eq("lesson_id", lesson.id)
+            .order("card_number", { ascending: true });
+
+        if (cardsError) {
+            throw cardsError;
+        }
+
+        // The Content Manager allows a maximum of eight cards.
+        activeLessonCards = (cards || []).slice(
+            0,
+            MAX_CARDS_PER_LESSON
+        );
+
+        // ----------------------------------------------------
+        // STEP 3: LOAD CONTENT FOR THESE EXACT CARD IDs
+        // ----------------------------------------------------
+
+        if (activeLessonCards.length > 0) {
+            const cardIds = activeLessonCards.map(card => card.id);
+
+            const { data: content, error: contentError } = await client
+                .from("lesson_content")
+                .select("*")
+                .in("card_id", cardIds)
+                .order("created_at", { ascending: true });
+
+            if (contentError) {
+                throw contentError;
+            }
+
+            activeLessonContent = content || [];
+
+            // Generate temporary links for uploaded media.
+            activeLessonContent = await Promise.all(
+                activeLessonContent.map(async item => {
+                    if (!item.storage_path) {
+                        return item;
+                    }
+
+                    const signedUrl = await getLessonContentUrl(item);
+
+                    return {
+                        ...item,
+                        signed_url: signedUrl
+                    };
+                })
+            );
+        }
+
+        // ----------------------------------------------------
+        // STEP 4: DISPLAY THE DATABASE RECORDS
+        // ----------------------------------------------------
+
+        renderStudentLessonCards();
 
     } catch (error) {
-        console.error("Unable to load lesson cards:", error);
-        return [];
+        console.error(
+            "Could not load lesson from Supabase:",
+            error
+        );
+
+        showLessonMessage(
+            "Unable to load this lesson",
+            error.message ||
+                "An error occurred while retrieving the lesson from Supabase.",
+            true
+        );
     }
 }
 
 
-// Display the cards belonging to the selected lesson.
-function renderStudentLesson(unitNumber, lessonNumber) {
-    const container = showLessonCardView();
+// ============================================================
+// RENDER THE CARDS BELONGING TO THE SELECTED LESSON
+// ============================================================
 
-    activeStudentUnit = String(unitNumber);
-    activeStudentLesson = String(lessonNumber);
+function renderStudentLessonCards() {
+    const container = showLessonCardView();
 
     container.replaceChildren();
 
-    // Lesson heading.
+    // --------------------------------------------------------
+    // LESSON HEADING
+    // --------------------------------------------------------
+
     const heading = document.createElement("div");
     heading.className = "lesson-heading";
 
     const title = document.createElement("h1");
-    title.textContent = `Unit ${unitNumber} — Lesson ${lessonNumber}`;
+
+    title.textContent =
+        activeLessonRecord?.title ||
+        `Unit ${activeStudentUnit} — Lesson ${activeStudentLesson}`;
 
     const subtitle = document.createElement("p");
-    subtitle.textContent = "Select a card to view its content.";
+
+    subtitle.textContent =
+        activeLessonRecord?.description ||
+        `Unit ${activeStudentUnit} · Lesson ${activeStudentLesson}`;
 
     heading.append(title, subtitle);
+
     container.appendChild(heading);
 
-    const cards = getSavedLessonCards(
-        String(unitNumber),
-        String(lessonNumber)
-    );
+    // --------------------------------------------------------
+    // EMPTY LESSON
+    // --------------------------------------------------------
 
-    // Empty-state message until the teacher adds content.
-    if (cards.length === 0) {
+    if (activeLessonCards.length === 0) {
         const emptyState = document.createElement("div");
+
         emptyState.className = "lesson-empty-state";
 
         const emptyTitle = document.createElement("h2");
-        emptyTitle.textContent = "Lesson content coming soon";
+        emptyTitle.textContent = "No cards available yet";
 
         const emptyMessage = document.createElement("p");
+
         emptyMessage.textContent =
-            "There is no content available for this lesson yet.";
+            "This lesson exists, but no cards have been created for it yet.";
 
         emptyState.append(emptyTitle, emptyMessage);
+
         container.appendChild(emptyState);
 
         return;
     }
 
-    cards.forEach((card, index) => {
+    // --------------------------------------------------------
+    // CREATE ONE DISPLAY CARD FOR EACH DATABASE CARD
+    // --------------------------------------------------------
+
+    activeLessonCards.forEach(card => {
         const cardElement = document.createElement("button");
 
         cardElement.type = "button";
         cardElement.className = "lesson-content-card";
 
+        cardElement.dataset.cardId = card.id;
+
         const cardTitle = document.createElement("h2");
-        cardTitle.textContent = card.title || `Card ${index + 1}`;
+
+        cardTitle.textContent =
+            card.title || `Card ${card.card_number}`;
+
+        const cardContent = activeLessonContent.filter(
+            item => String(item.card_id) === String(card.id)
+        );
 
         const cardDescription = document.createElement("p");
-        cardDescription.textContent =
-            card.description || "Open this card to view its content.";
 
-        cardElement.append(cardTitle, cardDescription);
+        if (cardContent.length === 0) {
+            cardDescription.textContent = "No content added yet.";
+        } else if (cardContent.length === 1) {
+            cardDescription.textContent = cardContent[0].title ||
+                "1 content item";
+        } else {
+            cardDescription.textContent =
+                `${cardContent.length} content items`;
+        }
+
+        const cardNumber = document.createElement("span");
+
+        cardNumber.className = "lesson-card-number";
+        cardNumber.textContent = `Card ${card.card_number}`;
+
+        cardElement.append(
+            cardNumber,
+            cardTitle,
+            cardDescription
+        );
 
         cardElement.addEventListener("click", () => {
-            openLessonCard(card, index);
+            openLessonCard(card);
         });
 
         container.appendChild(cardElement);
@@ -261,126 +499,266 @@ function renderStudentLesson(unitNumber, lessonNumber) {
 }
 
 
-// ==========================
-// LESSON CARD FULLSCREEN VIEWER
-// ==========================
-function openLessonCard(card, index) {
-    // Remove an existing viewer, if one is open
-    const existingViewer = document.getElementById("lesson-card-viewer");
-    if (existingViewer) existingViewer.remove();
+// ============================================================
+// OPEN A CARD AND DISPLAY ITS SUPABASE CONTENT
+// ============================================================
+
+function openLessonCard(card) {
+    // Close any previously opened viewer.
+    const existingViewer = document.getElementById(
+        "lesson-card-viewer"
+    );
+
+    if (existingViewer) {
+        existingViewer.remove();
+    }
 
     const viewer = document.createElement("div");
+
     viewer.id = "lesson-card-viewer";
 
+    // --------------------------------------------------------
+    // CLOSE BUTTON
+    // --------------------------------------------------------
+
     const closeButton = document.createElement("button");
+
     closeButton.type = "button";
     closeButton.className = "lesson-viewer-close";
     closeButton.textContent = "×";
-    closeButton.setAttribute("aria-label", "Close lesson card");
+
+    closeButton.setAttribute(
+        "aria-label",
+        "Close lesson card"
+    );
+
+    // --------------------------------------------------------
+    // VIEWER CONTENT
+    // --------------------------------------------------------
 
     const contentArea = document.createElement("div");
+
     contentArea.className = "lesson-viewer-content";
 
     const title = document.createElement("h2");
-    title.textContent = card.title || card.name || `Lesson Card ${index + 1}`;
+
+    title.textContent =
+        card.title || `Card ${card.card_number}`;
+
     contentArea.appendChild(title);
 
-    const cardType = (card.type || "").toLowerCase();
-    const fileUrl = card.url || card.fileUrl || card.file_url || "";
-    const textContent = card.content || card.description || card.text || "";
+    const cardContent = activeLessonContent.filter(
+        item => String(item.card_id) === String(card.id)
+    );
 
-    if (fileUrl) {
-        let mediaElement = null;
+    if (cardContent.length === 0) {
+        const emptyMessage = document.createElement("p");
 
-        if (cardType === "image" || /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(fileUrl)) {
-            mediaElement = document.createElement("img");
-            mediaElement.src = fileUrl;
-            mediaElement.alt = card.title || "Lesson image";
-        } else if (cardType === "video" || /\.(mp4|webm|ogg)(\?.*)?$/i.test(fileUrl)) {
-            mediaElement = document.createElement("video");
-            mediaElement.src = fileUrl;
-            mediaElement.controls = true;
-            mediaElement.playsInline = true;
-        } else if (cardType === "audio" || /\.(mp3|wav|m4a|aac|oga)(\?.*)?$/i.test(fileUrl)) {
-            mediaElement = document.createElement("audio");
-            mediaElement.src = fileUrl;
-            mediaElement.controls = true;
-        } else {
-            mediaElement = document.createElement("a");
-            mediaElement.href = fileUrl;
-            mediaElement.target = "_blank";
-            mediaElement.rel = "noopener noreferrer";
-            mediaElement.textContent = card.fileName || card.file_name || "Open lesson file";
+        emptyMessage.textContent =
+            "No content has been added to this card yet.";
+
+        contentArea.appendChild(emptyMessage);
+    }
+
+    // --------------------------------------------------------
+    // DISPLAY EVERY CONTENT ITEM ASSOCIATED WITH THIS CARD
+    // --------------------------------------------------------
+
+    cardContent.forEach(item => {
+        const itemContainer = document.createElement("section");
+
+        itemContainer.className = "lesson-viewer-item";
+
+        const itemTitle = document.createElement("h3");
+
+        itemTitle.className = "lesson-viewer-item-title";
+
+        itemTitle.textContent = item.title || "Lesson content";
+
+        itemContainer.appendChild(itemTitle);
+
+        const type = String(
+            item.content_type || "text"
+        ).toLowerCase();
+
+        const mediaUrl = item.signed_url || "";
+
+        // TEXT CONTENT
+        if (item.text_content) {
+            const text = document.createElement("div");
+
+            text.className = "lesson-viewer-text";
+
+            text.textContent = item.text_content;
+
+            itemContainer.appendChild(text);
         }
 
-        mediaElement.className = "lesson-viewer-media";
-        contentArea.appendChild(mediaElement);
-    }
+        // IMAGE CONTENT
+        if (type === "image") {
+            if (mediaUrl) {
+                const image = document.createElement("img");
 
-    if (textContent) {
-        const text = document.createElement("div");
-        text.className = "lesson-viewer-text";
-        text.textContent = textContent;
-        contentArea.appendChild(text);
-    }
+                image.className = "lesson-viewer-media";
+                image.src = mediaUrl;
 
-    if (!fileUrl && !textContent) {
-        const message = document.createElement("p");
-        message.textContent = "This card does not have any content yet.";
-        contentArea.appendChild(message);
-    }
+                image.alt =
+                    item.title || "Lesson image";
+
+                image.loading = "lazy";
+
+                itemContainer.appendChild(image);
+            } else if (item.storage_path) {
+                appendUnavailableMessage(
+                    itemContainer,
+                    "This image could not be loaded. Check the Supabase Storage permissions."
+                );
+            }
+        }
+
+        // AUDIO CONTENT
+        else if (type === "audio") {
+            if (mediaUrl) {
+                const audio = document.createElement("audio");
+
+                audio.className = "lesson-viewer-media";
+                audio.controls = true;
+                audio.preload = "metadata";
+                audio.src = mediaUrl;
+
+                itemContainer.appendChild(audio);
+            } else if (item.storage_path) {
+                appendUnavailableMessage(
+                    itemContainer,
+                    "This audio file could not be loaded. Check the Supabase Storage permissions."
+                );
+            }
+        }
+
+        // VIDEO CONTENT
+        else if (type === "video") {
+            if (mediaUrl) {
+                const video = document.createElement("video");
+
+                video.className = "lesson-viewer-media";
+                video.controls = true;
+                video.preload = "metadata";
+                video.playsInline = true;
+                video.src = mediaUrl;
+
+                itemContainer.appendChild(video);
+            } else if (item.storage_path) {
+                appendUnavailableMessage(
+                    itemContainer,
+                    "This video could not be loaded. Check the Supabase Storage permissions."
+                );
+            }
+        }
+
+        // FILES AND OTHER RESOURCE TYPES
+        else if (
+            type === "file" ||
+            type === "game"
+        ) {
+            if (mediaUrl) {
+                const fileLink = document.createElement("a");
+
+                fileLink.href = mediaUrl;
+                fileLink.target = "_blank";
+                fileLink.rel = "noopener noreferrer";
+
+                fileLink.textContent =
+                    item.original_filename ||
+                    item.file_name ||
+                    "Open resource";
+
+                itemContainer.appendChild(fileLink);
+            } else if (item.storage_path) {
+                appendUnavailableMessage(
+                    itemContainer,
+                    "This resource could not be opened. Check the Supabase Storage permissions."
+                );
+            }
+        }
+
+        contentArea.appendChild(itemContainer);
+    });
+
+    // --------------------------------------------------------
+    // CLOSE THE VIEWER
+    // --------------------------------------------------------
 
     function closeViewer() {
+        contentArea.querySelectorAll("audio, video").forEach(media => {
+            media.pause();
+        });
+
         viewer.remove();
-        document.removeEventListener("keydown", handleEscape);
+
+        document.removeEventListener(
+            "keydown",
+            handleEscape
+        );
     }
 
     function handleEscape(event) {
-        if (event.key === "Escape") closeViewer();
+        if (event.key === "Escape") {
+            closeViewer();
+        }
     }
 
-    closeButton.addEventListener("click", closeViewer);
+    closeButton.addEventListener(
+        "click",
+        closeViewer
+    );
 
-    viewer.addEventListener("click", function (event) {
-        if (event.target === viewer) closeViewer();
+    viewer.addEventListener("click", event => {
+        if (event.target === viewer) {
+            closeViewer();
+        }
     });
 
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener(
+        "keydown",
+        handleEscape
+    );
 
-    viewer.appendChild(closeButton);
-    viewer.appendChild(contentArea);
+    viewer.append(closeButton, contentArea);
+
     document.body.appendChild(viewer);
 }
 
 
-// Select a unit without loading its old scanned pages.
+// ============================================================
+// DISPLAY AN UNAVAILABLE-FILE MESSAGE
+// ============================================================
+
+function appendUnavailableMessage(container, messageText) {
+    const message = document.createElement("p");
+
+    message.className = "lesson-content-error";
+    message.textContent = messageText;
+
+    container.appendChild(message);
+}
+
+
+// ============================================================
+// SELECT A UNIT
+// ============================================================
+
 function loadStudentUnit(unitNumber) {
     activeStudentUnit = String(unitNumber);
     activeStudentLesson = null;
 
-    const container = showLessonCardView();
+    activeLessonRecord = null;
+    activeLessonCards = [];
+    activeLessonContent = [];
 
-    container.replaceChildren();
-
-    const heading = document.createElement("div");
-    heading.className = "lesson-heading";
-
-    const title = document.createElement("h1");
-    title.textContent = `Unit ${unitNumber}`;
-
-    const subtitle = document.createElement("p");
-    subtitle.textContent =
-        "Choose a lesson from the Student Book menu.";
-
-    heading.append(title, subtitle);
-    container.appendChild(heading);
-
-    const message = document.createElement("div");
-    message.className = "lesson-empty-state";
-    message.textContent =
-        "Select Lesson 1, Lesson 2, Lesson 3, Lesson 4 or Lesson 5.";
-
-    container.appendChild(message);
+    showLessonMessage(
+        `Unit ${unitNumber}`,
+        "Choose a lesson from the Student Book menu."
+    );
 }
 
 // ==========================
