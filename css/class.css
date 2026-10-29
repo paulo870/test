@@ -3429,3 +3429,50 @@ left: var(--control-bar-width, 56px);
 
 }
 
+/* =========================================
+   LESSON VIEWER: LAYERING AND SIDEBAR ACCESS
+   ========================================= */
+
+/* The expanded viewer stays beside the sidebar */
+#lesson-card-viewer {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+
+    left: var(--control-bar-width, 76px) !important;
+
+    z-index: 10000 !important;
+
+    box-sizing: border-box;
+    overflow: auto;
+}
+
+/* Keep the main sidebar above the viewer */
+.control-bar {
+    position: fixed !important;
+    z-index: 11000 !important;
+}
+
+/* Keep the editing tray above the viewer */
+.edit-tray,
+#edit-tray,
+.edit-tools,
+#edit-tools {
+    position: fixed;
+    z-index: 12000 !important;
+}
+
+/* Keep the whiteboard above the viewer */
+#whiteboard,
+.whiteboard,
+.whiteboard-container,
+#whiteboard-container {
+    z-index: 13000 !important;
+}
+
+/* Keep the viewer's close button accessible */
+.lesson-viewer-close {
+    position: fixed !important;
+    z-index: 14000 !important;
+}
