@@ -3278,84 +3278,154 @@ select:focus-visible {
 
 
 /* ==========================
-   LESSON CARD FULLSCREEN VIEWER
+EXPANDED LESSON CARD
+Keeps the vertical control bar visible.
 ========================== */
 
 #lesson-card-viewer {
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 24px 24px;
-    box-sizing: border-box;
-    background: rgba(10, 20, 24, 0.97);
-    overflow: auto;
+position: fixed;
+
+/* Keep the sidebar/control bar visible. */
+left: var(--control-bar-width, 76px);
+top: 0;
+right: 0;
+bottom: 0;
+
+z-index: 10000;
+
+display: flex;
+align-items: center;
+justify-content: center;
+
+padding: 60px 24px 24px;
+
+box-sizing: border-box;
+
+background: rgba(10, 20, 24, 0.97);
+
+overflow: auto;
+
+/* The viewer itself does not close when clicked. */
+cursor: default;
+
 }
 
 .lesson-viewer-close {
-    position: fixed;
-    top: 16px;
-    right: 22px;
-    z-index: 10001;
-    width: 44px;
-    height: 44px;
-    border: none;
-    border-radius: 50%;
-    background: #48e082;
-    color: #10231a;
-    font-size: 32px;
-    line-height: 1;
-    cursor: pointer;
+position: fixed;
+
+top: 16px;
+right: 22px;
+
+z-index: 10002;
+
+width: 44px;
+height: 44px;
+
+border: none;
+border-radius: 50%;
+
+background: #48e082;
+color: #10231a;
+
+font-size: 32px;
+line-height: 1;
+
+cursor: pointer;
+
 }
 
 .lesson-viewer-close:hover {
-    filter: brightness(1.1);
+filter: brightness(1.1);
 }
 
 .lesson-viewer-content {
-    width: min(1100px, 100%);
-    max-height: 100%;
-    overflow: auto;
-    color: #fff;
-    text-align: center;
+width: 100%;
+max-width: 1100px;
+
+height: 100%;
+max-height: 100%;
+
+overflow: auto;
+
+color: #fff;
+text-align: center;
+
+}
+
+/* Zoomable area inside the expanded card. */
+.lesson-viewer-zoom-area {
+width: 100%;
+
+transform: scale(1);
+transform-origin: center center;
+
+transition: transform 0.08s ease-out;
+
+
 }
 
 .lesson-viewer-content h2 {
-    margin: 0 0 24px;
-    color: #48e082;
+margin: 0 0 24px;
+
+
+color: #48e082;
+
+
+}
+
+/* Images, videos and audio. */
+.lesson-viewer-media {
+display: block;
+
+
+max-width: 100%;
+max-height: 70vh;
+
+margin: 0 auto 20px;
+
+object-fit: contain;
+
+}
+
+/* Text content. */
+.lesson-viewer-text {
+max-width: 900px;
+
+
+margin: 20px auto;
+
+color: #fff;
+
+font-size: 1.1rem;
+line-height: 1.7;
+
+white-space: pre-wrap;
+overflow-wrap: anywhere;
+```
+
+}
+
+/* Smaller screens. */
+@media (max-width: 600px) {
+#lesson-card-viewer {
+left: var(--control-bar-width, 56px);
+
+```
+    padding: 70px 14px 20px;
+}
+
+.lesson-viewer-close {
+    top: 12px;
+    right: 12px;
+}
+
+.lesson-viewer-content h2 {
+    font-size: 1.3rem;
 }
 
 .lesson-viewer-media {
-    display: block;
-    max-width: 100%;
-    max-height: 70vh;
-    margin: 0 auto 20px;
-    object-fit: contain;
+    max-height: 60vh;
 }
 
-.lesson-viewer-text {
-    max-width: 900px;
-    margin: 20px auto;
-    color: #fff;
-    font-size: 1.1rem;
-    line-height: 1.7;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
 }
 
-@media (max-width: 600px) {
-    #lesson-card-viewer {
-        padding: 70px 14px 20px;
-    }
-
-    .lesson-viewer-close {
-        top: 12px;
-        right: 12px;
-    }
-
-    .lesson-viewer-content h2 {
-        font-size: 1.3rem;
-    }
-}
