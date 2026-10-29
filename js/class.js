@@ -769,6 +769,8 @@ viewer.append(closeButton, zoomArea);
 
 document.body.appendChild(viewer);
 
+} // END OF openLessonCard()
+
 
 // ============================================================
 // DISPLAY AN UNAVAILABLE-FILE MESSAGE
