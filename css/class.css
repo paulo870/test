@@ -3612,3 +3612,27 @@ left: var(--control-bar-width, 56px);
 #lesson-card-viewer .lesson-viewer-close {
     z-index: 15000;
 }
+/* ================================================
+   EXPANDED LESSON CARD EDITING CANVAS
+================================================ */
+
+#lesson-card-viewer .lesson-viewer-content {
+    position: relative;
+}
+
+#lesson-card-viewer .lesson-card-edit-canvas {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    z-index: 20;
+
+    pointer-events: none;
+    touch-action: none;
+}
+
+#lesson-card-viewer .lesson-viewer-close {
+    z-index: 15000;
+}
