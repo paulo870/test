@@ -540,6 +540,24 @@ function openLessonCard(card) {
 
     contentArea.className = "lesson-viewer-content";
 
+    // --------------------------------------------------------
+// FULL-CARD EDITING CANVAS
+// --------------------------------------------------------
+
+contentArea.style.position = "relative";
+
+const cardEditCanvas = document.createElement("canvas");
+
+cardEditCanvas.id = "lesson-card-edit-canvas";
+cardEditCanvas.className = "lesson-card-edit-canvas";
+
+cardEditCanvas.setAttribute(
+    "aria-label",
+    "Lesson card editing canvas"
+);
+
+contentArea.appendChild(cardEditCanvas);
+
     const title = document.createElement("h2");
 
     title.textContent =
@@ -683,7 +701,8 @@ function openLessonCard(card) {
 
         contentArea.appendChild(itemContainer);
     });
-
+// Keep the editing canvas above all lesson content.
+contentArea.appendChild(cardEditCanvas);
 
     // --------------------------------------------------------
 // CLOSE THE VIEWER
