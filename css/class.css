@@ -3338,18 +3338,26 @@ cursor: pointer;
 filter: brightness(1.1);
 }
 
-.lesson-viewer-content {
-width: 100%;
-max-width: 1100px;
+/* =========================================
+   EXPANDED LESSON CARD — FULL-WIDTH CONTENT
+========================================= */
 
-height: 100%;
-max-height: 100%;
+#lesson-card-viewer .lesson-viewer-content {
+    position: relative;
 
-overflow: auto;
+    width: 100%;
+    max-width: none;
 
-color: #fff;
-text-align: center;
+    height: 100%;
+    min-height: 100%;
 
+    flex: 1 1 auto;
+    min-width: 0;
+
+    overflow: auto;
+
+    color: #fff;
+    text-align: center;
 }
 
 /* Zoomable area inside the expanded card. */
@@ -3591,48 +3599,22 @@ left: var(--control-bar-width, 56px);
     transition: transform 0.08s ease-out;
 }
 /* =========================================
-   FULL LESSON CARD EDITING CANVAS
+   FULL-AREA LESSON CARD EDITING CANVAS
 ========================================= */
 
-#lesson-card-edit-canvas {
+#lesson-card-viewer #lesson-card-edit-canvas {
     position: absolute;
+
     top: 0;
     left: 0;
 
     width: 100%;
     height: 100%;
 
-    z-index: 20;
-
-    pointer-events: none;
-    touch-action: none;
-}
-
-/* Keep the close button accessible. */
-#lesson-card-viewer .lesson-viewer-close {
-    z-index: 15000;
-}
-/* ================================================
-   EXPANDED LESSON CARD EDITING CANVAS
-================================================ */
-
-#lesson-card-viewer .lesson-viewer-content {
-    position: relative;
-}
-
-#lesson-card-viewer .lesson-card-edit-canvas {
-    position: absolute;
-    inset: 0;
-
-    width: 100%;
-    height: 100%;
+    display: block;
 
     z-index: 20;
 
     pointer-events: none;
     touch-action: none;
-}
-
-#lesson-card-viewer .lesson-viewer-close {
-    z-index: 15000;
 }
