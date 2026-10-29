@@ -791,13 +791,26 @@ document.body.appendChild(viewer);
 attachDrawingEvents(cardEditCanvas);
 cardEditCanvas.addEventListener("click", handleTextClick);
 
+
+// =========================================
+// ACTIVATE EXPANDED LESSON CARD EDITING
+// =========================================
+
+// Connect the editing tools to this canvas.
+attachDrawingEvents(cardEditCanvas);
+
+// Connect the text tool to this canvas.
+cardEditCanvas.addEventListener("click", handleTextClick);
+
+// Make the lesson card the active drawing surface.
 setDrawingTarget("lesson-card", cardEditCanvas);
 
+// Resize the canvas after the viewer has been displayed.
 requestAnimationFrame(() => {
     resizeLessonCardCanvas();
     updateCursor();
 });
-} // END OF openLessonCard()
+
 
 
 // ============================================================
@@ -1536,9 +1549,9 @@ function updateToolUI() {
         tools[currentTool].classList.add("active-tool");
     }
 }
-// ==========================
+// =========================================
 // CLEAR CURRENT CANVAS
-// ==========================
+// =========================================
 
 clearTool.addEventListener("click", () => {
     if (!drawingCanvas || !drawingCtx) {
@@ -1547,7 +1560,7 @@ clearTool.addEventListener("click", () => {
 
     const currentCanvasId = drawingCanvas.id;
 
-    // Remove strokes belonging only to the active canvas.
+    // Remove only strokes belonging to the active canvas.
     strokes = strokes.filter(
         stroke => stroke.canvas !== currentCanvasId
     );
@@ -1560,32 +1573,18 @@ clearTool.addEventListener("click", () => {
         drawingCanvas.height
     );
 
-    // Remove text boxes belonging to the active canvas.
-    if (currentCanvasId === "lesson-card-edit-canvas") {
-        const contentArea = drawingCanvas.parentElement;
-
-        if (contentArea) {
-            contentArea.querySelectorAll(".slide-textbox").forEach(box => {
-                if (box.dataset.canvas === currentCanvasId) {
-                    box.remove();
-                }
-            });
+    // Remove text boxes belonging to this canvas.
+    document.querySelectorAll(".slide-textbox").forEach(box => {
+        if (box.dataset.canvas === currentCanvasId) {
+            box.remove();
         }
-    } else if (currentCanvasId === "edit-canvas") {
-        document.querySelectorAll(".slide-textbox").forEach(box => {
-            if (box.dataset.canvas === currentCanvasId) {
-                box.remove();
-            }
-        });
-    } else if (currentCanvasId === "whiteboard-canvas") {
-        document.querySelectorAll(".slide-textbox").forEach(box => {
-            if (box.dataset.canvas === currentCanvasId) {
-                box.remove();
-            }
-        });
-    }
+    });
 
-    if (activeTextBox && activeTextBox.dataset.canvas === currentCanvasId) {
+    // Close the text toolbar if its text box was removed.
+    if (
+        activeTextBox &&
+        activeTextBox.dataset.canvas === currentCanvasId
+    ) {
         activeTextBox = null;
         textToolbar.style.display = "none";
     }
@@ -1622,6 +1621,7 @@ function updateCursor() {
         }
     }
 }
+
 // ==========================
 // DRAWING ENGINE
 // ==========================
@@ -1654,6 +1654,30 @@ function resizeWhiteboardCanvas() {
 
     whiteboardCanvas.width = whiteboard.offsetWidth;
     whiteboardCanvas.height = whiteboard.offsetHeight;
+
+    redrawStrokes();
+}
+// =========================================
+// RESIZE THE EXPANDED LESSON CARD CANVAS
+// =========================================
+
+function resizeLessonCardCanvas() {
+    const canvas = document.getElementById("lesson-card-edit-canvas");
+
+    if (!canvas || !canvas.isConnected) {
+        return;
+    }
+
+    const contentArea = canvas.parentElement;
+
+    if (!contentArea) {
+        return;
+    }
+
+    const rect = contentArea.getBoundingClientRect();
+
+    canvas.width = Math.max(1, Math.round(rect.width));
+    canvas.height = Math.max(1, Math.round(rect.height));
 
     redrawStrokes();
 }
@@ -2017,6 +2041,8 @@ function handleTextClick(e) {
     if (currentTool !== "text") return;
 
     const canvas = e.currentTarget;
+
+    if (canvas !== drawingCanvas) return;
 
     if (canvas !== drawingCanvas) return;
     const rect = canvas.getBoundingClientRect();
