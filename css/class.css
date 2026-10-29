@@ -3388,19 +3388,40 @@ object-fit: contain;
 }
 
 /* Text content. */
+/* Text content */
 .lesson-viewer-text {
 max-width: 900px;
-
-
 margin: 20px auto;
-
 color: #fff;
-
 font-size: 1.1rem;
 line-height: 1.7;
-
 white-space: pre-wrap;
 overflow-wrap: anywhere;
+}
+
+/* Smaller screens */
+@media (max-width: 600px) {
+#lesson-card-viewer {
+padding: 70px 14px 20px;
+}
+
+```
+.lesson-viewer-close {
+    top: 12px;
+    right: 12px;
+}
+
+.lesson-viewer-content h2 {
+    font-size: 1.3rem;
+}
+
+.lesson-viewer-media {
+    max-height: 60vh;
+}
+```
+
+}
+
 
 
 }
