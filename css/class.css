@@ -3401,7 +3401,7 @@ line-height: 1.7;
 
 white-space: pre-wrap;
 overflow-wrap: anywhere;
-```
+
 
 }
 
@@ -3410,7 +3410,7 @@ overflow-wrap: anywhere;
 #lesson-card-viewer {
 left: var(--control-bar-width, 56px);
 
-```
+
     padding: 70px 14px 20px;
 }
 
