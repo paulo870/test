@@ -913,33 +913,6 @@ function applyZoom() {
 }
 
 
-// ==========================
-// COMPUTER — CTRL + MOUSE WHEEL
-// ==========================
-
-slideContainer.addEventListener("wheel", function(e) {
-
-    if (!e.ctrlKey) return;
-
-    e.preventDefault();
-
-    if (e.deltaY < 0) {
-
-        currentScale += 0.1;
-
-    } else {
-
-        currentScale -= 0.1;
-    }
-
-    currentScale = Math.max(
-        MIN_ZOOM,
-        Math.min(MAX_ZOOM, currentScale)
-    );
-
-    applyZoom();
-
-}, { passive: false });
 
 
 // ==========================
