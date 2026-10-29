@@ -786,31 +786,25 @@ document.addEventListener(
 // Assemble the viewer.
 viewer.append(closeButton, zoomArea);
 
+
+// Assemble and display the viewer.
+viewer.append(closeButton, zoomArea);
 document.body.appendChild(viewer);
-// Activate drawing and text tools on the expanded lesson card.
-attachDrawingEvents(cardEditCanvas);
-cardEditCanvas.addEventListener("click", handleTextClick);
 
-
-// =========================================
-// ACTIVATE EXPANDED LESSON CARD EDITING
-// =========================================
-
-// Connect the editing tools to this canvas.
+// Connect the drawing tools to the expanded card.
 attachDrawingEvents(cardEditCanvas);
 
-// Connect the text tool to this canvas.
+// Connect the text tool exactly once.
 cardEditCanvas.addEventListener("click", handleTextClick);
 
 // Make the lesson card the active drawing surface.
 setDrawingTarget("lesson-card", cardEditCanvas);
 
-// Resize the canvas after the viewer has been displayed.
+// Size the canvas after the viewer has been displayed.
 requestAnimationFrame(() => {
     resizeLessonCardCanvas();
     updateCursor();
 });
-
 
 
 // ============================================================
@@ -1591,36 +1585,7 @@ clearTool.addEventListener("click", () => {
 
     redrawStrokes();
 });
-// ==========================
-// CURSOR SYSTEM
-// ==========================
 
-function updateCursor() {
-
-    if (currentTool === "text") {
-
-        drawingCanvas.style.cursor = "text";
-
-        // allow clicking textboxes
-        editCanvas.style.pointerEvents = "none";
-
-    } else {
-
-        editCanvas.style.pointerEvents = "auto";
-
-        if (currentTool === "eraser") {
-            drawingCanvas.style.cursor = "crosshair";
-        }
-
-        else if (currentTool === "marker") {
-            drawingCanvas.style.cursor = "cell";
-        }
-
-        else {
-            drawingCanvas.style.cursor = "default";
-        }
-    }
-}
 
 // ==========================
 // DRAWING ENGINE
@@ -1657,6 +1622,7 @@ function resizeWhiteboardCanvas() {
 
     redrawStrokes();
 }
+
 // =========================================
 // RESIZE THE EXPANDED LESSON CARD CANVAS
 // =========================================
@@ -1674,56 +1640,50 @@ function resizeLessonCardCanvas() {
         return;
     }
 
-    const rect = contentArea.getBoundingClientRect();
+    // Use the complete scrollable content dimensions.
+    const width = Math.max(
+        contentArea.clientWidth,
+        contentArea.scrollWidth
+    );
 
-    canvas.width = Math.max(1, Math.round(rect.width));
-    canvas.height = Math.max(1, Math.round(rect.height));
+    const height = Math.max(
+        contentArea.clientHeight,
+        contentArea.scrollHeight
+    );
 
-    redrawStrokes();
-}
-// ============================================================
-// RESIZE THE EXPANDED LESSON-CARD CANVAS
-// ============================================================
+    // Preserve existing strokes before resizing the canvas.
+    const previousWidth = canvas.width;
+    const previousHeight = canvas.height;
 
-function resizeLessonCardCanvas() {
-    const canvas = document.getElementById("lesson-card-edit-canvas");
-
-    if (!canvas || !canvas.isConnected) {
+    if (previousWidth === width && previousHeight === height) {
         return;
     }
 
-    const contentArea = canvas.parentElement;
+    canvas.width = Math.max(1, width);
+    canvas.height = Math.max(1, height);
 
-    if (!contentArea) {
-        return;
-    }
-
-    const rect = contentArea.getBoundingClientRect();
-
-    canvas.width = Math.max(1, Math.round(rect.width));
-    canvas.height = Math.max(1, Math.round(rect.height));
-
+    // Recalculate the displayed drawing from stored strokes.
     redrawStrokes();
 }
-window.addEventListener("resize", () => {
 
-    resizeEditCanvas();
-    resizeWhiteboardCanvas();
-});
-
-// ==========================
-// POSITION SYSTEM
-// ==========================
+// =========================================
+// GET NORMALIZED DRAWING COORDINATES
+// =========================================
 
 function getPos(e, canvas) {
-
     const rect = canvas.getBoundingClientRect();
 
+    if (!rect.width || !rect.height) {
+        return { x: 0, y: 0 };
+    }
+
     return {
-        x: (e.clientX - rect.left) / canvas.width,
-        y: (e.clientY - rect.top) / canvas.height
+        x: (e.clientX - rect.left) / rect.width,
+        y: (e.clientY - rect.top) / rect.height
     };
 }
+
+
 
 // ==========================
 // DRAW START
@@ -1780,6 +1740,9 @@ function moveDrawing(e, canvas) {
 
     if (!drawing) return;
 
+    if (currentTool !== "eraser" && !currentStroke) {
+        return;
+    }
     const { x, y } = getPos(e, canvas);
 
     if (currentTool === "eraser") {
@@ -2044,12 +2007,12 @@ function handleTextClick(e) {
 
     if (canvas !== drawingCanvas) return;
 
-    if (canvas !== drawingCanvas) return;
     const rect = canvas.getBoundingClientRect();
 
-    // FIX: correct absolute positioning (no shift left anymore)
-const x = (e.clientX - rect.left) / rect.width;
-const y = (e.clientY - rect.top) / rect.height;
+    if (!rect.width || !rect.height) return;
+
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
 
     createTextBox(x, y, canvas);
 }
@@ -2071,10 +2034,9 @@ function createTextBox(x, y, canvas) {
     box.style.position = "absolute";
 
     // POSITION
-    const rect = canvas.getBoundingClientRect();
-
-    box.style.left = (x * rect.width) + "px";
-    box.style.top = (y * rect.height) + "px";
+  // POSITION RELATIVE TO THE CANVAS
+box.style.left = (x * canvas.width) + "px";
+box.style.top = (y * canvas.height) + "px";
 
     // STYLE
     box.style.minWidth = "50px";
@@ -2235,27 +2197,25 @@ window.addEventListener("load", () => {
 function updateCursor() {
     if (!drawingCanvas) return;
 
-    // Allow pointer events only when a tool is selected.
+    const isLessonCard =
+        drawingCanvas.id === "lesson-card-edit-canvas";
+
+    // Only enable the active drawing surface when a tool is selected.
     drawingCanvas.style.pointerEvents =
         currentTool ? "auto" : "none";
 
-    // Prevent touch gestures from interfering with drawing
-    // on the expanded lesson-card canvas.
-    if (drawingCanvas.id === "lesson-card-edit-canvas") {
+    // Prevent touch gestures from interrupting drawing on the lesson card.
+    if (isLessonCard) {
         drawingCanvas.style.touchAction = "none";
     }
 
-    // Restore the normal cursor when no tool is selected.
+    // Set the appropriate cursor.
     if (!currentTool) {
         drawingCanvas.style.cursor = "default";
-        return;
-    }
-
-    // Set a cursor appropriate for the selected tool.
-    if (currentTool === "eraser") {
-        drawingCanvas.style.cursor = "crosshair";
     } else if (currentTool === "text") {
         drawingCanvas.style.cursor = "text";
+    } else if (currentTool === "eraser") {
+        drawingCanvas.style.cursor = "crosshair";
     } else if (currentTool === "marker") {
         drawingCanvas.style.cursor = "cell";
     } else {
