@@ -688,45 +688,89 @@ function openLessonCard(card) {
     // CLOSE THE VIEWER
     // --------------------------------------------------------
 
-    function closeViewer() {
-        contentArea.querySelectorAll("audio, video").forEach(media => {
-            media.pause();
-        });
+    // --------------------------------------------------------
+// CLOSE THE VIEWER
+// Only the close button closes the card.
+// --------------------------------------------------------
 
-        viewer.remove();
-
-        document.removeEventListener(
-            "keydown",
-            handleEscape
-        );
-    }
-
-    function handleEscape(event) {
-        if (event.key === "Escape") {
-            closeViewer();
-        }
-    }
-
-    closeButton.addEventListener(
-        "click",
-        closeViewer
-    );
-
-    viewer.addEventListener("click", event => {
-        if (event.target === viewer) {
-            closeViewer();
-        }
+function closeViewer() {
+    contentArea.querySelectorAll("audio, video").forEach(media => {
+        media.pause();
     });
 
-    document.addEventListener(
-        "keydown",
-        handleEscape
+    viewer.remove();
+}
+
+closeButton.addEventListener("click", closeViewer);
+
+
+// --------------------------------------------------------
+// ZOOMABLE CARD CONTENT
+// --------------------------------------------------------
+
+const zoomArea = document.createElement("div");
+zoomArea.className = "lesson-viewer-zoom-area";
+
+zoomArea.appendChild(contentArea);
+
+let cardZoomScale = 1;
+
+const MIN_CARD_ZOOM = 0.5;
+const MAX_CARD_ZOOM = 3;
+const CARD_ZOOM_STEP = 0.1;
+
+
+// Only Ctrl + wheel over the card content changes card zoom.
+zoomArea.addEventListener("wheel", function(event) {
+    if (!event.ctrlKey) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (event.deltaY < 0) {
+        cardZoomScale += CARD_ZOOM_STEP;
+    } else if (event.deltaY > 0) {
+        cardZoomScale -= CARD_ZOOM_STEP;
+    }
+
+    cardZoomScale = Math.max(
+        MIN_CARD_ZOOM,
+        Math.min(MAX_CARD_ZOOM, cardZoomScale)
     );
 
-    viewer.append(closeButton, contentArea);
+    zoomArea.style.transform =
+        `scale(${cardZoomScale})`;
 
-    document.body.appendChild(viewer);
+}, { passive: false });
+
+
+// --------------------------------------------------------
+// PREVENT BROWSER ZOOM WHILE THE CARD IS OPEN
+// --------------------------------------------------------
+
+// This prevents Ctrl + wheel from zooming the browser.
+// It does not change the background slide's scale.
+function preventBrowserZoomWhileCardOpen(event) {
+    if (!event.ctrlKey) return;
+
+    if (!document.getElementById("lesson-card-viewer")) {
+        return;
+    }
+
+    event.preventDefault();
 }
+
+document.addEventListener(
+    "wheel",
+    preventBrowserZoomWhileCardOpen,
+    { passive: false, capture: true }
+);
+
+
+// Assemble the viewer.
+viewer.append(closeButton, zoomArea);
+
+document.body.appendChild(viewer);
 
 
 // ============================================================
