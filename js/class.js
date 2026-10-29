@@ -2227,48 +2227,40 @@ window.addEventListener("load", () => {
 
 });
 
-// ================================================
-// UPDATE ACTIVE CANVAS AND TOOL CURSOR
-// ================================================
+
+// =========================================
+// UPDATE THE ACTIVE DRAWING TOOL
+// =========================================
 
 function updateCursor() {
-
     if (!drawingCanvas) return;
 
-    const isLessonCard =
-        drawingCanvas.id === "lesson-card-edit-canvas";
-
-    // Enable the selected tool on the active surface.
+    // Allow pointer events only when a tool is selected.
     drawingCanvas.style.pointerEvents =
         currentTool ? "auto" : "none";
 
-    // The lesson-card canvas must accept input
-    // only when a tool is selected.
-    if (isLessonCard) {
-
+    // Prevent touch gestures from interfering with drawing
+    // on the expanded lesson-card canvas.
+    if (drawingCanvas.id === "lesson-card-edit-canvas") {
         drawingCanvas.style.touchAction = "none";
     }
 
+    // Restore the normal cursor when no tool is selected.
     if (!currentTool) {
-
         drawingCanvas.style.cursor = "default";
         return;
     }
 
+    // Set a cursor appropriate for the selected tool.
     if (currentTool === "eraser") {
-
         drawingCanvas.style.cursor = "crosshair";
-
     } else if (currentTool === "text") {
-
         drawingCanvas.style.cursor = "text";
-
     } else if (currentTool === "marker") {
-
         drawingCanvas.style.cursor = "cell";
-
     } else {
-
         drawingCanvas.style.cursor = "crosshair";
     }
 }
+
+
