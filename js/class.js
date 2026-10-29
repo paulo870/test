@@ -539,23 +539,7 @@ function openLessonCard(card) {
     const contentArea = document.createElement("div");
 
     contentArea.className = "lesson-viewer-content";
-// ================================================
-// FULL-CARD ANNOTATION CANVAS
-// ================================================
 
-contentArea.style.position = "relative";
-
-const cardEditCanvas = document.createElement("canvas");
-
-cardEditCanvas.id = "lesson-card-edit-canvas";
-cardEditCanvas.className = "lesson-card-edit-canvas";
-
-cardEditCanvas.setAttribute(
-    "aria-label",
-    "Lesson card annotation canvas"
-);
-
-contentArea.appendChild(cardEditCanvas);
     // --------------------------------------------------------
 // FULL-CARD EDITING CANVAS
 // --------------------------------------------------------
@@ -803,10 +787,16 @@ document.addEventListener(
 viewer.append(closeButton, zoomArea);
 
 document.body.appendChild(viewer);
-// Activate the expanded lesson card as the drawing surface.
+// Activate drawing and text tools on the expanded lesson card.
+attachDrawingEvents(cardEditCanvas);
+cardEditCanvas.addEventListener("click", handleTextClick);
+
 setDrawingTarget("lesson-card", cardEditCanvas);
 
-requestAnimationFrame(resizeLessonCardCanvas);
+requestAnimationFrame(() => {
+    resizeLessonCardCanvas();
+    updateCursor();
+});
 } // END OF openLessonCard()
 
 
@@ -1551,32 +1541,53 @@ function updateToolUI() {
 // ==========================
 
 clearTool.addEventListener("click", () => {
+    if (!drawingCanvas || !drawingCtx) {
+        return;
+    }
 
     const currentCanvasId = drawingCanvas.id;
 
-    // Remove only strokes from current canvas
-    strokes = strokes.filter(stroke => {
-        return stroke.canvas !== currentCanvasId;
-    });
+    // Remove strokes belonging only to the active canvas.
+    strokes = strokes.filter(
+        stroke => stroke.canvas !== currentCanvasId
+    );
 
-    // Clear actual canvas
-    if (currentCanvasId === "whiteboard-canvas") {
+    // Clear the active drawing surface.
+    drawingCtx.clearRect(
+        0,
+        0,
+        drawingCanvas.width,
+        drawingCanvas.height
+    );
 
-        whiteboardCtx.clearRect(
-            0,
-            0,
-            whiteboardCanvas.width,
-            whiteboardCanvas.height
-        );
+    // Remove text boxes belonging to the active canvas.
+    if (currentCanvasId === "lesson-card-edit-canvas") {
+        const contentArea = drawingCanvas.parentElement;
 
-    } else {
+        if (contentArea) {
+            contentArea.querySelectorAll(".slide-textbox").forEach(box => {
+                if (box.dataset.canvas === currentCanvasId) {
+                    box.remove();
+                }
+            });
+        }
+    } else if (currentCanvasId === "edit-canvas") {
+        document.querySelectorAll(".slide-textbox").forEach(box => {
+            if (box.dataset.canvas === currentCanvasId) {
+                box.remove();
+            }
+        });
+    } else if (currentCanvasId === "whiteboard-canvas") {
+        document.querySelectorAll(".slide-textbox").forEach(box => {
+            if (box.dataset.canvas === currentCanvasId) {
+                box.remove();
+            }
+        });
+    }
 
-        editCtx.clearRect(
-            0,
-            0,
-            editCanvas.width,
-            editCanvas.height
-        );
+    if (activeTextBox && activeTextBox.dataset.canvas === currentCanvasId) {
+        activeTextBox = null;
+        textToolbar.style.display = "none";
     }
 
     redrawStrokes();
@@ -1646,7 +1657,30 @@ function resizeWhiteboardCanvas() {
 
     redrawStrokes();
 }
+// ============================================================
+// RESIZE THE EXPANDED LESSON-CARD CANVAS
+// ============================================================
 
+function resizeLessonCardCanvas() {
+    const canvas = document.getElementById("lesson-card-edit-canvas");
+
+    if (!canvas || !canvas.isConnected) {
+        return;
+    }
+
+    const contentArea = canvas.parentElement;
+
+    if (!contentArea) {
+        return;
+    }
+
+    const rect = contentArea.getBoundingClientRect();
+
+    canvas.width = Math.max(1, Math.round(rect.width));
+    canvas.height = Math.max(1, Math.round(rect.height));
+
+    redrawStrokes();
+}
 window.addEventListener("resize", () => {
 
     resizeEditCanvas();
@@ -1796,9 +1830,11 @@ function attachDrawingEvents(canvas) {
     canvas.addEventListener("lostpointercapture", stopDrawing);
 }
 
-// Connect the existing surfaces.
+// Connect the existing drawing surfaces.
 attachDrawingEvents(editCanvas);
 attachDrawingEvents(whiteboardCanvas);
+
+// Connect the expanded lesson-card canvas when it is created.
 // ==========================
 // WHITEBOARD EVENTS
 // ==========================
@@ -1971,13 +2007,18 @@ function redrawStrokes() {
 let activeTextBox = null;
 
 // click handler
+// Text insertion on the original slide and whiteboard.
 editCanvas.addEventListener("click", handleTextClick);
 whiteboardCanvas.addEventListener("click", handleTextClick);
+
+// Lesson-card text insertion is connected when its canvas is created.
 
 function handleTextClick(e) {
     if (currentTool !== "text") return;
 
-    const canvas = drawingCanvas;
+    const canvas = e.currentTarget;
+
+    if (canvas !== drawingCanvas) return;
     const rect = canvas.getBoundingClientRect();
 
     // FIX: correct absolute positioning (no shift left anymore)
