@@ -260,128 +260,164 @@ function renderStudentLesson(unitNumber, lessonNumber) {
     });
 }
 
+// ==========================
+// LESSON CARD EXPANDED VIEWER
+// Sidebar remains visible.
+// Only the close button closes the card.
+// Ctrl + mouse wheel zooms the expanded content.
+// ==========================
 
-// ==========================
-// LESSON CARD FULLSCREEN VIEWER
-// ==========================
 function openLessonCard(card, index) {
-    // Remove an existing viewer, if one is open
-    const existingViewer = document.getElementById("lesson-card-viewer");
-    if (existingViewer) existingViewer.remove();
+// Remove an existing viewer, if one is open.
+const existingViewer = document.getElementById("lesson-card-viewer");
+if (existingViewer) {
+existingViewer.remove();
+}
 
-    const viewer = document.createElement("div");
-    viewer.id = "lesson-card-viewer";
+const viewer = document.createElement("div");
+viewer.id = "lesson-card-viewer";
 
-    const closeButton = document.createElement("button");
-    closeButton.type = "button";
-    closeButton.className = "lesson-viewer-close";
-    closeButton.textContent = "×";
-    closeButton.setAttribute("aria-label", "Close lesson card");
+const closeButton = document.createElement("button");
+closeButton.type = "button";
+closeButton.className = "lesson-viewer-close";
+closeButton.textContent = "×";
+closeButton.setAttribute("aria-label", "Close lesson card");
+closeButton.title = "Close card";
 
-    const contentArea = document.createElement("div");
-    contentArea.className = "lesson-viewer-content";
+const contentArea = document.createElement("div");
+contentArea.className = "lesson-viewer-content";
 
-    const title = document.createElement("h2");
-    title.textContent = card.title || card.name || `Lesson Card ${index + 1}`;
-    contentArea.appendChild(title);
+// Keep the title and content inside the zoomable area.
+const zoomArea = document.createElement("div");
+zoomArea.className = "lesson-viewer-zoom-area";
 
-    const cardType = (card.type || "").toLowerCase();
-    const fileUrl = card.url || card.fileUrl || card.file_url || "";
-    const textContent = card.content || card.description || card.text || "";
+const title = document.createElement("h2");
+title.textContent =
+    card.title || card.name || `Lesson Card ${index + 1}`;
 
-    if (fileUrl) {
-        let mediaElement = null;
+zoomArea.appendChild(title);
 
-        if (cardType === "image" || /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(fileUrl)) {
-            mediaElement = document.createElement("img");
-            mediaElement.src = fileUrl;
-            mediaElement.alt = card.title || "Lesson image";
-        } else if (cardType === "video" || /\.(mp4|webm|ogg)(\?.*)?$/i.test(fileUrl)) {
-            mediaElement = document.createElement("video");
-            mediaElement.src = fileUrl;
-            mediaElement.controls = true;
-            mediaElement.playsInline = true;
-        } else if (cardType === "audio" || /\.(mp3|wav|m4a|aac|oga)(\?.*)?$/i.test(fileUrl)) {
-            mediaElement = document.createElement("audio");
-            mediaElement.src = fileUrl;
-            mediaElement.controls = true;
-        } else {
-            mediaElement = document.createElement("a");
-            mediaElement.href = fileUrl;
-            mediaElement.target = "_blank";
-            mediaElement.rel = "noopener noreferrer";
-            mediaElement.textContent = card.fileName || card.file_name || "Open lesson file";
-        }
+const cardType = (card.type || card.content_type || "").toLowerCase();
 
-        mediaElement.className = "lesson-viewer-media";
-        contentArea.appendChild(mediaElement);
+const fileUrl =
+    card.url ||
+    card.fileUrl ||
+    card.file_url ||
+    card.publicUrl ||
+    "";
+
+const textContent =
+    card.content ||
+    card.description ||
+    card.text ||
+    card.text_content ||
+    "";
+
+if (fileUrl) {
+    let mediaElement = null;
+
+    if (
+        cardType === "image" ||
+        /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(fileUrl)
+    ) {
+        mediaElement = document.createElement("img");
+        mediaElement.src = fileUrl;
+        mediaElement.alt = card.title || "Lesson image";
+    } else if (
+        cardType === "video" ||
+        /\.(mp4|webm|ogg)(\?.*)?$/i.test(fileUrl)
+    ) {
+        mediaElement = document.createElement("video");
+        mediaElement.src = fileUrl;
+        mediaElement.controls = true;
+        mediaElement.playsInline = true;
+    } else if (
+        cardType === "audio" ||
+        /\.(mp3|wav|m4a|aac|oga)(\?.*)?$/i.test(fileUrl)
+    ) {
+        mediaElement = document.createElement("audio");
+        mediaElement.src = fileUrl;
+        mediaElement.controls = true;
+        mediaElement.setAttribute("controlsList", "nodownload");
+    } else {
+        mediaElement = document.createElement("a");
+        mediaElement.href = fileUrl;
+        mediaElement.target = "_blank";
+        mediaElement.rel = "noopener noreferrer";
+        mediaElement.textContent =
+            card.original_filename ||
+            card.fileName ||
+            card.file_name ||
+            "Open lesson file";
     }
 
-    if (textContent) {
-        const text = document.createElement("div");
-        text.className = "lesson-viewer-text";
-        text.textContent = textContent;
-        contentArea.appendChild(text);
+    mediaElement.className = "lesson-viewer-media";
+    zoomArea.appendChild(mediaElement);
+}
+
+if (textContent) {
+    const text = document.createElement("div");
+    text.className = "lesson-viewer-text";
+    text.textContent = textContent;
+    zoomArea.appendChild(text);
+}
+
+if (!fileUrl && !textContent) {
+    const message = document.createElement("p");
+    message.textContent = "This card does not have any content yet.";
+    zoomArea.appendChild(message);
+}
+
+contentArea.appendChild(zoomArea);
+viewer.appendChild(contentArea);
+viewer.appendChild(closeButton);
+
+// Add the viewer to the page.
+document.body.appendChild(viewer);
+
+// Close ONLY when the close button is clicked.
+closeButton.addEventListener("click", () => {
+    viewer.remove();
+});
+
+// Do not close when clicking the background or card content.
+// No background-click closing handler is added.
+
+// Zoom applies only to the expanded card content.
+let zoomScale = 1;
+
+const MIN_CARD_ZOOM = 0.5;
+const MAX_CARD_ZOOM = 3;
+const CARD_ZOOM_STEP = 0.1;
+
+viewer.addEventListener("wheel", (event) => {
+    if (!event.ctrlKey) {
+        return;
     }
 
-    if (!fileUrl && !textContent) {
-        const message = document.createElement("p");
-        message.textContent = "This card does not have any content yet.";
-        contentArea.appendChild(message);
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (event.deltaY < 0) {
+        zoomScale += CARD_ZOOM_STEP;
+    } else {
+        zoomScale -= CARD_ZOOM_STEP;
     }
 
-    function closeViewer() {
-        viewer.remove();
-        document.removeEventListener("keydown", handleEscape);
-    }
+    zoomScale = Math.max(
+        MIN_CARD_ZOOM,
+        Math.min(MAX_CARD_ZOOM, zoomScale)
+    );
 
-    function handleEscape(event) {
-        if (event.key === "Escape") closeViewer();
-    }
+    zoomArea.style.transform = `scale(${zoomScale})`;
+}, { passive: false });
 
-    closeButton.addEventListener("click", closeViewer);
+// Escape does not close the card.
+// The top-right close button is the only closing control.
 
-    viewer.addEventListener("click", function (event) {
-        if (event.target === viewer) closeViewer();
-    });
-
-    document.addEventListener("keydown", handleEscape);
-
-    viewer.appendChild(closeButton);
-    viewer.appendChild(contentArea);
-    document.body.appendChild(viewer);
 }
 
 
-// Select a unit without loading its old scanned pages.
-function loadStudentUnit(unitNumber) {
-    activeStudentUnit = String(unitNumber);
-    activeStudentLesson = null;
-
-    const container = showLessonCardView();
-
-    container.replaceChildren();
-
-    const heading = document.createElement("div");
-    heading.className = "lesson-heading";
-
-    const title = document.createElement("h1");
-    title.textContent = `Unit ${unitNumber}`;
-
-    const subtitle = document.createElement("p");
-    subtitle.textContent =
-        "Choose a lesson from the Student Book menu.";
-
-    heading.append(title, subtitle);
-    container.appendChild(heading);
-
-    const message = document.createElement("div");
-    message.className = "lesson-empty-state";
-    message.textContent =
-        "Select Lesson 1, Lesson 2, Lesson 3, Lesson 4 or Lesson 5.";
-
-    container.appendChild(message);
-}
 
 // ==========================
 // ACTIVITY BOOK
