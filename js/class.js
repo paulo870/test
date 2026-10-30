@@ -713,7 +713,7 @@ function closeViewer() {
     contentArea.querySelectorAll("audio, video").forEach(media => {
         media.pause();
     });
-setDrawingTarget("slide");
+
     viewer.remove();
 }
 
@@ -787,30 +787,8 @@ document.addEventListener(
 viewer.append(closeButton, zoomArea);
 
 document.body.appendChild(viewer);
-// Activate drawing and text tools on the expanded lesson card.
-attachDrawingEvents(cardEditCanvas);
-cardEditCanvas.addEventListener("click", handleTextClick);
 
-
-// =========================================
-// ACTIVATE EXPANDED LESSON CARD EDITING
-// =========================================
-
-// Connect the editing tools to this canvas.
-attachDrawingEvents(cardEditCanvas);
-
-// Connect the text tool to this canvas.
-cardEditCanvas.addEventListener("click", handleTextClick);
-
-// Make the lesson card the active drawing surface.
-setDrawingTarget("lesson-card", cardEditCanvas);
-
-// Resize the canvas after the viewer has been displayed.
-requestAnimationFrame(() => {
-    resizeLessonCardCanvas();
-    updateCursor();
-});
-
+} // END OF openLessonCard()
 
 
 // ============================================================
@@ -1398,28 +1376,17 @@ const editCtx = editCanvas.getContext("2d");
 const whiteboardCanvas = document.getElementById("whiteboard-canvas");
 const whiteboardCtx = whiteboardCanvas.getContext("2d");
 
-// ================================================
-// ACTIVE DRAWING TARGET
-// Supports slide, whiteboard and expanded lesson card
-// ================================================
-
+// ACTIVE CANVAS
 let drawingCanvas = editCanvas;
 let drawingCtx = editCtx;
 
-function setDrawingTarget(type, targetCanvas = null) {
+// Switch drawing target
+function setDrawingTarget(type) {
 
     if (type === "whiteboard") {
-
         drawingCanvas = whiteboardCanvas;
         drawingCtx = whiteboardCtx;
-
-    } else if (type === "lesson-card" && targetCanvas) {
-
-        drawingCanvas = targetCanvas;
-        drawingCtx = targetCanvas.getContext("2d");
-
     } else {
-
         drawingCanvas = editCanvas;
         drawingCtx = editCtx;
     }
@@ -1549,44 +1516,37 @@ function updateToolUI() {
         tools[currentTool].classList.add("active-tool");
     }
 }
-// =========================================
+// ==========================
 // CLEAR CURRENT CANVAS
-// =========================================
+// ==========================
 
 clearTool.addEventListener("click", () => {
-    if (!drawingCanvas || !drawingCtx) {
-        return;
-    }
 
     const currentCanvasId = drawingCanvas.id;
 
-    // Remove only strokes belonging to the active canvas.
-    strokes = strokes.filter(
-        stroke => stroke.canvas !== currentCanvasId
-    );
-
-    // Clear the active drawing surface.
-    drawingCtx.clearRect(
-        0,
-        0,
-        drawingCanvas.width,
-        drawingCanvas.height
-    );
-
-    // Remove text boxes belonging to this canvas.
-    document.querySelectorAll(".slide-textbox").forEach(box => {
-        if (box.dataset.canvas === currentCanvasId) {
-            box.remove();
-        }
+    // Remove only strokes from current canvas
+    strokes = strokes.filter(stroke => {
+        return stroke.canvas !== currentCanvasId;
     });
 
-    // Close the text toolbar if its text box was removed.
-    if (
-        activeTextBox &&
-        activeTextBox.dataset.canvas === currentCanvasId
-    ) {
-        activeTextBox = null;
-        textToolbar.style.display = "none";
+    // Clear actual canvas
+    if (currentCanvasId === "whiteboard-canvas") {
+
+        whiteboardCtx.clearRect(
+            0,
+            0,
+            whiteboardCanvas.width,
+            whiteboardCanvas.height
+        );
+
+    } else {
+
+        editCtx.clearRect(
+            0,
+            0,
+            editCanvas.width,
+            editCanvas.height
+        );
     }
 
     redrawStrokes();
@@ -1621,7 +1581,6 @@ function updateCursor() {
         }
     }
 }
-
 // ==========================
 // DRAWING ENGINE
 // ==========================
@@ -1657,54 +1616,7 @@ function resizeWhiteboardCanvas() {
 
     redrawStrokes();
 }
-// =========================================
-// RESIZE THE EXPANDED LESSON CARD CANVAS
-// =========================================
 
-function resizeLessonCardCanvas() {
-    const canvas = document.getElementById("lesson-card-edit-canvas");
-
-    if (!canvas || !canvas.isConnected) {
-        return;
-    }
-
-    const contentArea = canvas.parentElement;
-
-    if (!contentArea) {
-        return;
-    }
-
-    const rect = contentArea.getBoundingClientRect();
-
-    canvas.width = Math.max(1, Math.round(rect.width));
-    canvas.height = Math.max(1, Math.round(rect.height));
-
-    redrawStrokes();
-}
-// ============================================================
-// RESIZE THE EXPANDED LESSON-CARD CANVAS
-// ============================================================
-
-function resizeLessonCardCanvas() {
-    const canvas = document.getElementById("lesson-card-edit-canvas");
-
-    if (!canvas || !canvas.isConnected) {
-        return;
-    }
-
-    const contentArea = canvas.parentElement;
-
-    if (!contentArea) {
-        return;
-    }
-
-    const rect = contentArea.getBoundingClientRect();
-
-    canvas.width = Math.max(1, Math.round(rect.width));
-    canvas.height = Math.max(1, Math.round(rect.height));
-
-    redrawStrokes();
-}
 window.addEventListener("resize", () => {
 
     resizeEditCanvas();
@@ -1805,60 +1717,22 @@ function stopDrawing() {
     drawing = false;
 }
 
-// ================================================
-// SHARED DRAWING EVENTS
-// Mouse, stylus and touchscreen support
-// ================================================
+// ==========================
+// EDIT CANVAS EVENTS
+// ==========================
 
-function attachDrawingEvents(canvas) {
+editCanvas.addEventListener("mousedown", (e) => {
+    startDrawing(e, editCanvas);
+});
 
-    if (canvas.dataset.drawingEventsAttached === "true") {
-        return;
-    }
+editCanvas.addEventListener("mousemove", (e) => {
+    moveDrawing(e, editCanvas);
+});
 
-    canvas.dataset.drawingEventsAttached = "true";
+editCanvas.addEventListener("mouseup", stopDrawing);
 
-    canvas.addEventListener("pointerdown", event => {
+editCanvas.addEventListener("mouseleave", stopDrawing);
 
-        if (!currentTool) return;
-
-        // Text insertion is handled by the text tool.
-        if (currentTool === "text") return;
-
-        event.preventDefault();
-
-        canvas.setPointerCapture(event.pointerId);
-
-        startDrawing(event, canvas);
-    });
-
-    canvas.addEventListener("pointermove", event => {
-
-        if (!drawing) return;
-
-        event.preventDefault();
-
-        moveDrawing(event, canvas);
-    });
-
-    canvas.addEventListener("pointerup", event => {
-
-        stopDrawing();
-
-        if (canvas.hasPointerCapture(event.pointerId)) {
-            canvas.releasePointerCapture(event.pointerId);
-        }
-    });
-
-    canvas.addEventListener("pointercancel", stopDrawing);
-    canvas.addEventListener("lostpointercapture", stopDrawing);
-}
-
-// Connect the existing drawing surfaces.
-attachDrawingEvents(editCanvas);
-attachDrawingEvents(whiteboardCanvas);
-
-// Connect the expanded lesson-card canvas when it is created.
 // ==========================
 // WHITEBOARD EVENTS
 // ==========================
@@ -1933,21 +1807,14 @@ function eraseAt(x, y, canvasId) {
     });
 }
 
-// ================================================
-// REDRAW ALL DRAWING SURFACES
-// ================================================
+// ==========================
+// REDRAW SYSTEM
+// ==========================
 
 function redrawStrokes() {
 
-    // Clear the original slide canvas.
-    editCtx.clearRect(
-        0,
-        0,
-        editCanvas.width,
-        editCanvas.height
-    );
+    editCtx.clearRect(0, 0, editCanvas.width, editCanvas.height);
 
-    // Clear the whiteboard.
     whiteboardCtx.clearRect(
         0,
         0,
@@ -1955,68 +1822,40 @@ function redrawStrokes() {
         whiteboardCanvas.height
     );
 
-    // Clear the expanded lesson card canvas, if open.
-    const lessonCanvas = document.getElementById(
-        "lesson-card-edit-canvas"
-    );
+    strokes.forEach(item => {
 
-    const lessonCtx = lessonCanvas
-        ? lessonCanvas.getContext("2d")
-        : null;
-
-    if (lessonCanvas && lessonCtx) {
-
-        lessonCtx.clearRect(
-            0,
-            0,
-            lessonCanvas.width,
-            lessonCanvas.height
-        );
-    }
-
-    // Redraw every stored stroke on its original surface.
-    strokes.forEach(stroke => {
-
-        let canvas;
         let ctx;
+        let canvas;
 
-        if (stroke.canvas === "whiteboard-canvas") {
+        if (item.canvas === "whiteboard-canvas") {
 
-            canvas = whiteboardCanvas;
             ctx = whiteboardCtx;
-
-        } else if (
-            stroke.canvas === "lesson-card-edit-canvas"
-        ) {
-
-            canvas = lessonCanvas;
-            ctx = lessonCtx;
+            canvas = whiteboardCanvas;
 
         } else {
 
-            canvas = editCanvas;
             ctx = editCtx;
+            canvas = editCanvas;
         }
 
-        if (!canvas || !ctx || !stroke.points.length) {
-            return;
-        }
-
-        ctx.strokeStyle = stroke.color;
-        ctx.lineWidth = stroke.size;
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = item.size;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
 
         ctx.beginPath();
 
-        stroke.points.forEach((point, index) => {
+        item.points.forEach((p, i) => {
 
-            const x = point.x * canvas.width;
-            const y = point.y * canvas.height;
+            const x = p.x * canvas.width;
+            const y = p.y * canvas.height;
 
-            if (index === 0) {
+            if (i === 0) {
+
                 ctx.moveTo(x, y);
+
             } else {
+
                 ctx.lineTo(x, y);
             }
         });
@@ -2024,6 +1863,7 @@ function redrawStrokes() {
         ctx.stroke();
     });
 }
+
 // ==========================
 // TEXT TOOL (FIXED VERSION)
 // ==========================
@@ -2031,20 +1871,13 @@ function redrawStrokes() {
 let activeTextBox = null;
 
 // click handler
-// Text insertion on the original slide and whiteboard.
 editCanvas.addEventListener("click", handleTextClick);
 whiteboardCanvas.addEventListener("click", handleTextClick);
-
-// Lesson-card text insertion is connected when its canvas is created.
 
 function handleTextClick(e) {
     if (currentTool !== "text") return;
 
-    const canvas = e.currentTarget;
-
-    if (canvas !== drawingCanvas) return;
-
-    if (canvas !== drawingCanvas) return;
+    const canvas = drawingCanvas;
     const rect = canvas.getBoundingClientRect();
 
     // FIX: correct absolute positioning (no shift left anymore)
@@ -2227,38 +2060,37 @@ window.addEventListener("load", () => {
 
 });
 
-
-// =========================================
-// UPDATE THE ACTIVE DRAWING TOOL
-// =========================================
+// ==========================
+// CURSOR SYSTEM
+// ==========================
 
 function updateCursor() {
+
     if (!drawingCanvas) return;
 
-    // Allow pointer events only when a tool is selected.
-    drawingCanvas.style.pointerEvents =
-        currentTool ? "auto" : "none";
-
-    // Prevent touch gestures from interfering with drawing
-    // on the expanded lesson-card canvas.
-    if (drawingCanvas.id === "lesson-card-edit-canvas") {
-        drawingCanvas.style.touchAction = "none";
-    }
-
-    // Restore the normal cursor when no tool is selected.
+    // NO TOOL SELECTED
     if (!currentTool) {
         drawingCanvas.style.cursor = "default";
         return;
     }
 
-    // Set a cursor appropriate for the selected tool.
+    // ERASER
     if (currentTool === "eraser") {
         drawingCanvas.style.cursor = "crosshair";
-    } else if (currentTool === "text") {
+    }
+
+    // TEXT TOOL
+    else if (currentTool === "text") {
         drawingCanvas.style.cursor = "text";
-    } else if (currentTool === "marker") {
+    }
+
+    // MARKER / HIGHLIGHT
+    else if (currentTool === "marker") {
         drawingCanvas.style.cursor = "cell";
-    } else {
-        drawingCanvas.style.cursor = "crosshair";
+    }
+
+    // DEFAULT FOR ALL OTHER TOOLS
+    else {
+        drawingCanvas.style.cursor = "pointer";
     }
 }
