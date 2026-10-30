@@ -92,15 +92,14 @@
             }
 
             try {
-                // Preserve the existing Edge Function authentication flow.
-                const { data, error } = await client.functions.invoke("poliglota-auth", {
-                    {
+                // Login uses poliglota-auth.
+                const { data, error } =
+                    await client.functions.invoke("poliglota-auth", {
                         body: {
                             username,
                             password
                         }
-                    }
-                );
+                    });
 
                 if (error) {
                     throw error;
@@ -140,10 +139,8 @@
                     throw sessionError;
                 }
 
-                // Preserve the existing current-user convention.
                 window.poliglotaCurrentUser = data.user;
 
-                // Navigate to the correct protected page.
                 redirectByRole(data.user);
 
             } catch (error) {
@@ -164,7 +161,7 @@
     }
 
     // --------------------------------------------------------
-    // If an existing authenticated session is found, redirect.
+    // Check existing authenticated session
     // --------------------------------------------------------
 
     async function checkExistingSession() {
@@ -181,11 +178,6 @@
             if (!session?.user) {
                 return;
             }
-
-            /*
-             * Do not guess the role from session.user.
-             * Retrieve the authoritative role from profiles.
-             */
 
             const { data: profile, error: profileError } =
                 await client
