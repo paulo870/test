@@ -1017,14 +1017,37 @@
                 "success"
             );
 
-        } catch (error) {
+             } catch (error) {
+            console.error("Could not create account:", error);
+
+            let detailedMessage = getErrorMessage(error);
+
+            // Read the actual response returned by the Edge Function.
+            if (error?.context) {
+                try {
+                    const response = error.context.clone();
+                    const responseData = await response.json();
+
+                    detailedMessage =
+                        responseData.error ||
+                        responseData.message ||
+                        detailedMessage;
+
+                } catch (responseError) {
+                    console.warn(
+                        "Could not read Edge Function response:",
+                        responseError
+                    );
+                }
+            }
+
             console.error(
-                "Could not add card:",
-                error
+                "Account creation details:",
+                detailedMessage
             );
 
             setNotice(
-                `Could not add card: ${getErrorMessage(error)}`,
+                `Could not create account: ${detailedMessage}`,
                 "error"
             );
         } finally {
