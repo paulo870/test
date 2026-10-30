@@ -2960,7 +2960,7 @@ select:focus-visible {
 
     position: absolute;
 
-    left: calc(100% + 20px);
+left: calc(100% - 1px);
 
     /* Default position */
     top: 0;
@@ -3009,15 +3009,6 @@ select:focus-visible {
 .unit-item:nth-child(11) .lesson-dropdown,
 .unit-item:nth-child(12) .lesson-dropdown {
     top: -150px;
-}
-
-
-/* =========================================
-   SHOW LESSON MENU
-   ========================================= */
-
-.unit-item:hover > .lesson-dropdown {
-    display: flex;
 }
 
 
@@ -3122,7 +3113,9 @@ select:focus-visible {
 #students-book-dropdown {
     overflow: visible;
 }
-
+#students-book-dropdown .dropdown-content {
+    overflow: visible !important;
+}
 
 /* Also make sure the Unit items themselves
    don't clip their lesson menu */
@@ -3352,104 +3345,104 @@ text-align: center;
 
 }
 
-/* Zoomable area inside the expanded card. */
-.lesson-viewer-zoom-area {
-width: 100%;
+/* =========================================
+   LESSON VIEWER — FINAL POSITIONING
+   ========================================= */
 
-transform: scale(1);
-transform-origin: center center;
-
-transition: transform 0.08s ease-out;
-
-
-}
-
-.lesson-viewer-content h2 {
-margin: 0 0 24px;
-
-
-color: #48e082;
-
-
-}
-
-/* Images, videos and audio. */
-.lesson-viewer-media {
-display: block;
-
-
-max-width: 100%;
-max-height: 70vh;
-
-margin: 0 auto 20px;
-
-object-fit: contain;
-
-}
-
-/* Text content. */
-/* Text content */
-.lesson-viewer-text {
-max-width: 900px;
-margin: 20px auto;
-color: #fff;
-font-size: 1.1rem;
-line-height: 1.7;
-white-space: pre-wrap;
-overflow-wrap: anywhere;
-}
-
-/* Smaller screens */
-@media (max-width: 600px) {
 #lesson-card-viewer {
-padding: 70px 14px 20px;
-}
+    position: fixed;
+    inset: 0 0 0 var(--control-bar-width, 90px);
 
-```
-.lesson-viewer-close {
-    top: 12px;
-    right: 12px;
-}
+    display: none;
+    align-items: center;
+    justify-content: center;
 
-.lesson-viewer-content h2 {
-    font-size: 1.3rem;
-}
+    box-sizing: border-box;
+    padding: 60px 24px 24px;
 
-.lesson-viewer-media {
-    max-height: 60vh;
-}
-```
+    overflow: auto;
 
-}
+    background: rgba(10, 20, 24, 0.97);
 
-
-
-}
-
-/* Smaller screens. */
-@media (max-width: 600px) {
-#lesson-card-viewer {
-left: var(--control-bar-width, 56px);
-
-
-    padding: 70px 14px 20px;
+    z-index: 10000;
 }
 
 .lesson-viewer-close {
-    top: 12px;
-    right: 12px;
+    position: fixed;
+    top: 16px;
+    right: 22px;
+
+    width: 44px;
+    height: 44px;
+
+    border: none;
+    border-radius: 50%;
+
+    background: #48e082;
+    color: #10231a;
+
+    font-size: 32px;
+    line-height: 1;
+
+    cursor: pointer;
+
+    z-index: 15000;
 }
 
-.lesson-viewer-content h2 {
-    font-size: 1.3rem;
+/* Keep the control bar accessible. */
+.control-bar {
+    z-index: 11000 !important;
 }
 
-.lesson-viewer-media {
-    max-height: 60vh;
+/* Keep editing tools accessible. */
+#edit-tray {
+    z-index: 12000 !important;
 }
 
+#whiteboard {
+    z-index: 13000 !important;
 }
 
+#pencil-size-menu {
+    z-index: 14000 !important;
+}
+
+/* Match the actual control bar width. */
+@media (min-width: 1400px) {
+    #lesson-card-viewer {
+        left: 94px;
+    }
+}
+
+@media (max-width: 1100px) {
+    #lesson-card-viewer {
+        left: 78px;
+    }
+}
+
+@media (max-width: 850px) {
+    #lesson-card-viewer {
+        left: 70px;
+    }
+}
+
+@media (max-width: 600px) {
+    #lesson-card-viewer {
+        left: 62px;
+        padding: 70px 14px 20px;
+    }
+
+    .lesson-viewer-close {
+        top: 12px;
+        right: 12px;
+    }
+}
+
+@media (max-width: 420px) {
+    #lesson-card-viewer {
+        left: 56px;
+    }
+}
 /* =========================================
    LESSON VIEWER: LAYERING AND SIDEBAR ACCESS
    ========================================= */
