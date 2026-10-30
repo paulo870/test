@@ -93,8 +93,7 @@
 
             try {
                 // Preserve the existing Edge Function authentication flow.
-                const { data, error } = await client.functions.invoke(
-                    "hyper-handler",
+                const { data, error } = await client.functions.invoke("poliglota-auth", {
                     {
                         body: {
                             username,
@@ -191,7 +190,7 @@
             const { data: profile, error: profileError } =
                 await client
                     .from("profiles")
-                    .select("id, role, is_active")
+                    .select("id, role, active")
                     .eq("id", session.user.id)
                     .maybeSingle();
 
@@ -209,7 +208,7 @@
                 return;
             }
 
-            if (profile.is_active === false) {
+            if (profile.active === false) {
                 await client.auth.signOut();
 
                 showError(
