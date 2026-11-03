@@ -341,17 +341,27 @@
         updateContentControls();
     }
 
-    function updateContentControls() {
-        const contentButton = $("#add-content-btn");
+ function updateContentControls() {
+    const contentButton = $("#add-content-btn");
+    const extraContentButton = $("#add-extra-content-btn");
 
-        if (!contentButton) return;
+    const disabled =
+        !canManageContent() ||
+        !state.currentLesson ||
+        !state.currentCard;
 
+    if (contentButton) {
         contentButton.disabled =
-            !canManageContent() ||
-            !state.currentLesson ||
-            !state.currentCard ||
+            disabled ||
             contentButton.getAttribute("aria-busy") === "true";
     }
+
+    if (extraContentButton) {
+        extraContentButton.disabled =
+            disabled ||
+            extraContentButton.getAttribute("aria-busy") === "true";
+    }
+}
 
     // =========================================================
     // NAVIGATION
