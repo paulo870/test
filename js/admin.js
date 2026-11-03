@@ -1401,69 +1401,45 @@ async function deleteCard(cardId) {
     // CONTENT TYPE CONTROLS
     // =========================================================
 
-    function initializeContentTypeControls() {
-        const typeSelect = $("#content-type");
+   function initializeContentTypeControls() {
+    const typeSelect = $("#content-type");
+    const gameSelect = $("#game-select");
 
-        if (!typeSelect) return;
+    if (!typeSelect) return;
 
-        typeSelect.addEventListener(
-            "change",
-            updateContentTypeFields
-        );
-
-        updateContentTypeFields();
-        const extraTypeSelect = $("#extra-content-type");
-
-if (extraTypeSelect) {
-    extraTypeSelect.addEventListener(
+    typeSelect.addEventListener(
         "change",
-        updateExtraContentTypeFields
+        updateContentTypeFields
     );
 
-    updateExtraContentTypeFields();
+    if (gameSelect) {
+        gameSelect.addEventListener("change", updateContentTypeFields);
+    }
+
+    updateContentTypeFields();
 }
-    }
 
-    function updateContentTypeFields() {
-        const type = $("#content-type")?.value || "text";
-        const fileInput = $("#content-file");
-        const textInput = $("#text-content");
-        const fileLabel = $("#file-label");
+   function updateContentTypeFields() {
+    const type = $("#content-type")?.value || "text";
+    const fileInput = $("#content-file");
+    const textInput = $("#text-content");
+    const fileLabel = $("#file-label");
+    const gameLabel = $("#game-select-label");
 
-        const textLabel = textInput?.closest("label");
+    const textLabel = textInput?.closest("label");
 
-        if (fileLabel) {
-            fileLabel.hidden = type === "text";
-        }
-
-        if (textLabel) {
-            textLabel.hidden = false;
-        }
-
-        if (fileInput) {
-            fileInput.value = "";
-
-            const acceptByType = {
-                image: "image/*",
-                audio: "audio/*",
-                video: "video/*",
-                file: ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.html",
-                game: ".html,.zip"
-            };
-
-            fileInput.accept =
-                acceptByType[type] ||
-                "image/*,audio/*,video/*,.pdf,.html,.zip";
-        }
-    }
-function updateExtraContentTypeFields() {
-    const type = $("#extra-content-type")?.value || "text";
-
-    const fileInput = $("#extra-content-file");
-    const fileLabel = $("#extra-file-label");
+    const isGame = type === "game";
 
     if (fileLabel) {
-        fileLabel.hidden = type === "text";
+        fileLabel.hidden = type === "text" || isGame;
+    }
+
+    if (gameLabel) {
+        gameLabel.hidden = !isGame;
+    }
+
+    if (textLabel) {
+        textLabel.hidden = false;
     }
 
     if (fileInput) {
@@ -1473,8 +1449,7 @@ function updateExtraContentTypeFields() {
             image: "image/*",
             audio: "audio/*",
             video: "video/*",
-            file: ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.html",
-            game: ".html,.zip"
+            file: ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.html"
         };
 
         fileInput.accept =
@@ -1582,6 +1557,7 @@ function updateExtraContentTypeFields() {
         const requestedType = $("#content-type")?.value || "text";
         const text = $("#text-content")?.value.trim() || "";
         const file = $("#content-file")?.files?.[0] || null;
+        const selectedGame = $("#game-select")?.value || "";
         const button = $("#add-content-btn");
 
         if (!title) {
@@ -1602,38 +1578,36 @@ function updateExtraContentTypeFields() {
             return;
         }
 
-        if (requestedType !== "text" && !file) {
-            setNotice(
-                "Choose a file to upload for this content type.",
-                "error"
-            );
+      if (requestedType === "game" && !selectedGame) {
+    setNotice("Please select a game.", "error");
+    return;
+}
 
-            return;
-        }
+if (requestedType !== "text" && requestedType !== "game" && !file) {
+    setNotice(
+        "Choose a file to upload for this content type.",
+        "error"
+    );
+
+    return;
+}
 
         let uploadedFile = null;
+if (requestedType === "game") {
+    const validGames = ["stop", "round", "grad", "box"];
 
+    if (!validGames.includes(selectedGame)) {
+        setNotice("Invalid game selection.", "error");
+        return;
+    }
+}
         try {
             setButtonBusy(button, true, "Saving content...");
 
             let actualType = requestedType;
 
-            if (file) {
                 const detectedType = getActualFileType(file);
-                const name = String(file.name || "").toLowerCase();
 
-                if (requestedType === "game") {
-                    if (
-                        !name.endsWith(".html") &&
-                        !name.endsWith(".zip")
-                    ) {
-                        throw new Error(
-                            "Game resources must be an .html or .zip file."
-                        );
-                    }
-
-                    actualType = "game";
-                } else if (requestedType === "file") {
                     actualType = "file";
                 } else if (detectedType !== requestedType) {
                     throw new Error(
@@ -1646,19 +1620,21 @@ function updateExtraContentTypeFields() {
                 uploadedFile = await uploadContentFile(file);
             }
 
-           const contentData = {
-  card_id: state.currentCard.id,
-  title: title || "",
-  content_type: actualType,
-  text_content: text || null,
-  storage_path: uploadedFile?.path || null,
-  original_filename: uploadedFile?.original_filename
-    || uploadedFile?.file_name
-    || uploadedFile?.name
-    || null,
-  file_size: uploadedFile?.file_size ?? null,
-  mime_type: uploadedFile?.mime_type || null,
-  created_by: state.user.id
+          const contentData = {
+    card_id: state.currentCard.id,
+    title: title || "",
+    content_type: actualType,
+    text_content: requestedType === "game"
+        ? selectedGame
+        : (text || null),
+    storage_path: uploadedFile?.path || null,
+    original_filename: uploadedFile?.original_filename
+        || uploadedFile?.file_name
+        || uploadedFile?.name
+        || null,
+    file_size: uploadedFile?.file_size ?? null,
+    mime_type: uploadedFile?.mime_type || null,
+    created_by: state.user.id
 };
 
             const {
@@ -1682,6 +1658,9 @@ function updateExtraContentTypeFields() {
             if ($("#content-file")) {
                 $("#content-file").value = "";
             }
+    if ($("#game-select")) {
+    $("#game-select").value = "";
+}
 
             await loadCardContent();
 
