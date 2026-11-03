@@ -17,7 +17,7 @@
     const $$ = (selector, root = document) =>
         Array.from(root.querySelectorAll(selector));
 
- const state = {
+  const state = {
     user: null,
     profile: null,
     role: null,
@@ -341,20 +341,26 @@
         updateContentControls();
     }
 
-function updateContentControls() {
+ function updateContentControls() {
+    const contentButton = $("#add-content-btn");
+    const extraContentButton = $("#add-extra-content-btn");
+
     const disabled =
         !canManageContent() ||
         !state.currentLesson ||
         !state.currentCard;
 
-    ["#add-content-btn", "#add-extra-content-btn"].forEach(selector => {
-        const button = $(selector);
-        if (!button) return;
-
-        button.disabled =
+    if (contentButton) {
+        contentButton.disabled =
             disabled ||
-            button.getAttribute("aria-busy") === "true";
-    });
+            contentButton.getAttribute("aria-busy") === "true";
+    }
+
+    if (extraContentButton) {
+        extraContentButton.disabled =
+            disabled ||
+            extraContentButton.getAttribute("aria-busy") === "true";
+    }
 }
 
     // =========================================================
@@ -1235,36 +1241,38 @@ $$("[data-delete-card-id]", container).forEach(button => {
         }
     }
 
-   async function selectCard(cardId) {
-    const card = state.cards.find(item =>
-        String(item.id) === String(cardId)
-    );
+    async function selectCard(cardId) {
+        const card = state.cards.find(item =>
+            String(item.id) === String(cardId)
+        );
 
-    if (!card) {
-        setNotice("The selected card could not be found.", "error");
-        return;
+        if (!card) {
+            setNotice(
+                "The selected card could not be found.",
+                "error"
+            );
+
+            return;
+        }
+
+        state.currentCard = card;
+        state.content = [];
+
+        const selectedLabel = $("#selected-card-label");
+
+        if (selectedLabel) {
+            selectedLabel.textContent =
+                `Unit ${state.currentLesson.unit_number} · ` +
+                `Lesson ${state.currentLesson.lesson_number} · ` +
+                `Card ${card.card_number}: ${card.title || "Untitled"}`;
+        }
+
+        renderCards();
+        renderContent();
+        updateContentControls();
+
+        await loadCardContent();
     }
-
-    state.currentCard = card;
-    state.content = [];
-    state.extraContent = [];
-
-    const selectedLabel = $("#selected-card-label");
-
-    if (selectedLabel) {
-        selectedLabel.textContent =
-            `Unit ${state.currentLesson.unit_number} · ` +
-            `Lesson ${state.currentLesson.lesson_number} · ` +
-            `Card ${card.card_number}: ${card.title || "Untitled"}`;
-    }
-
-    renderCards();
-    renderContent();
-    renderExtraContent();
-    updateContentControls();
-
-    await loadCardContent();
-}
 async function deleteCard(cardId) {
     if (!isAdmin()) {
         setNotice(
@@ -1414,42 +1422,8 @@ if (extraTypeSelect) {
 
     updateExtraContentTypeFields();
 }
-        const extraTypeSelect = $("#extra-content-type");
-
-if (extraTypeSelect) {
-    extraTypeSelect.addEventListener(
-        "change",
-        updateExtraContentTypeFields
-    );
-
-    updateExtraContentTypeFields();
-}
-    }
-function updateExtraContentTypeFields() {
-    const type = $("#extra-content-type")?.value || "text";
-    const fileInput = $("#extra-content-file");
-    const fileLabel = $("#extra-file-label");
-
-    if (fileLabel) {
-        fileLabel.hidden = type === "text";
     }
 
-    if (fileInput) {
-        fileInput.value = "";
-
-        const acceptByType = {
-            image: "image/*",
-            audio: "audio/*",
-            video: "video/*",
-            file: ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.html",
-            game: ".html,.zip"
-        };
-
-        fileInput.accept =
-            acceptByType[type] ||
-            "image/*,audio/*,video/*,.pdf,.html,.zip";
-    }
-}
     function updateContentTypeFields() {
         const type = $("#content-type")?.value || "text";
         const fileInput = $("#content-file");
@@ -1738,359 +1712,100 @@ function updateExtraContentTypeFields() {
             updateContentControls();
         }
     }
-async function addExtraContent() {
-    if (!canManageContent()) {
-        setNotice(
-            "You do not have permission to add extra content.",
-            "error"
-        );
-        return;
-    }
 
-    if (!state.currentLesson || !state.currentCard) {
-        setNotice(
-            "Select a lesson and a card first.",
-            "error"
-        );
-        return;
-    }
-
-    const title = $("#extra-content-title")?.value.trim() || "";
-    const requestedType =
-        $("#extra-content-type")?.value || "text";
-    const text =
-        $("#extra-text-content")?.value.trim() || "";
-    const file =
-        $("#extra-content-file")?.files?.[0] || null;
-
-    const button = $("#add-extra-content-btn");
-
-    if (!title) {
-        setNotice(
-            "Please enter an extra content title.",
-            "error"
-        );
-        return;
-    }
-
-    if (requestedType === "text" && !text) {
-        setNotice(
-            "Enter the homework text or instructions.",
-            "error"
-        );
-        return;
-    }
-
-    if (requestedType !== "text" && !file) {
-        setNotice(
-            "Choose a file to upload for this content type.",
-            "error"
-        );
-        return;
-    }
-
-    let uploadedFile = null;
-
-    try {
-        setButtonBusy(button, true, "Saving extra content...");
-
-        let actualType = requestedType;
-
-        if (file) {
-            const detectedType = getActualFileType(file);
-            const name = String(file.name || "").toLowerCase();
-
-            if (requestedType === "game") {
-                if (
-                    !name.endsWith(".html") &&
-                    !name.endsWith(".zip")
-                ) {
-                    throw new Error(
-                        "Game resources must be an .html or .zip file."
-                    );
-                }
-
-                actualType = "game";
-
-            } else if (requestedType === "file") {
-                actualType = "file";
-
-            } else if (detectedType !== requestedType) {
-                throw new Error(
-                    `The selected file does not appear to be ${requestedType}. Please choose a matching file.`
-                );
-            }
-        }
-
-        if (file) {
-            uploadedFile = await uploadContentFile(file);
-        }
-
-        const contentData = {
-            card_id: state.currentCard.id,
-            title,
-            content_type: actualType,
-            content_category: "extra",
-            text_content: text || null,
-            storage_path: uploadedFile?.path || null,
-            original_filename:
-                uploadedFile?.original_filename ||
-                uploadedFile?.file_name ||
-                uploadedFile?.name ||
-                null,
-            file_size: uploadedFile?.file_size ?? null,
-            mime_type: uploadedFile?.mime_type || null,
-            created_by: state.user.id
-        };
-
-        const { error } = await client
-            .from("lesson_content")
-            .insert(contentData);
-
-        if (error) {
-            throw error;
-        }
-
-        $("#extra-content-title").value = "";
-        $("#extra-text-content").value = "";
-        $("#extra-content-file").value = "";
-
-        await loadCardContent();
-
-        setNotice(
-            "Extra content added successfully.",
-            "success"
-        );
-
-    } catch (error) {
-        console.error(
-            "Could not add extra content:",
-            error
-        );
-
-        setNotice(
-            `Could not add extra content: ${getErrorMessage(error)}`,
-            "error"
-        );
-
-        if (uploadedFile?.path) {
-            console.warn(
-                "The file may have uploaded successfully, but its database record was not saved. Storage path:",
-                uploadedFile.path
-            );
-        }
-
-    } finally {
-        setButtonBusy(button, false);
-        updateContentControls();
-    }
-}
-    async function addExtraContent() {
-    if (
-        !canManageContent() ||
-        !state.currentLesson ||
-        !state.currentCard
-    ) {
-        setNotice(
-            "Select a lesson and card, and make sure you have permission.",
-            "error"
-        );
-        return;
-    }
-
-    const title =
-        $("#extra-content-title")?.value.trim() || "";
-
-    const requestedType =
-        $("#extra-content-type")?.value || "text";
-
-    const text =
-        $("#extra-text-content")?.value.trim() || "";
-
-    const file =
-        $("#extra-content-file")?.files?.[0] || null;
-
-    const button = $("#add-extra-content-btn");
-
-    if (!title) {
-        setNotice("Please enter an extra content title.", "error");
-        return;
-    }
-
-    if (requestedType === "text" && !text) {
-        setNotice("Enter the homework text or instructions.", "error");
-        return;
-    }
-
-    if (requestedType !== "text" && !file) {
-        setNotice("Choose a file to upload for this content type.", "error");
-        return;
-    }
-
-    let uploadedFile = null;
-
-    try {
-        setButtonBusy(button, true, "Saving extra content...");
-
-        let actualType = requestedType;
-
-        if (file) {
-            const detectedType = getActualFileType(file);
-            const name = String(file.name || "").toLowerCase();
-
-            if (requestedType === "game") {
-                if (!name.endsWith(".html") && !name.endsWith(".zip")) {
-                    throw new Error(
-                        "Game resources must be an .html or .zip file."
-                    );
-                }
-            } else if (
-                requestedType !== "file" &&
-                detectedType !== requestedType
-            ) {
-                throw new Error(
-                    `The selected file does not appear to be ${requestedType}.`
-                );
-            }
-
-            if (requestedType === "file") {
-                actualType = "file";
-            }
-
-            uploadedFile = await uploadContentFile(file);
-        }
-
-        const { error } = await client
-            .from("lesson_content")
-            .insert({
-                card_id: state.currentCard.id,
-                title,
-                content_type: actualType,
-                content_category: "extra",
-                text_content: text || null,
-                storage_path: uploadedFile?.path || null,
-                original_filename:
-                    uploadedFile?.original_filename ||
-                    uploadedFile?.file_name ||
-                    uploadedFile?.name ||
-                    null,
-                file_size: uploadedFile?.file_size ?? null,
-                mime_type: uploadedFile?.mime_type || null,
-                created_by: state.user.id
-            });
-
-        if (error) throw error;
-
-        $("#extra-content-title").value = "";
-        $("#extra-text-content").value = "";
-        $("#extra-content-file").value = "";
-
-        await loadCardContent();
-
-        setNotice("Extra content added successfully.", "success");
-
-    } catch (error) {
-        console.error("Could not add extra content:", error);
-
-        setNotice(
-            `Could not add extra content: ${getErrorMessage(error)}`,
-            "error"
-        );
-
-    } finally {
-        setButtonBusy(button, false);
-        updateContentControls();
-    }
-}
     // =========================================================
     // LOAD AND DISPLAY CARD CONTENT
     // =========================================================
 
-   async function loadCardContent() {
-    if (!state.currentCard) {
-        state.content = [];
-        state.extraContent = [];
+    async function loadCardContent() {
+        if (!state.currentCard) {
+            state.content = [];
+            renderContent();
+            updateContentControls();
+            return;
+        }
 
-        renderContent();
-        renderExtraContent();
-        updateContentControls();
+        const container = $("#content-list");
 
-        return;
+        try {
+            showLoading(
+                container,
+                "Loading card content..."
+            );
+
+            const {
+                data,
+                error
+            } = await client
+                .from("lesson_content")
+                .select("*")
+                .eq("card_id", state.currentCard.id)
+                .order("created_at", { ascending: true });
+
+            if (error) {
+                throw error;
+            }
+
+            state.content = await Promise.all(
+                (data || []).map(async item => {
+                    if (!item.storage_path) {
+                        return item;
+                    }
+
+                    try {
+                        const {
+                            data: signedData,
+                            error: signedError
+                        } = await client.storage
+                            .from(STORAGE_BUCKET)
+                            .createSignedUrl(
+                                item.storage_path,
+                                3600
+                            );
+
+                        if (signedError) {
+                            throw signedError;
+                        }
+
+                        return {
+                            ...item,
+                            signed_url: signedData?.signedUrl || null
+                        };
+
+                    } catch (signedError) {
+                        console.warn(
+                            "Could not create a temporary media link:",
+                            signedError
+                        );
+
+                        return {
+                            ...item,
+                            signed_url: null
+                        };
+                    }
+                })
+            );
+
+            renderContent();
+
+        } catch (error) {
+            console.error(
+                "Could not load card content:",
+                error
+            );
+
+            showEmpty(
+                container,
+                "Unable to load content for this card."
+            );
+
+            setNotice(
+                `Could not load card content: ${getErrorMessage(error)}`,
+                "error"
+            );
+        }
     }
 
-    const container = $("#content-list");
-
-    try {
-        showLoading(container, "Loading card content...");
-
-        const { data, error } = await client
-            .from("lesson_content")
-            .select("*")
-            .eq("card_id", state.currentCard.id)
-            .order("created_at", { ascending: true });
-
-        if (error) throw error;
-
-        const signedItems = await Promise.all(
-            (data || []).map(async item => {
-                if (!item.storage_path) {
-                    return item;
-                }
-
-                try {
-                    const {
-                        data: signedData,
-                        error: signedError
-                    } = await client.storage
-                        .from(STORAGE_BUCKET)
-                        .createSignedUrl(item.storage_path, 3600);
-
-                    if (signedError) throw signedError;
-
-                    return {
-                        ...item,
-                        signed_url: signedData?.signedUrl || null
-                    };
-
-                } catch (signedError) {
-                    console.warn(
-                        "Could not create a temporary media link:",
-                        signedError
-                    );
-
-                    return {
-                        ...item,
-                        signed_url: null
-                    };
-                }
-            })
-        );
-
-        state.content = signedItems.filter(
-            item => item.content_category !== "extra"
-        );
-
-        state.extraContent = signedItems.filter(
-            item => item.content_category === "extra"
-        );
-
-        renderContent();
-        renderExtraContent();
-
-    } catch (error) {
-        console.error("Could not load card content:", error);
-
-        showEmpty(
-            container,
-            "Unable to load content for this card."
-        );
-
-        setNotice(
-            `Could not load card content: ${getErrorMessage(error)}`,
-            "error"
-        );
-    }
-}
     function renderContent() {
         const container = $("#content-list");
         const countLabel = $("#content-count");
@@ -2267,233 +1982,7 @@ async function addExtraContent() {
             `;
         }).join("");
     }
-    function renderExtraContent() {
-    const container = $("#extra-content-list");
-    const countLabel = $("#extra-content-count");
 
-    if (!container) return;
-
-    const items = state.extraContent || [];
-
-    if (countLabel) {
-        countLabel.textContent =
-            `${items.length} ${items.length === 1 ? "item" : "items"}`;
-    }
-
-    if (!state.currentCard) {
-        showEmpty(container, "Select a card to view its extra content.");
-        return;
-    }
-
-    if (!items.length) {
-        showEmpty(
-            container,
-            "No extra content has been added to this card yet."
-        );
-        return;
-    }
-
-    const labels = {
-        text: "Text / Instructions",
-        image: "Image",
-        audio: "Audio",
-        video: "Video",
-        file: "File",
-        game: "Game / Interactive Resource"
-    };
-
-    container.innerHTML = items.map(item => {
-        const type = String(
-            item.content_type || "text"
-        ).toLowerCase();
-
-        const title = escapeHTML(
-            item.title || "Untitled extra content"
-        );
-
-        const url = item.signed_url
-            ? escapeHTML(item.signed_url)
-            : "";
-
-        const filename = escapeHTML(
-            item.original_filename || item.file_name || ""
-        );
-
-        let preview = "";
-
-        if (url && type === "image") {
-            preview = `
-                <img
-                    class="content-preview content-preview-image"
-                    src="${url}"
-                    alt="${title}"
-                    loading="lazy"
-                >
-            `;
-        } else if (url && type === "audio") {
-            preview = `
-                <audio
-                    class="content-preview"
-                    controls
-                    preload="none"
-                    src="${url}"
-                ></audio>
-            `;
-        } else if (url && type === "video") {
-            preview = `
-                <video
-                    class="content-preview content-preview-video"
-                    controls
-                    preload="metadata"
-                    src="${url}"
-                ></video>
-            `;
-        }
-
-        const link =
-            url && !["image", "audio", "video"].includes(type)
-                ? `<p><a class="content-open-link" href="${url}" target="_blank" rel="noopener noreferrer">Open / download resource</a></p>`
-                : "";
-
-        const warning =
-            item.storage_path && !url
-                ? `<p class="content-item-note">The attached file is currently unavailable.</p>`
-                : "";
-
-        return `
-            <article class="content-item">
-                <div class="content-item-header">
-                    <div>
-                        <h4>${title}</h4>
-                        <span class="content-type-badge content-type-${escapeHTML(type)}">
-                            ${escapeHTML(labels[type] || type)}
-                        </span>
-                    </div>
-                </div>
-
-                ${
-                    item.text_content
-                        ? `<p class="content-item-text">${escapeHTML(item.text_content)}</p>`
-                        : ""
-                }
-
-                ${preview}
-
-                ${
-                    filename
-                        ? `<p class="content-file-name">📎 ${filename}</p>`
-                        : ""
-                }
-
-                ${link}
-                ${warning}
-
-                ${
-                    item.file_size != null
-                        ? `<p class="content-file-size">${escapeHTML(formatBytes(item.file_size))}</p>`
-                        : ""
-                }
-            </article>
-        `;
-    }).join("");
-}
-function renderExtraContent() {
-    const container = $("#extra-content-list");
-    const countBadge = $("#extra-content-count");
-
-    if (!container) return;
-
-    const items = state.extraContent || [];
-
-    if (countBadge) {
-        countBadge.textContent =
-            `${items.length} ${items.length === 1 ? "item" : "items"}`;
-    }
-
-    container.innerHTML = "";
-
-    if (!state.currentCard) {
-        container.innerHTML = `
-            <p class="empty-state">
-                Select a card to view its extra content.
-            </p>
-        `;
-        return;
-    }
-
-    if (items.length === 0) {
-        container.innerHTML = `
-            <p class="empty-state">
-                No extra content has been added to this card yet.
-            </p>
-        `;
-        return;
-    }
-
-    items.forEach(item => {
-        const entry = document.createElement("div");
-        entry.className = "content-item";
-
-        const heading = document.createElement("h4");
-        heading.textContent = item.title || "Untitled extra content";
-        entry.appendChild(heading);
-
-        const type = document.createElement("p");
-        type.className = "muted";
-        type.textContent =
-            `Type: ${item.content_type || "Other"}`;
-        entry.appendChild(type);
-
-        if (item.text_content) {
-            const text = document.createElement("p");
-            text.textContent = item.text_content;
-            entry.appendChild(text);
-        }
-
-        if (item.storage_path) {
-            if (item.signed_url) {
-                if (item.content_type === "image") {
-                    const image = document.createElement("img");
-                    image.src = item.signed_url;
-                    image.alt = item.title || "Extra content image";
-                    image.className = "content-preview";
-                    entry.appendChild(image);
-
-                } else if (item.content_type === "audio") {
-                    const audio = document.createElement("audio");
-                    audio.controls = true;
-                    audio.src = item.signed_url;
-                    entry.appendChild(audio);
-
-                } else if (item.content_type === "video") {
-                    const video = document.createElement("video");
-                    video.controls = true;
-                    video.src = item.signed_url;
-                    video.className = "content-preview";
-                    entry.appendChild(video);
-                }
-
-                const link = document.createElement("a");
-                link.href = item.signed_url;
-                link.target = "_blank";
-                link.rel = "noopener noreferrer";
-                link.textContent =
-                    item.original_filename || "Open attached file";
-
-                entry.appendChild(link);
-
-            } else {
-                const warning = document.createElement("p");
-                warning.className = "muted";
-                warning.textContent =
-                    "The attached file is currently unavailable.";
-                entry.appendChild(warning);
-            }
-        }
-
-        container.appendChild(entry);
-    });
-}
     // =========================================================
     // ACCOUNT MANAGEMENT — ADMIN ONLY
     // =========================================================
@@ -2786,14 +2275,6 @@ function renderExtraContent() {
             "click",
             addContent
         );
-        $("#add-extra-content-btn")?.addEventListener(
-    "click",
-    addExtraContent
-);
-        $("#add-extra-content-btn")?.addEventListener(
-    "click",
-    addExtraContent
-);
 
         $("#create-user-form")?.addEventListener(
             "submit",
