@@ -387,6 +387,93 @@
                 Select a card to view its content.
               </p>
             </div>
+                        <!-- EXTRA CONTENT / HOMEWORK -->
+
+            <div class="divider"></div>
+
+            <div class="section-heading section-heading-inline">
+              <div>
+                <h3>Extra Content</h3>
+                <p class="muted">
+                  Add independent practice materials or homework.
+                </p>
+              </div>
+
+              <span id="extra-content-count" class="count-badge">
+                0 items
+              </span>
+            </div>
+
+            <label for="extra-content-title">
+              Content title
+
+              <input
+                id="extra-content-title"
+                type="text"
+                maxlength="160"
+                placeholder="e.g. Homework – Unit 1"
+              >
+            </label>
+
+            <label for="extra-content-type">
+              Content type
+
+              <select id="extra-content-type">
+                <option value="text">Text / instructions</option>
+                <option value="image">Image</option>
+                <option value="audio">Audio</option>
+                <option value="video">Video</option>
+                <option value="game">
+                  Game / interactive resource (HTML or ZIP)
+                </option>
+                <option value="file">
+                  Other file / PDF / document
+                </option>
+              </select>
+            </label>
+
+            <label for="extra-text-content">
+              Text or instructions
+
+              <textarea
+                id="extra-text-content"
+                rows="4"
+                maxlength="10000"
+                placeholder="Write homework instructions or practice material."
+              ></textarea>
+            </label>
+
+            <label id="extra-file-label" for="extra-content-file">
+              Attach file
+
+              <input
+                id="extra-content-file"
+                type="file"
+                accept="image/*,audio/*,video/*,.pdf,.html,.zip"
+              >
+
+              <span class="file-picker-note">
+                Choose a file from your device.
+                The file will be uploaded to private storage.
+              </span>
+            </label>
+
+            <button
+              id="add-extra-content-btn"
+              type="button"
+              class="button button-primary button-full"
+              disabled
+            >
+              Add extra content to selected card
+            </button>
+
+            <div class="divider"></div>
+
+            <div id="extra-content-list" class="content-list">
+              <p class="empty-state">
+                Select a card to view its extra content.
+              </p>
+            </div>
           </section>
         </div>
       </section>
