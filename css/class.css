@@ -4162,3 +4162,284 @@ text-align: center;
         padding: 10px 12px;
     }
 }
+/* ==========================================================
+   POWERPOINT-STYLE LESSON PRESENTATION
+========================================================== */
+
+.lesson-card-viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    background: #101820;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 35px;
+    box-sizing: border-box;
+}
+
+.lesson-presentation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    min-height: 55px;
+}
+
+.lesson-presentation-header h2 {
+    margin: 0;
+    font-size: 22px;
+    color: #ffffff;
+}
+
+.lesson-viewer-close {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: #ffffff;
+    color: #101820;
+    font-size: 30px;
+    cursor: pointer;
+}
+
+.lesson-presentation {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 25px;
+    text-align: center;
+    overflow: auto;
+}
+
+.lesson-presentation-title {
+    font-size: clamp(20px, 3vw, 30px);
+    color: #f2b632;
+    margin-bottom: 30px;
+}
+
+.lesson-presentation-body {
+    width: 100%;
+    max-width: 1100px;
+    min-height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.lesson-presentation-text {
+    font-size: clamp(28px, 4vw, 54px);
+    line-height: 1.5;
+    font-weight: 600;
+    color: #ffffff;
+    max-width: 1000px;
+    overflow-wrap: anywhere;
+    animation: presentationFade 0.3s ease;
+}
+
+.lesson-presentation-media {
+    max-width: 100%;
+    max-height: 65vh;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+.lesson-presentation-iframe {
+    width: 100%;
+    height: 65vh;
+    border: none;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.lesson-presentation-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 15px 0;
+}
+
+.lesson-presentation-navigation button {
+    padding: 13px 25px;
+    border: none;
+    border-radius: 8px;
+    background: #f2b632;
+    color: #101820;
+    font-weight: 700;
+    cursor: pointer;
+    min-width: 120px;
+}
+
+.lesson-presentation-navigation button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.lesson-presentation-progress {
+    flex: 1;
+    max-width: 400px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.lesson-progress-track {
+    height: 7px;
+    background: #39434c;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-top: 9px;
+}
+
+.lesson-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #f2b632;
+    border-radius: 20px;
+    transition: width 0.25s ease;
+}
+
+@keyframes presentationFade {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================================
+   EXTRA CONTENT BUTTON
+========================================================== */
+
+.lesson-extra-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px 15px;
+    border: 1px solid #f2b632;
+    border-radius: 8px;
+    background: #fff8e6;
+    color: #17212b;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.lesson-extra-btn:hover {
+    background: #f2b632;
+    transform: translateY(-2px);
+}
+
+/* ==========================================================
+   EXTRA CONTENT MODAL
+========================================================== */
+
+.lesson-extra-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000000;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.lesson-extra-dialog {
+    width: min(1100px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #ffffff;
+    color: #17212b;
+    border-radius: 14px;
+    padding: 25px;
+}
+
+.lesson-extra-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.lesson-extra-header h2 {
+    font-size: 22px;
+    margin: 0;
+}
+
+.lesson-extra-close {
+    border: none;
+    background: #17212b;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 25px;
+    cursor: pointer;
+}
+
+.lesson-extra-item {
+    padding: 20px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.lesson-extra-media {
+    display: block;
+    max-width: 100%;
+    max-height: 500px;
+    margin: 15px auto;
+    object-fit: contain;
+}
+
+.lesson-extra-iframe {
+    width: 100%;
+    min-height: 500px;
+    border: none;
+}
+
+.lesson-extra-text {
+    font-size: 18px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+
+    .lesson-card-viewer {
+        padding: 12px;
+    }
+
+    .lesson-presentation {
+        padding: 10px;
+    }
+
+    .lesson-presentation-navigation {
+        gap: 8px;
+    }
+
+    .lesson-presentation-navigation button {
+        min-width: auto;
+        padding: 11px;
+    }
+
+    .lesson-presentation-progress {
+        font-size: 12px;
+    }
+
+    .lesson-presentation-text {
+        font-size: 26px;
+    }
+
+    .lesson-extra-dialog {
+        padding: 15px;
+    }
+}
