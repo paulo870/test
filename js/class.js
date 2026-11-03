@@ -1295,6 +1295,28 @@ function openExtraContent(card) {
         ).toLowerCase();
 
         const mediaUrl = item.signed_url || "";
+        // GAME CONTENT
+        if (type === "game") {
+            const validGames = ["stop", "round", "grad", "box"];
+
+            if (validGames.includes(item.text_content)) {
+                const gameFrame = document.createElement("iframe");
+
+                gameFrame.className = "lesson-game-iframe";
+                gameFrame.src =
+                    `games.html?game=${encodeURIComponent(item.text_content)}`;
+
+                gameFrame.title = item.title || "Interactive lesson game";
+                gameFrame.allow = "autoplay; fullscreen";
+
+                itemContainer.appendChild(gameFrame);
+            } else {
+                appendUnavailableMessage(
+                    itemContainer,
+                    "This game selection is invalid."
+                );
+            }
+        }
 
         // TEXT
         if (item.text_content) {
@@ -1406,11 +1428,8 @@ function openExtraContent(card) {
             }
         }
 
-        // FILES AND OTHER RESOURCES
-        else if (
-            type === "file" ||
-            type === "game"
-        ) {
+            // FILES AND OTHER RESOURCE TYPES
+        else if (type === "file") {
 
             if (mediaUrl) {
 
@@ -1502,7 +1521,23 @@ function appendUnavailableMessage(container, messageText) {
 
     container.appendChild(message);
 }
+// ============================================================
+// CLOSE A GAME WITHOUT CLOSING THE LESSON CARD
+// ============================================================
 
+window.addEventListener("message", function(event) {
+    if (event.origin !== window.location.origin) return;
+
+    if (event.data?.type !== "POLIGLOTA_LESSON_GAME_CLOSE") {
+        return;
+    }
+
+    const gameFrame = event.source?.frameElement;
+
+    if (gameFrame && gameFrame.classList.contains("lesson-game-iframe")) {
+        gameFrame.remove();
+    }
+});
 
 // ============================================================
 // SELECT A UNIT
