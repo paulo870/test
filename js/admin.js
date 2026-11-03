@@ -17,17 +17,18 @@
     const $$ = (selector, root = document) =>
         Array.from(root.querySelectorAll(selector));
 
-    const state = {
-        user: null,
-        profile: null,
-        role: null,
-        currentLesson: null,
-        currentCard: null,
-        lessons: [],
-        cards: [],
-        content: [],
-        users: []
-    };
+  const state = {
+    user: null,
+    profile: null,
+    role: null,
+    currentLesson: null,
+    currentCard: null,
+    lessons: [],
+    cards: [],
+    content: [],
+    extraContent: [],
+    users: []
+};
 
     let noticeTimeout = null;
 
