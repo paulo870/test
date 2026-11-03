@@ -1712,7 +1712,153 @@ function updateExtraContentTypeFields() {
             updateContentControls();
         }
     }
+async function addExtraContent() {
+    if (!canManageContent()) {
+        setNotice(
+            "You do not have permission to add extra content.",
+            "error"
+        );
+        return;
+    }
 
+    if (!state.currentLesson || !state.currentCard) {
+        setNotice(
+            "Select a lesson and a card first.",
+            "error"
+        );
+        return;
+    }
+
+    const title = $("#extra-content-title")?.value.trim() || "";
+    const requestedType =
+        $("#extra-content-type")?.value || "text";
+    const text =
+        $("#extra-text-content")?.value.trim() || "";
+    const file =
+        $("#extra-content-file")?.files?.[0] || null;
+
+    const button = $("#add-extra-content-btn");
+
+    if (!title) {
+        setNotice(
+            "Please enter an extra content title.",
+            "error"
+        );
+        return;
+    }
+
+    if (requestedType === "text" && !text) {
+        setNotice(
+            "Enter the homework text or instructions.",
+            "error"
+        );
+        return;
+    }
+
+    if (requestedType !== "text" && !file) {
+        setNotice(
+            "Choose a file to upload for this content type.",
+            "error"
+        );
+        return;
+    }
+
+    let uploadedFile = null;
+
+    try {
+        setButtonBusy(button, true, "Saving extra content...");
+
+        let actualType = requestedType;
+
+        if (file) {
+            const detectedType = getActualFileType(file);
+            const name = String(file.name || "").toLowerCase();
+
+            if (requestedType === "game") {
+                if (
+                    !name.endsWith(".html") &&
+                    !name.endsWith(".zip")
+                ) {
+                    throw new Error(
+                        "Game resources must be an .html or .zip file."
+                    );
+                }
+
+                actualType = "game";
+
+            } else if (requestedType === "file") {
+                actualType = "file";
+
+            } else if (detectedType !== requestedType) {
+                throw new Error(
+                    `The selected file does not appear to be ${requestedType}. Please choose a matching file.`
+                );
+            }
+        }
+
+        if (file) {
+            uploadedFile = await uploadContentFile(file);
+        }
+
+        const contentData = {
+            card_id: state.currentCard.id,
+            title,
+            content_type: actualType,
+            content_category: "extra",
+            text_content: text || null,
+            storage_path: uploadedFile?.path || null,
+            original_filename:
+                uploadedFile?.original_filename ||
+                uploadedFile?.file_name ||
+                uploadedFile?.name ||
+                null,
+            file_size: uploadedFile?.file_size ?? null,
+            mime_type: uploadedFile?.mime_type || null,
+            created_by: state.user.id
+        };
+
+        const { error } = await client
+            .from("lesson_content")
+            .insert(contentData);
+
+        if (error) {
+            throw error;
+        }
+
+        $("#extra-content-title").value = "";
+        $("#extra-text-content").value = "";
+        $("#extra-content-file").value = "";
+
+        await loadCardContent();
+
+        setNotice(
+            "Extra content added successfully.",
+            "success"
+        );
+
+    } catch (error) {
+        console.error(
+            "Could not add extra content:",
+            error
+        );
+
+        setNotice(
+            `Could not add extra content: ${getErrorMessage(error)}`,
+            "error"
+        );
+
+        if (uploadedFile?.path) {
+            console.warn(
+                "The file may have uploaded successfully, but its database record was not saved. Storage path:",
+                uploadedFile.path
+            );
+        }
+
+    } finally {
+        setButtonBusy(button, false);
+        updateContentControls();
+    }
+}
     // =========================================================
     // LOAD AND DISPLAY CARD CONTENT
     // =========================================================
@@ -1746,47 +1892,57 @@ function updateExtraContentTypeFields() {
                 throw error;
             }
 
-            state.content = await Promise.all(
-                (data || []).map(async item => {
-                    if (!item.storage_path) {
-                        return item;
-                    }
+           const signedItems = await Promise.all(
+    (data || []).map(async item => {
+        if (!item.storage_path) {
+            return item;
+        }
 
-                    try {
-                        const {
-                            data: signedData,
-                            error: signedError
-                        } = await client.storage
-                            .from(STORAGE_BUCKET)
-                            .createSignedUrl(
-                                item.storage_path,
-                                3600
-                            );
+        try {
+            const {
+                data: signedData,
+                error: signedError
+            } = await client.storage
+                .from(STORAGE_BUCKET)
+                .createSignedUrl(
+                    item.storage_path,
+                    3600
+                );
 
-                        if (signedError) {
-                            throw signedError;
-                        }
+            if (signedError) {
+                throw signedError;
+            }
 
-                        return {
-                            ...item,
-                            signed_url: signedData?.signedUrl || null
-                        };
+            return {
+                ...item,
+                signed_url: signedData?.signedUrl || null
+            };
 
-                    } catch (signedError) {
-                        console.warn(
-                            "Could not create a temporary media link:",
-                            signedError
-                        );
-
-                        return {
-                            ...item,
-                            signed_url: null
-                        };
-                    }
-                })
+        } catch (signedError) {
+            console.warn(
+                "Could not create a temporary media link:",
+                signedError
             );
 
-            renderContent();
+            return {
+                ...item,
+                signed_url: null
+            };
+        }
+    })
+);
+
+// Keep normal lesson content separate from homework.
+state.content = signedItems.filter(
+    item => item.content_category !== "extra"
+);
+
+state.extraContent = signedItems.filter(
+    item => item.content_category === "extra"
+);
+
+renderContent();
+            renderExtraContent();
 
         } catch (error) {
             console.error(
@@ -1982,7 +2138,103 @@ function updateExtraContentTypeFields() {
             `;
         }).join("");
     }
+function renderExtraContent() {
+    const container = $("#extra-content-list");
+    const countBadge = $("#extra-content-count");
 
+    if (!container) return;
+
+    const items = state.extraContent || [];
+
+    if (countBadge) {
+        countBadge.textContent =
+            `${items.length} ${items.length === 1 ? "item" : "items"}`;
+    }
+
+    container.innerHTML = "";
+
+    if (!state.currentCard) {
+        container.innerHTML = `
+            <p class="empty-state">
+                Select a card to view its extra content.
+            </p>
+        `;
+        return;
+    }
+
+    if (items.length === 0) {
+        container.innerHTML = `
+            <p class="empty-state">
+                No extra content has been added to this card yet.
+            </p>
+        `;
+        return;
+    }
+
+    items.forEach(item => {
+        const entry = document.createElement("div");
+        entry.className = "content-item";
+
+        const heading = document.createElement("h4");
+        heading.textContent = item.title || "Untitled extra content";
+        entry.appendChild(heading);
+
+        const type = document.createElement("p");
+        type.className = "muted";
+        type.textContent =
+            `Type: ${item.content_type || "Other"}`;
+        entry.appendChild(type);
+
+        if (item.text_content) {
+            const text = document.createElement("p");
+            text.textContent = item.text_content;
+            entry.appendChild(text);
+        }
+
+        if (item.storage_path) {
+            if (item.signed_url) {
+                if (item.content_type === "image") {
+                    const image = document.createElement("img");
+                    image.src = item.signed_url;
+                    image.alt = item.title || "Extra content image";
+                    image.className = "content-preview";
+                    entry.appendChild(image);
+
+                } else if (item.content_type === "audio") {
+                    const audio = document.createElement("audio");
+                    audio.controls = true;
+                    audio.src = item.signed_url;
+                    entry.appendChild(audio);
+
+                } else if (item.content_type === "video") {
+                    const video = document.createElement("video");
+                    video.controls = true;
+                    video.src = item.signed_url;
+                    video.className = "content-preview";
+                    entry.appendChild(video);
+                }
+
+                const link = document.createElement("a");
+                link.href = item.signed_url;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.textContent =
+                    item.original_filename || "Open attached file";
+
+                entry.appendChild(link);
+
+            } else {
+                const warning = document.createElement("p");
+                warning.className = "muted";
+                warning.textContent =
+                    "The attached file is currently unavailable.";
+                entry.appendChild(warning);
+            }
+        }
+
+        container.appendChild(entry);
+    });
+}
     // =========================================================
     // ACCOUNT MANAGEMENT — ADMIN ONLY
     // =========================================================
