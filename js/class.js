@@ -286,52 +286,76 @@ async function renderStudentLesson(unitNumber, lessonNumber) {
     try {
         const client = getClassroomSupabaseClient();
 
-        // ----------------------------------------------------
-        // STEP 1: FIND THE EXACT LESSON
-        // ----------------------------------------------------
+       // ----------------------------------------------------
+// STEP 1: FIND THE EXACT LESSON
+// ----------------------------------------------------
 
-        const { data: lesson, error: lessonError } = await client
-            .from("lessons")
-            .select("*")
-            .eq("unit_number", Number(unitNumber))
-            .eq("lesson_number", Number(lessonNumber))
-            .maybeSingle();
+const lessonQuery = await client
+    .from("lessons")
+    .select("*")
+    .eq("unit_number", Number(unitNumber))
+    .eq("lesson_number", Number(lessonNumber));
 
-        if (lessonError) {
-            throw lessonError;
-        }
+console.log("LESSON QUERY:", {
+    unitNumber,
+    lessonNumber,
+    data: lessonQuery.data,
+    error: lessonQuery.error
+});
 
-        if (!lesson) {
-            showLessonMessage(
-                `Unit ${unitNumber} — Lesson ${lessonNumber}`,
-                "This lesson has not been created in the Content Manager yet."
-            );
+if (lessonQuery.error) {
+    throw lessonQuery.error;
+}
 
-            return;
-        }
+if (!lessonQuery.data || lessonQuery.data.length === 0) {
+    showLessonMessage(
+        `Unit ${unitNumber} — Lesson ${lessonNumber}`,
+        "No matching lesson was found. Check the lesson records and student permissions."
+    );
+    return;
+}
 
-        activeLessonRecord = lesson;
+if (lessonQuery.data.length > 1) {
+    console.error(
+        "Multiple lessons found. The query needs a course filter:",
+        lessonQuery.data
+    );
 
-        // ----------------------------------------------------
-        // STEP 2: LOAD THE CARDS BELONGING TO THIS LESSON
-        // ----------------------------------------------------
+    showLessonMessage(
+        "Multiple lessons found",
+        "More than one course contains this unit and lesson. The classroom needs to identify the correct course."
+    );
 
-        const { data: cards, error: cardsError } = await client
-            .from("lesson_cards")
-            .select("*")
-            .eq("lesson_id", lesson.id)
-            .order("card_number", { ascending: true });
+    return;
+}
 
-        if (cardsError) {
-            throw cardsError;
-        }
+const lesson = lessonQuery.data[0];
 
-        // The Content Manager allows a maximum of eight cards.
-        activeLessonCards = (cards || []).slice(
-            0,
-            MAX_CARDS_PER_LESSON
-        );
+activeLessonRecord = lesson;
+      // ----------------------------------------------------
+// STEP 2: LOAD THE CARDS BELONGING TO THIS LESSON
+// ----------------------------------------------------
 
+const cardsQuery = await client
+    .from("lesson_cards")
+    .select("*")
+    .eq("lesson_id", lesson.id)
+    .order("card_number", { ascending: true });
+
+console.log("CARD QUERY:", {
+    lessonId: lesson.id,
+    data: cardsQuery.data,
+    error: cardsQuery.error
+});
+
+if (cardsQuery.error) {
+    throw cardsQuery.error;
+}
+
+activeLessonCards = (cardsQuery.data || []).slice(
+    0,
+    MAX_CARDS_PER_LESSON
+);
         // ----------------------------------------------------
         // STEP 3: LOAD CONTENT FOR THESE EXACT CARD IDs
         // ----------------------------------------------------
