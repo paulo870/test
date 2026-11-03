@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson Game | Academia Poliglota</title>
+    <link rel="stylesheet" href="css/games.css">
+</head>
+<body>
+
+    <header class="game-toolbar">
+        <div class="game-heading">
+            <span class="game-brand">ACADEMIA POLIGLOTA</span>
+            <h1 id="game-title">Lesson Game</h1>
+        </div>
+
+        <button id="close-game" type="button" aria-label="Close game">
+            &times;
+        </button>
+    </header>
+
+    <main class="game-container">
+        <div id="game-loading">Loading game...</div>
+        <div id="game-error" hidden></div>
+        <iframe
+            id="game-frame"
+            title="Interactive lesson game"
+            allow="autoplay; fullscreen"
+        ></iframe>
+    </main>
+
+    <script src="js/games.js"></script>
+</body>
+</html>
