@@ -479,58 +479,93 @@ container.style.setProperty(
         return;
     }
 
-    // --------------------------------------------------------
-    // CREATE ONE DISPLAY CARD FOR EACH DATABASE CARD
-    // --------------------------------------------------------
+   // --------------------------------------------------------
+// CREATE ONE DISPLAY CARD FOR EACH DATABASE CARD
+// --------------------------------------------------------
 
-    activeLessonCards.forEach(card => {
-        const cardElement = document.createElement("button");
+activeLessonCards.forEach(card => {
 
-        cardElement.type = "button";
-        cardElement.className = "lesson-content-card";
+    // Main card container
+    const cardElement = document.createElement("div");
 
-        cardElement.dataset.cardId = card.id;
+    cardElement.className = "lesson-content-card";
+    cardElement.dataset.cardId = card.id;
 
-        const cardTitle = document.createElement("h2");
+    // Separate MAIN and EXTRA content
+    const mainContent = activeLessonContent.filter(item =>
+        String(item.card_id) === String(card.id) &&
+        item.content_category !== "extra"
+    );
 
-        cardTitle.textContent =
-            card.title || `Card ${card.card_number}`;
+    const extraContent = activeLessonContent.filter(item =>
+        String(item.card_id) === String(card.id) &&
+        item.content_category === "extra"
+    );
 
-        const cardContent = activeLessonContent.filter(
-            item => String(item.card_id) === String(card.id)
-        );
+    // Card number
+    const cardNumber = document.createElement("span");
 
-        const cardDescription = document.createElement("p");
+    cardNumber.className = "lesson-card-number";
+    cardNumber.textContent = `Card ${card.card_number}`;
 
-        if (cardContent.length === 0) {
-            cardDescription.textContent = "No content added yet.";
-        } else if (cardContent.length === 1) {
-            cardDescription.textContent = cardContent[0].title ||
-                "1 content item";
-        } else {
-            cardDescription.textContent =
-                `${cardContent.length} content items`;
-        }
+    // Main card button
+    const mainButton = document.createElement("button");
 
-        const cardNumber = document.createElement("span");
+    mainButton.type = "button";
+    mainButton.className = "lesson-card-open";
 
-        cardNumber.className = "lesson-card-number";
-        cardNumber.textContent = `Card ${card.card_number}`;
+    const cardTitle = document.createElement("h2");
 
-        cardElement.append(
-            cardNumber,
-            cardTitle,
-            cardDescription
-        );
+    cardTitle.textContent =
+        card.title || `Card ${card.card_number}`;
 
-        cardElement.addEventListener("click", () => {
-            openLessonCard(card);
+    const cardDescription = document.createElement("p");
+
+    if (mainContent.length === 0) {
+        cardDescription.textContent = "No main content added yet.";
+    } else if (mainContent.length === 1) {
+        cardDescription.textContent =
+            mainContent[0].title || "Open lesson content";
+    } else {
+        cardDescription.textContent =
+            `${mainContent.length} content items`;
+    }
+
+    mainButton.append(cardTitle, cardDescription);
+
+    // Open the normal lesson presentation
+    mainButton.addEventListener("click", () => {
+        openLessonCard(card);
+    });
+
+    // Extra Content button
+    cardElement.append(cardNumber, mainButton);
+
+    // Only create this button if extra content exists
+    if (extraContent.length > 0) {
+
+        const extraButton = document.createElement("button");
+
+        extraButton.type = "button";
+        extraButton.className = "lesson-extra-btn";
+
+        extraButton.textContent =
+            `Extra Content (${extraContent.length})`;
+
+        extraButton.addEventListener("click", (event) => {
+
+            event.stopPropagation();
+
+            openExtraContent(card);
+
         });
 
-        container.appendChild(cardElement);
-    });
-}
+        cardElement.appendChild(extraButton);
+    }
 
+    container.appendChild(cardElement);
+
+});
 // ============================================================
 // AUTOMATIC TEXT SIZING FOR INTERACTIVE BOARD
 // ============================================================
@@ -640,9 +675,10 @@ contentArea.appendChild(cardEditCanvas);
 
     contentArea.appendChild(title);
 
-    const cardContent = activeLessonContent.filter(
-        item => String(item.card_id) === String(card.id)
-    );
+    const cardContent = activeLessonContent.filter(item =>
+    String(item.card_id) === String(card.id) &&
+    item.content_category !== "extra"
+);
 
     if (cardContent.length === 0) {
         const emptyMessage = document.createElement("p");
@@ -899,7 +935,285 @@ viewer.querySelectorAll("img").forEach(image => {
 
 } // END OF openLessonCard()
 
+// ============================================================
+// OPEN EXTRA CONTENT FOR A SPECIFIC CARD
+// ============================================================
 
+function openExtraContent(card) {
+
+    // Remove an existing Extra Content window
+    const existingModal = document.getElementById(
+        "lesson-extra-modal"
+    );
+
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Retrieve EXTRA content belonging only to this card
+    const extraItems = activeLessonContent.filter(item =>
+        String(item.card_id) === String(card.id) &&
+        item.content_category === "extra"
+    );
+
+    if (extraItems.length === 0) {
+        return;
+    }
+
+    // Main modal
+    const modal = document.createElement("div");
+
+    modal.id = "lesson-extra-modal";
+    modal.className = "lesson-extra-modal";
+
+    // Modal content box
+    const dialog = document.createElement("div");
+
+    dialog.className = "lesson-extra-dialog";
+
+    // Header
+    const header = document.createElement("div");
+
+    header.className = "lesson-extra-header";
+
+    const heading = document.createElement("h2");
+
+    heading.textContent =
+        `${card.title || `Card ${card.card_number}`} — Extra Content`;
+
+    // Close button
+    const closeButton = document.createElement("button");
+
+    closeButton.type = "button";
+    closeButton.className = "lesson-extra-close";
+    closeButton.textContent = "×";
+
+    closeButton.setAttribute(
+        "aria-label",
+        "Close extra content"
+    );
+
+    header.append(heading, closeButton);
+
+    // Content area
+    const contentArea = document.createElement("div");
+
+    contentArea.className = "lesson-extra-content";
+
+    // Display each extra activity
+    extraItems.forEach(item => {
+
+        const itemContainer = document.createElement("section");
+
+        itemContainer.className = "lesson-extra-item";
+
+        const itemTitle = document.createElement("h3");
+
+        itemTitle.textContent =
+            item.title || "Extra activity";
+
+        itemContainer.appendChild(itemTitle);
+
+        const type = String(
+            item.content_type || "text"
+        ).toLowerCase();
+
+        const mediaUrl = item.signed_url || "";
+
+        // TEXT
+        if (item.text_content) {
+
+            const text = document.createElement("div");
+
+            text.className = "lesson-extra-text";
+            text.textContent = item.text_content;
+
+            itemContainer.appendChild(text);
+        }
+
+        // IMAGE
+        if (type === "image") {
+
+            if (mediaUrl) {
+
+                const image = document.createElement("img");
+
+                image.src = mediaUrl;
+                image.alt = item.title || "Extra activity image";
+                image.className = "lesson-extra-media";
+
+                itemContainer.appendChild(image);
+
+            } else if (item.storage_path) {
+
+                appendUnavailableMessage(
+                    itemContainer,
+                    "This image could not be loaded."
+                );
+            }
+        }
+
+        // AUDIO
+        else if (type === "audio") {
+
+            if (mediaUrl) {
+
+                const audio = document.createElement("audio");
+
+                audio.controls = true;
+                audio.preload = "metadata";
+                audio.src = mediaUrl;
+                audio.className = "lesson-extra-media";
+
+                itemContainer.appendChild(audio);
+
+            } else if (item.storage_path) {
+
+                appendUnavailableMessage(
+                    itemContainer,
+                    "This audio could not be loaded."
+                );
+            }
+        }
+
+        // VIDEO
+        else if (type === "video") {
+
+            if (mediaUrl) {
+
+                const video = document.createElement("video");
+
+                video.controls = true;
+                video.playsInline = true;
+                video.preload = "metadata";
+                video.src = mediaUrl;
+                video.className = "lesson-extra-media";
+
+                itemContainer.appendChild(video);
+
+            } else if (item.storage_path) {
+
+                appendUnavailableMessage(
+                    itemContainer,
+                    "This video could not be loaded."
+                );
+            }
+        }
+
+        // INTERACTIVE HTML ACTIVITIES
+        else if (
+            type === "html" ||
+            type === "interactive"
+        ) {
+
+            if (mediaUrl) {
+
+                const frame = document.createElement("iframe");
+
+                frame.src = mediaUrl;
+                frame.className = "lesson-extra-iframe";
+                frame.title = item.title || "Interactive activity";
+
+                frame.setAttribute(
+                    "allowfullscreen",
+                    ""
+                );
+
+                itemContainer.appendChild(frame);
+
+            } else if (item.storage_path) {
+
+                appendUnavailableMessage(
+                    itemContainer,
+                    "This interactive activity could not be loaded."
+                );
+            }
+        }
+
+        // FILES AND OTHER RESOURCES
+        else if (
+            type === "file" ||
+            type === "game"
+        ) {
+
+            if (mediaUrl) {
+
+                const link = document.createElement("a");
+
+                link.href = mediaUrl;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+
+                link.textContent =
+                    item.original_filename ||
+                    item.file_name ||
+                    "Open activity";
+
+                itemContainer.appendChild(link);
+
+            } else if (item.storage_path) {
+
+                appendUnavailableMessage(
+                    itemContainer,
+                    "This resource could not be opened."
+                );
+            }
+        }
+
+        contentArea.appendChild(itemContainer);
+
+    });
+
+    // Assemble modal
+    dialog.append(header, contentArea);
+
+    modal.appendChild(dialog);
+
+    document.body.appendChild(modal);
+
+    // Close and stop any playing media
+    function closeExtraContent() {
+
+        modal.querySelectorAll("audio, video").forEach(media => {
+            media.pause();
+        });
+
+        modal.remove();
+    }
+
+    closeButton.addEventListener(
+        "click",
+        closeExtraContent
+    );
+
+    // Clicking outside the dialog closes the modal
+    modal.addEventListener("click", event => {
+
+        if (event.target === modal) {
+            closeExtraContent();
+        }
+
+    });
+
+    // Escape key closes the modal
+    function handleEscape(event) {
+
+        if (event.key === "Escape") {
+
+            closeExtraContent();
+
+            document.removeEventListener(
+                "keydown",
+                handleEscape
+            );
+        }
+    }
+
+    document.addEventListener(
+        "keydown",
+        handleEscape
+    );
+}
 // ============================================================
 // DISPLAY AN UNAVAILABLE-FILE MESSAGE
 // ============================================================
