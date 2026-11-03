@@ -422,6 +422,15 @@ function renderStudentLessonCards() {
     const container = showLessonCardView();
 
     container.replaceChildren();
+    const cardRows = Math.max(
+    1,
+    Math.ceil(activeLessonCards.length / 4)
+);
+
+container.style.setProperty(
+    "--card-rows",
+    cardRows
+);
 
     // --------------------------------------------------------
     // LESSON HEADING
@@ -775,10 +784,18 @@ contentArea.appendChild(cardEditCanvas);
 // Only the close button closes the card.
 // --------------------------------------------------------
 
+let lessonViewerResizeObserver = null;
+
 function closeViewer() {
+
     contentArea.querySelectorAll("audio, video").forEach(media => {
         media.pause();
     });
+
+    if (lessonViewerResizeObserver) {
+        lessonViewerResizeObserver.disconnect();
+        lessonViewerResizeObserver = null;
+    }
 
     viewer.remove();
 }
@@ -853,6 +870,32 @@ document.addEventListener(
 viewer.append(closeButton, zoomArea);
 
 document.body.appendChild(viewer);
+
+// Automatically fit text to the available screen space.
+requestAnimationFrame(() => {
+
+    fitLessonViewerContent(viewer);
+
+    // Recalculate if the screen or viewer dimensions change.
+    if ("ResizeObserver" in window) {
+
+        lessonViewerResizeObserver = new ResizeObserver(() => {
+            fitLessonViewerContent(viewer);
+        });
+
+        lessonViewerResizeObserver.observe(viewer);
+    }
+
+});
+
+// Recalculate when images finish loading.
+viewer.querySelectorAll("img").forEach(image => {
+
+    image.addEventListener("load", () => {
+        fitLessonViewerContent(viewer);
+    });
+
+});
 
 } // END OF openLessonCard()
 
