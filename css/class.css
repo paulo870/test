@@ -3583,54 +3583,61 @@ text-align: center;
 
     transition: transform 0.08s ease-out;
 }
-/* ============================================================
-   INTERACTIVE BOARD — FULL-SCREEN LESSON CARD GRID
-   ============================================================ */
+/* =========================================
+   LESSON CARD GRID — PROFESSIONAL 3D DESIGN
+========================================= */
 
 #lesson-card-grid {
     position: absolute;
     inset: 0;
-
     width: 100%;
     height: 100%;
-    min-height: 0;
-
     box-sizing: border-box;
 
     display: none;
 
+    /* FORCE FOUR COLUMNS */
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-template-rows:
-        auto repeat(var(--card-rows, 2), minmax(0, 1fr));
 
-    align-content: stretch;
+    /* HEADING + CARD ROWS */
+    grid-template-rows: auto repeat(var(--card-rows, 2), minmax(0, 1fr));
 
-    gap: clamp(12px, 1.3vw, 22px);
+    grid-auto-flow: row;
+    grid-auto-rows: minmax(0, 1fr);
 
-    padding: clamp(18px, 2vw, 32px);
+    gap: 24px;
+    padding: 28px 35px;
 
     overflow: hidden;
+
+    /* 3D ENVIRONMENT */
+    perspective: 1200px;
 }
 
-/* Lesson heading */
+/* LESSON HEADING */
 
 #lesson-card-grid .lesson-heading {
     grid-column: 1 / -1;
-    margin: 0;
+    grid-row: 1;
+    margin: 0 0 8px;
 }
 
 #lesson-card-grid .lesson-heading h1 {
-    font-size: clamp(24px, 2.5vw, 38px);
-    margin-bottom: 5px;
+    font-size: clamp(30px, 2.5vw, 44px);
+    margin-bottom: 6px;
 }
 
 #lesson-card-grid .lesson-heading p {
-    font-size: clamp(14px, 1.1vw, 18px);
+    font-size: clamp(16px, 1.2vw, 20px);
 }
 
-/* Individual cards */
+/* INDIVIDUAL CARDS */
 
 #lesson-card-grid .lesson-content-card {
+    grid-column: auto !important;
+    grid-row: auto !important;
+
+    position: relative;
     width: 100%;
     height: 100%;
     min-width: 0;
@@ -3640,46 +3647,121 @@ text-align: center;
 
     display: flex;
     flex-direction: column;
-
     align-items: center;
     justify-content: center;
 
-    gap: clamp(10px, 1.2vw, 20px);
-
-    padding: clamp(16px, 1.8vw, 30px);
+    gap: 20px;
+    padding: 25px;
 
     text-align: center;
-
     overflow: hidden;
+
+    /* PROFESSIONAL CARD APPEARANCE */
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.13),
+            rgba(255, 255, 255, 0.025) 45%,
+            rgba(0, 0, 0, 0.25)
+        );
+
+    box-shadow:
+        0 12px 20px rgba(0, 0, 0, 0.25),
+        0 25px 45px rgba(0, 0, 0, 0.20),
+        inset 0 1px 1px rgba(255, 255, 255, 0.16);
+
+    transform: translateZ(0);
+    transform-style: preserve-3d;
+
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease,
+        border-color 0.3s ease;
+
+    cursor: pointer;
 }
 
-/* Card number */
+/* 3D HOVER EFFECT */
+
+#lesson-card-grid .lesson-content-card:hover {
+    transform:
+        translateY(-9px)
+        translateZ(18px)
+        rotateX(2deg);
+
+    border-color: rgba(72, 224, 130, 0.75);
+
+    box-shadow:
+        0 18px 25px rgba(0, 0, 0, 0.3),
+        0 35px 55px rgba(0, 0, 0, 0.3),
+        0 0 22px rgba(72, 224, 130, 0.12),
+        inset 0 1px 2px rgba(255, 255, 255, 0.2);
+}
+
+/* SUBTLE LIGHT REFLECTION */
+
+#lesson-card-grid .lesson-content-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.12),
+        transparent 40%,
+        transparent 70%,
+        rgba(72, 224, 130, 0.06)
+    );
+
+    pointer-events: none;
+}
+
+/* CARD NUMBER */
 
 #lesson-card-grid .lesson-card-number {
-    font-size: clamp(15px, 1.2vw, 20px);
-    font-weight: 700;
-    letter-spacing: 1px;
+    position: relative;
+    z-index: 1;
+
+    font-size: clamp(17px, 1.4vw, 23px);
+    font-weight: 800;
+    letter-spacing: 2px;
+
+    color: #48e082;
 }
 
-/* Card title */
+/* CARD TITLE */
 
 #lesson-card-grid .lesson-content-card h2 {
-    font-size: clamp(21px, 2vw, 34px);
+    position: relative;
+    z-index: 1;
+
+    font-size: clamp(25px, 2.1vw, 38px);
     line-height: 1.25;
+
+    font-weight: 800;
     text-align: center;
+
     overflow-wrap: anywhere;
 }
 
-/* Card description */
+/* CARD DESCRIPTION */
 
 #lesson-card-grid .lesson-content-card p {
-    font-size: clamp(15px, 1.2vw, 20px);
+    position: relative;
+    z-index: 1;
+
+    font-size: clamp(17px, 1.3vw, 23px);
     line-height: 1.5;
+
     text-align: center;
     overflow-wrap: anywhere;
 }
 
-/* Empty state */
+/* EMPTY STATE */
 
 #lesson-card-grid .lesson-empty-state {
     grid-column: 1 / -1;
@@ -3687,7 +3769,7 @@ text-align: center;
     text-align: center;
 }
 
-/* Smaller screens */
+/* SMALLER SCREENS */
 
 @media (max-width: 1000px) {
     #lesson-card-grid {
@@ -3701,13 +3783,11 @@ text-align: center;
 @media (max-width: 600px) {
     #lesson-card-grid {
         grid-template-columns: 1fr;
-        grid-auto-rows: minmax(150px, auto);
+        grid-auto-rows: minmax(170px, auto);
         padding: 16px;
-        gap: 14px;
+        gap: 16px;
     }
 }
-
-
 /* ============================================================
    EXPANDED LESSON CARD — INTERACTIVE BOARD LAYOUT
    ============================================================ */
