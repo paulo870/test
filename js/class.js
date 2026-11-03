@@ -2066,7 +2066,7 @@ gamesBtn.addEventListener("click", function(e) {
 
 });
 // ==========================
-// DRAWING TARGET SYSTEM (NEW CORE FIX)
+// DRAWING TARGET SYSTEM
 // ==========================
 
 const editCanvas = document.getElementById("edit-canvas");
@@ -2074,9 +2074,12 @@ const editCtx = editCanvas.getContext("2d");
 
 const whiteboardCanvas = document.getElementById("whiteboard-canvas");
 const whiteboardCtx = whiteboardCanvas.getContext("2d");
+
+// REGISTER ALL DRAWING CANVASES
 const drawingCanvasRegistry = new Map([
     [editCanvas.id, editCanvas],
     [whiteboardCanvas.id, whiteboardCanvas]
+]);
 
 // ACTIVE CANVAS
 let drawingCanvas = editCanvas;
@@ -2226,32 +2229,22 @@ clearTool.addEventListener("click", () => {
 
     const currentCanvasId = drawingCanvas.id;
 
-    // Remove only strokes from current canvas
-    strokes = strokes.filter(stroke => {
-        return stroke.canvas !== currentCanvasId;
+    // Remove strokes from the active canvas.
+    strokes = strokes.filter(
+        stroke => stroke.canvas !== currentCanvasId
+    );
+
+    // Remove text boxes belonging to the active canvas.
+    document.querySelectorAll(".slide-textbox").forEach(box => {
+        if (box.dataset.canvas === currentCanvasId) {
+            box.remove();
+        }
     });
 
-    // Clear actual canvas
-    if (currentCanvasId === "whiteboard-canvas") {
-
-        whiteboardCtx.clearRect(
-            0,
-            0,
-            whiteboardCanvas.width,
-            whiteboardCanvas.height
-        );
-
-    } else {
-
-        editCtx.clearRect(
-            0,
-            0,
-            editCanvas.width,
-            editCanvas.height
-        );
-    }
-
+    // Redraw all remaining annotations.
     redrawStrokes();
+
+    textToolbar.style.display = "none";
 });
 // ==========================
 // CURSOR SYSTEM
