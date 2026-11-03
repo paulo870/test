@@ -975,32 +975,53 @@ if (deleteLessonButton) {
                 );
             } else {
                 container.innerHTML = state.cards.map(card => `
-                    <button
-                        type="button"
-                        class="lesson-card-item ${
-                            String(state.currentCard?.id) === String(card.id)
-                                ? "active"
-                                : ""
-                        }"
-                        data-card-id="${escapeHTML(card.id)}"
-                    >
-                        <span class="lesson-card-number">
-                            ${escapeHTML(card.card_number)}
-                        </span>
+    <div class="lesson-card-row">
 
-                        <span class="lesson-card-title">
-                            ${escapeHTML(
-                                card.title || `Card ${card.card_number}`
-                            )}
-                        </span>
-                    </button>
-                `).join("");
+        <button
+            type="button"
+            class="lesson-card-item ${
+                String(state.currentCard?.id) === String(card.id)
+                    ? "active"
+                    : ""
+            }"
+            data-card-id="${escapeHTML(card.id)}"
+        >
+            <span class="lesson-card-number">
+                ${escapeHTML(card.card_number)}
+            </span>
 
-                $$("[data-card-id]", container).forEach(button => {
-                    button.addEventListener("click", async () => {
-                        await selectCard(button.dataset.cardId);
-                    });
-                });
+            <span class="lesson-card-title">
+                ${escapeHTML(
+                    card.title || `Card ${card.card_number}`
+                )}
+            </span>
+        </button>
+
+        ${isAdmin() ? `
+            <button
+                type="button"
+                class="button button-danger card-delete-btn"
+                data-delete-card-id="${escapeHTML(card.id)}"
+            >
+                Delete
+            </button>
+        ` : ""}
+
+    </div>
+`).join("");
+
+$$("[data-card-id]", container).forEach(button => {
+    button.addEventListener("click", async () => {
+        await selectCard(button.dataset.cardId);
+    });
+});
+
+$$("[data-delete-card-id]", container).forEach(button => {
+    button.addEventListener("click", async event => {
+        event.stopPropagation();
+        await deleteCard(button.dataset.deleteCardId);
+    });
+});
             }
         }
 
@@ -1241,7 +1262,130 @@ if (deleteLessonButton) {
 
         await loadCardContent();
     }
+async function deleteCard(cardId) {
+    if (!isAdmin()) {
+        setNotice(
+            "Only administrators can delete lesson cards.",
+            "error"
+        );
+        return;
+    }
 
+    const card = state.cards.find(item =>
+        String(item.id) === String(cardId)
+    );
+
+    if (!card) {
+        setNotice("Card not found.", "error");
+        return;
+    }
+
+    const confirmed = window.confirm(
+        `Are you sure you want to delete Card ${card.card_number}: ${card.title}?\n\nAll content associated with this card will also be deleted. This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    const button = $(`[data-delete-card-id="${cardId}"]`);
+
+    try {
+        setButtonBusy(button, true, "Deleting...");
+
+        // Retrieve associated media files before deleting the card.
+        const {
+            data: contentItems,
+            error: contentError
+        } = await client
+            .from("lesson_content")
+            .select("storage_path")
+            .eq("card_id", card.id);
+
+        if (contentError) throw contentError;
+
+        const storagePaths = (contentItems || [])
+            .map(item => item.storage_path)
+            .filter(Boolean);
+
+        // Delete the card. Its content records are removed
+        // through the database cascade relationship.
+        const {
+            data: deletedCard,
+            error: deleteError
+        } = await client
+            .from("lesson_cards")
+            .delete()
+            .eq("id", card.id)
+            .select("id")
+            .single();
+
+        if (deleteError) throw deleteError;
+
+        if (!deletedCard) {
+            throw new Error("The card could not be confirmed as deleted.");
+        }
+
+        // Remove associated files from Supabase Storage.
+        let storageWarning = false;
+
+        if (storagePaths.length) {
+            const {
+                error: storageError
+            } = await client.storage
+                .from(STORAGE_BUCKET)
+                .remove(storagePaths);
+
+            if (storageError) {
+                storageWarning = true;
+                console.error(
+                    "Card deleted, but some media files may remain:",
+                    storageError
+                );
+            }
+        }
+
+        // Update the dashboard.
+        state.cards = state.cards.filter(item =>
+            String(item.id) !== String(card.id)
+        );
+
+        if (
+            String(state.currentCard?.id) === String(card.id)
+        ) {
+            state.currentCard = null;
+            state.content = [];
+
+            if ($("#selected-card-label")) {
+                $("#selected-card-label").textContent =
+                    "No card selected";
+            }
+
+            renderContent();
+        }
+
+        renderCards();
+        updateContentControls();
+
+        setNotice(
+            storageWarning
+                ? "Card deleted, but some media files may remain in Storage. Check the console."
+                : "Card and its associated content deleted successfully.",
+            storageWarning ? "error" : "success"
+        );
+
+    } catch (error) {
+        console.error("Could not delete card:", error);
+
+        setNotice(
+            `Could not delete card: ${getErrorMessage(error)}`,
+            "error"
+        );
+
+    } finally {
+        if (button) {
+            setButtonBusy(button, false);
+        }
+    }
+}
     // =========================================================
     // CONTENT TYPE CONTROLS
     // =========================================================
