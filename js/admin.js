@@ -641,7 +641,155 @@
             setButtonBusy(button, false);
         }
     }
+async function deleteLesson() {
+    if (!isAdmin()) {
+        setNotice(
+            "Only administrators can delete lessons.",
+            "error"
+        );
+        return;
+    }
 
+    if (!state.currentLesson?.id) {
+        setNotice(
+            "Load a lesson before attempting to delete it.",
+            "error"
+        );
+        return;
+    }
+
+    const lesson = state.currentLesson;
+
+    const confirmed = window.confirm(
+        `Are you sure you want to permanently delete Unit ${lesson.unit_number}, Lesson ${lesson.lesson_number}?\n\nAll its cards and content records will also be deleted. This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    const button = $("#delete-lesson-btn");
+
+    try {
+        setButtonBusy(button, true, "Deleting lesson...");
+
+        // Collect associated files before deleting database records.
+        const {
+            data: cards,
+            error: cardsError
+        } = await client
+            .from("lesson_cards")
+            .select("id")
+            .eq("lesson_id", lesson.id);
+
+        if (cardsError) throw cardsError;
+
+        const cardIds = (cards || []).map(card => card.id);
+
+        let storagePaths = [];
+
+        if (cardIds.length) {
+            const {
+                data: contentItems,
+                error: contentError
+            } = await client
+                .from("lesson_content")
+                .select("storage_path")
+                .in("card_id", cardIds);
+
+            if (contentError) throw contentError;
+
+            storagePaths = (contentItems || [])
+                .map(item => item.storage_path)
+                .filter(Boolean);
+        }
+
+        // Delete the lesson. Related cards and content records
+        // are removed through the database cascade rules.
+        const {
+            data: deletedLesson,
+            error: deleteError
+        } = await client
+            .from("lessons")
+            .delete()
+            .eq("id", lesson.id)
+            .select("id")
+            .single();
+
+        if (deleteError) throw deleteError;
+
+        if (!deletedLesson) {
+            throw new Error(
+                "The lesson could not be confirmed as deleted."
+            );
+        }
+
+        // Remove associated files from private Supabase Storage.
+        let storageWarning = false;
+
+        if (storagePaths.length) {
+            const {
+                error: storageError
+            } = await client.storage
+                .from(STORAGE_BUCKET)
+                .remove(storagePaths);
+
+            if (storageError) {
+                storageWarning = true;
+                console.error(
+                    "Lesson deleted, but some media files may remain in Storage:",
+                    storageError
+                );
+            }
+        }
+
+        // Reset the selected lesson and its associated interface.
+        state.currentLesson = null;
+        state.currentCard = null;
+        state.cards = [];
+        state.content = [];
+
+        $("#lesson-title").value = "";
+        $("#lesson-description").value = "";
+
+        $("#save-lesson-btn").textContent = "Create lesson";
+
+        if ($("#delete-lesson-btn")) {
+            $("#delete-lesson-btn").hidden = true;
+        }
+
+        if ($("#new-lesson-btn")) {
+            $("#new-lesson-btn").hidden = true;
+        }
+
+        if ($("#selected-card-label")) {
+            $("#selected-card-label").textContent =
+                "No card selected";
+        }
+
+        renderCards();
+        renderContent();
+        updateContentControls();
+
+        await loadLessons();
+
+        setNotice(
+            storageWarning
+                ? "Lesson deleted, but some media files may remain in Storage. Check the console."
+                : "Lesson and its associated content deleted successfully.",
+            storageWarning ? "error" : "success"
+        );
+
+    } catch (error) {
+        console.error("Could not delete lesson:", error);
+
+        setNotice(
+            `Could not delete lesson: ${getErrorMessage(error)}`,
+            "error"
+        );
+
+    } finally {
+        setButtonBusy(button, false);
+    }
+}
     async function loadSelectedLesson() {
         try {
             const unitNumber = Number($("#unit-number")?.value);
@@ -745,6 +893,11 @@
             newLessonButton.hidden = !isAdmin();
         }
 
+        const deleteLessonButton = $("#delete-lesson-btn");
+
+if (deleteLessonButton) {
+    deleteLessonButton.hidden = !isAdmin();
+}
         renderCards();
         renderContent();
         updateContentControls();
@@ -1913,6 +2066,10 @@
             "click",
             saveLesson
         );
+        $("#delete-lesson-btn")?.addEventListener(
+    "click",
+    deleteLesson
+);
 
         $("#load-lesson-btn")?.addEventListener(
             "click",
@@ -1963,6 +2120,9 @@
             if (saveButton) {
                 saveButton.textContent = "Create lesson";
             }
+            if ($("#delete-lesson-btn")) {
+    $("#delete-lesson-btn").hidden = true;
+}
 
             if ($("#selected-card-label")) {
                 $("#selected-card-label").textContent =
