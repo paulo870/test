@@ -566,7 +566,8 @@ activeLessonCards.forEach(card => {
     container.appendChild(cardElement);
 
 });
-// ============================================================
+}
+    // ============================================================
 // AUTOMATIC TEXT SIZING FOR INTERACTIVE BOARD
 // ============================================================
 
