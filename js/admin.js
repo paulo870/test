@@ -1534,164 +1534,169 @@ async function deleteCard(cardId) {
         };
     }
 
-    async function addContent() {
-        if (!canManageContent()) {
-            setNotice(
-                "You do not have permission to add content.",
-                "error"
-            );
-
-            return;
-        }
-
-        if (!state.currentLesson || !state.currentCard) {
-            setNotice(
-                "Select a lesson and a card first.",
-                "error"
-            );
-
-            return;
-        }
-
-        const title = $("#content-title")?.value.trim() || "";
-        const requestedType = $("#content-type")?.value || "text";
-        const text = $("#text-content")?.value.trim() || "";
-        const file = $("#content-file")?.files?.[0] || null;
-        const selectedGame = $("#game-select")?.value || "";
-        const button = $("#add-content-btn");
-
-        if (!title) {
-            setNotice(
-                "Please enter a content title.",
-                "error"
-            );
-
-            return;
-        }
-
-        if (requestedType === "text" && !text) {
-            setNotice(
-                "Enter the text or instructions for this content.",
-                "error"
-            );
-
-            return;
-        }
-
-      if (requestedType === "game" && !selectedGame) {
-    setNotice("Please select a game.", "error");
-    return;
-}
-
-if (requestedType !== "text" && requestedType !== "game" && !file) {
-    setNotice(
-        "Choose a file to upload for this content type.",
-        "error"
-    );
-
-    return;
-}
-
-        let uploadedFile = null;
-if (requestedType === "game") {
-    const validGames = ["stop", "round", "grad", "box"];
-
-    if (!validGames.includes(selectedGame)) {
-        setNotice("Invalid game selection.", "error");
+   async function addContent() {
+    if (!canManageContent()) {
+        setNotice(
+            "You do not have permission to add content.",
+            "error"
+        );
         return;
     }
-}
-        try {
-            setButtonBusy(button, true, "Saving content...");
 
-            let actualType = requestedType;
+    if (!state.currentLesson || !state.currentCard) {
+        setNotice(
+            "Select a lesson and a card first.",
+            "error"
+        );
+        return;
+    }
 
-                const detectedType = getActualFileType(file);
+    const title = $("#content-title")?.value.trim() || "";
+    const requestedType = $("#content-type")?.value || "text";
+    const text = $("#text-content")?.value.trim() || "";
+    const file = $("#content-file")?.files?.[0] || null;
+    const selectedGame = $("#game-select")?.value || "";
+    const button = $("#add-content-btn");
 
-                    actualType = "file";
-                } else if (detectedType !== requestedType) {
-                    throw new Error(
-                        `The selected file does not appear to be ${requestedType}. Please choose a matching file.`
-                    );
-                }
-            }
+    if (!title) {
+        setNotice("Please enter a content title.", "error");
+        return;
+    }
 
-            if (file) {
-                uploadedFile = await uploadContentFile(file);
-            }
+    if (requestedType === "text" && !text) {
+        setNotice(
+            "Enter the text or instructions for this content.",
+            "error"
+        );
+        return;
+    }
 
-          const contentData = {
-    card_id: state.currentCard.id,
-    title: title || "",
-    content_type: actualType,
-    text_content: requestedType === "game"
-        ? selectedGame
-        : (text || null),
-    storage_path: uploadedFile?.path || null,
-    original_filename: uploadedFile?.original_filename
-        || uploadedFile?.file_name
-        || uploadedFile?.name
-        || null,
-    file_size: uploadedFile?.file_size ?? null,
-    mime_type: uploadedFile?.mime_type || null,
-    created_by: state.user.id
-};
+    // Validate game selection.
+    if (requestedType === "game") {
+        const validGames = ["stop", "round", "grad", "box"];
 
-            const {
-                error
-            } = await client
-                .from("lesson_content")
-                .insert(contentData);
-
-            if (error) {
-                throw error;
-            }
-
-            if ($("#content-title")) {
-                $("#content-title").value = "";
-            }
-
-            if ($("#text-content")) {
-                $("#text-content").value = "";
-            }
-
-            if ($("#content-file")) {
-                $("#content-file").value = "";
-            }
-    if ($("#game-select")) {
-    $("#game-select").value = "";
-}
-
-            await loadCardContent();
-
-            setNotice(
-                "Content added successfully.",
-                "success"
-            );
-
-        } catch (error) {
-            console.error(
-                "Could not add content:",
-                error
-            );
-
-            setNotice(
-                `Could not add content: ${getErrorMessage(error)}`,
-                "error"
-            );
-
-            if (uploadedFile?.path) {
-                console.warn(
-                    "The file may have uploaded successfully, but its database record was not saved. Storage path:",
-                    uploadedFile.path
-                );
-            }
-        } finally {
-            setButtonBusy(button, false);
-            updateContentControls();
+        if (!validGames.includes(selectedGame)) {
+            setNotice("Please select a valid game.", "error");
+            return;
         }
     }
 
+    // Files are required for image, audio, video and file content.
+    if (
+        requestedType !== "text" &&
+        requestedType !== "game" &&
+        !file
+    ) {
+        setNotice(
+            "Choose a file to upload for this content type.",
+            "error"
+        );
+        return;
+    }
+
+    let uploadedFile = null;
+
+    try {
+        setButtonBusy(button, true, "Saving content...");
+
+        let actualType = requestedType;
+
+        // Validate uploaded file types.
+        if (file) {
+            const detectedType = getActualFileType(file);
+
+            if (requestedType === "file") {
+                actualType = "file";
+            } else if (detectedType !== requestedType) {
+                throw new Error(
+                    `The selected file does not appear to be ${requestedType}. Please choose a matching file.`
+                );
+            }
+        }
+
+        // Upload only actual files. Games do not require uploads.
+        if (file) {
+            uploadedFile = await uploadContentFile(file);
+        }
+
+        // Save the selected game ID in text_content.
+        const contentData = {
+            card_id: state.currentCard.id,
+            title: title,
+            content_type: actualType,
+
+            text_content: requestedType === "game"
+                ? selectedGame
+                : (text || null),
+
+            storage_path: uploadedFile?.path || null,
+
+            original_filename:
+                uploadedFile?.file_name || null,
+
+            file_size:
+                uploadedFile?.file_size ?? null,
+
+            mime_type:
+                uploadedFile?.mime_type || null,
+
+            created_by: state.user.id
+        };
+
+        const {
+            error
+        } = await client
+            .from("lesson_content")
+            .insert(contentData);
+
+        if (error) {
+            throw error;
+        }
+
+        // Reset the form.
+        if ($("#content-title")) {
+            $("#content-title").value = "";
+        }
+
+        if ($("#text-content")) {
+            $("#text-content").value = "";
+        }
+
+        if ($("#content-file")) {
+            $("#content-file").value = "";
+        }
+
+        if ($("#game-select")) {
+            $("#game-select").value = "";
+        }
+
+        await loadCardContent();
+
+        setNotice(
+            "Content added successfully.",
+            "success"
+        );
+
+    } catch (error) {
+        console.error("Could not add content:", error);
+
+        setNotice(
+            `Could not add content: ${getErrorMessage(error)}`,
+            "error"
+        );
+
+        if (uploadedFile?.path) {
+            console.warn(
+                "The file may have uploaded successfully, but its database record was not saved. Storage path:",
+                uploadedFile.path
+            );
+        }
+
+    } finally {
+        setButtonBusy(button, false);
+        updateContentControls();
+    }
+}
     // =========================================================
     // LOAD AND DISPLAY CARD CONTENT
     // =========================================================
