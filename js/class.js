@@ -522,7 +522,49 @@ function renderStudentLessonCards() {
     });
 }
 
+// ============================================================
+// AUTOMATIC TEXT SIZING FOR INTERACTIVE BOARD
+// ============================================================
 
+function fitLessonViewerContent(viewer) {
+
+    const contentArea = viewer.querySelector(
+        ".lesson-viewer-content"
+    );
+
+    if (!contentArea) return;
+
+    const textElements = contentArea.querySelectorAll(
+        ".lesson-viewer-text"
+    );
+
+    if (!textElements.length) return;
+
+    let fontSize = 38;
+
+    const minimumFontSize = 16;
+
+    // Start with a large readable font.
+    viewer.style.setProperty(
+        "--lesson-viewer-font-size",
+        `${fontSize}px`
+    );
+
+    // Allow the browser to calculate the actual dimensions.
+    while (
+        fontSize > minimumFontSize &&
+        contentArea.scrollHeight > contentArea.clientHeight + 2
+    ) {
+
+        fontSize--;
+
+        viewer.style.setProperty(
+            "--lesson-viewer-font-size",
+            `${fontSize}px`
+        );
+    }
+
+}
 // ============================================================
 // OPEN A CARD AND DISPLAY ITS SUPABASE CONTENT
 // ============================================================
