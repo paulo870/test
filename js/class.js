@@ -105,7 +105,29 @@ let activeLessonRecord = null;
 let activeLessonCards = [];
 let activeLessonContent = [];
 
+// ============================================================
+// CONTENT CATEGORY HELPERS
+// ============================================================
 
+function isExtraContent(item) {
+    return String(item.content_category || "main")
+        .trim()
+        .toLowerCase() === "extra";
+}
+
+function getMainContent(cardId) {
+    return activeLessonContent.filter(item =>
+        String(item.card_id) === String(cardId) &&
+        !isExtraContent(item)
+    );
+}
+
+function getExtraContent(cardId) {
+    return activeLessonContent.filter(item =>
+        String(item.card_id) === String(cardId) &&
+        isExtraContent(item)
+    );
+}
 // ============================================================
 // SUPABASE CLIENT
 // ============================================================
@@ -419,18 +441,130 @@ activeLessonCards = (cardsQuery.data || []).slice(
 // ============================================================
 
 function renderStudentLessonCards() {
+
     const container = showLessonCardView();
 
     container.replaceChildren();
-    const cardRows = Math.max(
-    1,
-    Math.ceil(activeLessonCards.length / 4)
-);
 
-container.style.setProperty(
-    "--card-rows",
-    cardRows
-);
+    const cardRows = Math.max(
+        1,
+        Math.ceil(activeLessonCards.length / 4)
+    );
+
+    container.style.setProperty("--card-rows", cardRows);
+
+    // LESSON HEADING
+
+    const heading = document.createElement("div");
+    heading.className = "lesson-heading";
+
+    const title = document.createElement("h1");
+
+    title.textContent =
+        activeLessonRecord?.title ||
+        `Unit ${activeStudentUnit} — Lesson ${activeStudentLesson}`;
+
+    const subtitle = document.createElement("p");
+
+    subtitle.textContent =
+        activeLessonRecord?.description ||
+        `Unit ${activeStudentUnit} · Lesson ${activeStudentLesson}`;
+
+    heading.append(title, subtitle);
+    container.appendChild(heading);
+
+    // EMPTY LESSON
+
+    if (activeLessonCards.length === 0) {
+
+        const emptyState = document.createElement("div");
+
+        emptyState.className = "lesson-empty-state";
+
+        emptyState.innerHTML = `
+            <h2>No cards available yet</h2>
+            <p>This lesson does not have any cards yet.</p>
+        `;
+
+        container.appendChild(emptyState);
+
+        return;
+    }
+
+    // CREATE CARDS
+
+    activeLessonCards.forEach(card => {
+
+        const cardElement = document.createElement("div");
+
+        cardElement.className = "lesson-content-card";
+        cardElement.dataset.cardId = card.id;
+
+        const mainContent = getMainContent(card.id);
+        const extraContent = getExtraContent(card.id);
+
+        // CARD NUMBER
+
+        const cardNumber = document.createElement("span");
+
+        cardNumber.className = "lesson-card-number";
+        cardNumber.textContent = `Card ${card.card_number}`;
+
+        // MAIN BUTTON
+
+        const mainButton = document.createElement("button");
+
+        mainButton.type = "button";
+        mainButton.className = "lesson-card-open";
+
+        const cardTitle = document.createElement("h2");
+
+        cardTitle.textContent =
+            card.title || `Card ${card.card_number}`;
+
+        const cardDescription = document.createElement("p");
+
+        cardDescription.textContent =
+            mainContent.length === 0
+                ? "No main content added yet."
+                : `${mainContent.length} content item(s) · Open presentation`;
+
+        mainButton.append(cardTitle, cardDescription);
+
+        mainButton.addEventListener("click", () => {
+            openLessonCard(card);
+        });
+
+        cardElement.append(cardNumber, mainButton);
+
+        // EXTRA CONTENT BUTTON
+
+        if (extraContent.length > 0) {
+
+            const extraButton = document.createElement("button");
+
+            extraButton.type = "button";
+            extraButton.className = "lesson-extra-btn";
+
+            extraButton.textContent =
+                `＋ Extra Content (${extraContent.length})`;
+
+            extraButton.addEventListener("click", event => {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                openExtraContent(card);
+
+            });
+
+            cardElement.appendChild(extraButton);
+        }
+
+        container.appendChild(cardElement);
+
+    });
+}
 
     // --------------------------------------------------------
     // LESSON HEADING
@@ -610,12 +744,15 @@ function fitLessonViewerContent(viewer) {
     }
 
 }
+
 // ============================================================
-// OPEN A CARD AND DISPLAY ITS SUPABASE CONTENT
+// POWERPOINT-STYLE LESSON PRESENTATION
 // ============================================================
 
 function openLessonCard(card) {
-    // Close any previously opened viewer.
+
+    // Remove existing viewer
+
     const existingViewer = document.getElementById(
         "lesson-card-viewer"
     );
@@ -624,88 +761,15 @@ function openLessonCard(card) {
         existingViewer.remove();
     }
 
-    const viewer = document.createElement("div");
+    // Get MAIN content only
 
-    viewer.id = "lesson-card-viewer";
+    const cardContent = getMainContent(card.id);
 
-    // --------------------------------------------------------
-    // CLOSE BUTTON
-    // --------------------------------------------------------
+    // CREATE PRESENTATION SLIDES
 
-    const closeButton = document.createElement("button");
-
-    closeButton.type = "button";
-    closeButton.className = "lesson-viewer-close";
-    closeButton.textContent = "×";
-
-    closeButton.setAttribute(
-        "aria-label",
-        "Close lesson card"
-    );
-
-    // --------------------------------------------------------
-    // VIEWER CONTENT
-    // --------------------------------------------------------
-
-    const contentArea = document.createElement("div");
-
-    contentArea.className = "lesson-viewer-content";
-
-    // --------------------------------------------------------
-// FULL-CARD EDITING CANVAS
-// --------------------------------------------------------
-
-contentArea.style.position = "relative";
-
-const cardEditCanvas = document.createElement("canvas");
-
-cardEditCanvas.id = "lesson-card-edit-canvas";
-cardEditCanvas.className = "lesson-card-edit-canvas";
-
-cardEditCanvas.setAttribute(
-    "aria-label",
-    "Lesson card editing canvas"
-);
-
-contentArea.appendChild(cardEditCanvas);
-
-    const title = document.createElement("h2");
-
-    title.textContent =
-        card.title || `Card ${card.card_number}`;
-
-    contentArea.appendChild(title);
-
-    const cardContent = activeLessonContent.filter(item =>
-    String(item.card_id) === String(card.id) &&
-    item.content_category !== "extra"
-);
-
-    if (cardContent.length === 0) {
-        const emptyMessage = document.createElement("p");
-
-        emptyMessage.textContent =
-            "No content has been added to this card yet.";
-
-        contentArea.appendChild(emptyMessage);
-    }
-
-    // --------------------------------------------------------
-    // DISPLAY EVERY CONTENT ITEM ASSOCIATED WITH THIS CARD
-    // --------------------------------------------------------
+    const slides = [];
 
     cardContent.forEach(item => {
-        const itemContainer = document.createElement("section");
-
-        itemContainer.className = "lesson-viewer-item";
-
-        const itemTitle = document.createElement("h3");
-
-        itemTitle.className = "lesson-viewer-item-title";
-
-        itemTitle.textContent = item.title || "Lesson content";
-
-        itemContainer.appendChild(itemTitle);
 
         const type = String(
             item.content_type || "text"
@@ -713,228 +777,495 @@ contentArea.appendChild(cardEditCanvas);
 
         const mediaUrl = item.signed_url || "";
 
-        // TEXT CONTENT
-        if (item.text_content) {
-            const text = document.createElement("div");
+        // Split text into individual sentences
 
-            text.className = "lesson-viewer-text";
+        if (item.text_content && item.text_content.trim()) {
 
-            text.textContent = item.text_content;
+            const sentences = item.text_content
+                .replace(/\r/g, "")
+                .split(/(?<=[.!?])\s+|\n+/)
+                .map(sentence => sentence.trim())
+                .filter(Boolean);
 
-            itemContainer.appendChild(text);
+            sentences.forEach((sentence, index) => {
+
+                slides.push({
+                    type: "text",
+                    title: item.title || "Lesson",
+                    content: sentence,
+                    sentenceNumber: index + 1,
+                    itemId: item.id
+                });
+
+            });
         }
 
-        // IMAGE CONTENT
+        // IMAGE
+
         if (type === "image") {
-            if (mediaUrl) {
-                const image = document.createElement("img");
 
-                image.className = "lesson-viewer-media";
-                image.src = mediaUrl;
-
-                image.alt =
-                    item.title || "Lesson image";
-
-                image.loading = "lazy";
-
-                itemContainer.appendChild(image);
-            } else if (item.storage_path) {
-                appendUnavailableMessage(
-                    itemContainer,
-                    "This image could not be loaded. Check the Supabase Storage permissions."
-                );
-            }
+            slides.push({
+                type: "image",
+                title: item.title || "Lesson image",
+                url: mediaUrl,
+                storagePath: item.storage_path
+            });
         }
 
-        // AUDIO CONTENT
+        // AUDIO
+
         else if (type === "audio") {
-            if (mediaUrl) {
-                const audio = document.createElement("audio");
 
-                audio.className = "lesson-viewer-media";
-                audio.controls = true;
-                audio.preload = "metadata";
-                audio.src = mediaUrl;
-
-                itemContainer.appendChild(audio);
-            } else if (item.storage_path) {
-                appendUnavailableMessage(
-                    itemContainer,
-                    "This audio file could not be loaded. Check the Supabase Storage permissions."
-                );
-            }
+            slides.push({
+                type: "audio",
+                title: item.title || "Listening activity",
+                url: mediaUrl,
+                storagePath: item.storage_path
+            });
         }
 
-        // VIDEO CONTENT
+        // VIDEO
+
         else if (type === "video") {
-            if (mediaUrl) {
-                const video = document.createElement("video");
 
-                video.className = "lesson-viewer-media";
-                video.controls = true;
-                video.preload = "metadata";
-                video.playsInline = true;
-                video.src = mediaUrl;
-
-                itemContainer.appendChild(video);
-            } else if (item.storage_path) {
-                appendUnavailableMessage(
-                    itemContainer,
-                    "This video could not be loaded. Check the Supabase Storage permissions."
-                );
-            }
+            slides.push({
+                type: "video",
+                title: item.title || "Lesson video",
+                url: mediaUrl,
+                storagePath: item.storage_path
+            });
         }
 
-        // FILES AND OTHER RESOURCE TYPES
+        // INTERACTIVE HTML
+
+        else if (
+            type === "html" ||
+            type === "interactive"
+        ) {
+
+            slides.push({
+                type: "interactive",
+                title: item.title || "Interactive activity",
+                url: mediaUrl,
+                storagePath: item.storage_path
+            });
+        }
+
+        // FILES AND GAMES
+
         else if (
             type === "file" ||
             type === "game"
         ) {
-            if (mediaUrl) {
-                const fileLink = document.createElement("a");
 
-                fileLink.href = mediaUrl;
-                fileLink.target = "_blank";
-                fileLink.rel = "noopener noreferrer";
-
-                fileLink.textContent =
+            slides.push({
+                type: "file",
+                title: item.title || "Lesson resource",
+                url: mediaUrl,
+                filename:
                     item.original_filename ||
                     item.file_name ||
-                    "Open resource";
-
-                itemContainer.appendChild(fileLink);
-            } else if (item.storage_path) {
-                appendUnavailableMessage(
-                    itemContainer,
-                    "This resource could not be opened. Check the Supabase Storage permissions."
-                );
-            }
+                    "Open resource",
+                storagePath: item.storage_path
+            });
         }
 
-        contentArea.appendChild(itemContainer);
-    });
-// Keep the editing canvas above all lesson content.
-contentArea.appendChild(cardEditCanvas);
-
-    // --------------------------------------------------------
-// CLOSE THE VIEWER
-// Only the close button closes the card.
-// --------------------------------------------------------
-
-let lessonViewerResizeObserver = null;
-
-function closeViewer() {
-
-    contentArea.querySelectorAll("audio, video").forEach(media => {
-        media.pause();
     });
 
-    if (lessonViewerResizeObserver) {
-        lessonViewerResizeObserver.disconnect();
-        lessonViewerResizeObserver = null;
-    }
+    // VIEWER
 
-    viewer.remove();
-}
+    const viewer = document.createElement("div");
 
-closeButton.addEventListener("click", closeViewer);
+    viewer.id = "lesson-card-viewer";
+    viewer.className = "lesson-card-viewer";
 
+    // HEADER
 
-// --------------------------------------------------------
-// ZOOMABLE CARD CONTENT
-// --------------------------------------------------------
+    const header = document.createElement("div");
 
-const zoomArea = document.createElement("div");
-zoomArea.className = "lesson-viewer-zoom-area";
+    header.className = "lesson-presentation-header";
 
-zoomArea.appendChild(contentArea);
+    const heading = document.createElement("h2");
 
-let cardZoomScale = 1;
+    heading.textContent =
+        card.title || `Card ${card.card_number}`;
 
-const MIN_CARD_ZOOM = 0.5;
-const MAX_CARD_ZOOM = 3;
-const CARD_ZOOM_STEP = 0.1;
+    const closeButton = document.createElement("button");
 
+    closeButton.type = "button";
+    closeButton.className = "lesson-viewer-close";
+    closeButton.textContent = "×";
+    closeButton.setAttribute("aria-label", "Close presentation");
 
-// Only Ctrl + wheel over the card content changes card zoom.
-zoomArea.addEventListener("wheel", function(event) {
-    if (!event.ctrlKey) return;
+    header.append(heading, closeButton);
 
-    event.preventDefault();
-    event.stopPropagation();
+    // PRESENTATION AREA
 
-    if (event.deltaY < 0) {
-        cardZoomScale += CARD_ZOOM_STEP;
-    } else if (event.deltaY > 0) {
-        cardZoomScale -= CARD_ZOOM_STEP;
-    }
+    const presentation = document.createElement("div");
 
-    cardZoomScale = Math.max(
-        MIN_CARD_ZOOM,
-        Math.min(MAX_CARD_ZOOM, cardZoomScale)
+    presentation.className = "lesson-presentation";
+
+    const slideTitle = document.createElement("h3");
+
+    slideTitle.className = "lesson-presentation-title";
+
+    const slideBody = document.createElement("div");
+
+    slideBody.className = "lesson-presentation-body";
+
+    presentation.append(slideTitle, slideBody);
+
+    // NAVIGATION
+
+    const navigation = document.createElement("div");
+
+    navigation.className = "lesson-presentation-navigation";
+
+    const previousButton = document.createElement("button");
+
+    previousButton.type = "button";
+    previousButton.textContent = "← Previous";
+    previousButton.className = "lesson-presentation-prev";
+
+    const progress = document.createElement("div");
+
+    progress.className = "lesson-presentation-progress";
+
+    const progressText = document.createElement("span");
+
+    const progressTrack = document.createElement("div");
+
+    progressTrack.className = "lesson-progress-track";
+
+    const progressBar = document.createElement("div");
+
+    progressBar.className = "lesson-progress-bar";
+
+    progressTrack.appendChild(progressBar);
+
+    progress.append(progressText, progressTrack);
+
+    const nextButton = document.createElement("button");
+
+    nextButton.type = "button";
+    nextButton.textContent = "Next →";
+    nextButton.className = "lesson-presentation-next";
+
+    navigation.append(
+        previousButton,
+        progress,
+        nextButton
     );
 
-    zoomArea.style.transform =
-        `scale(${cardZoomScale})`;
+    // DRAWING CANVAS
 
-}, { passive: false });
+    const cardEditCanvas = document.createElement("canvas");
 
+    cardEditCanvas.className = "lesson-card-edit-canvas";
+    cardEditCanvas.setAttribute(
+        "aria-label",
+        "Lesson presentation drawing canvas"
+    );
 
-// --------------------------------------------------------
-// PREVENT BROWSER ZOOM WHILE THE CARD IS OPEN
-// --------------------------------------------------------
+    cardEditCanvas.style.pointerEvents = "none";
 
-// This prevents Ctrl + wheel from zooming the browser.
-// It does not change the background slide's scale.
-function preventBrowserZoomWhileCardOpen(event) {
-    if (!event.ctrlKey) return;
+    // ASSEMBLE VIEWER
 
-    if (!document.getElementById("lesson-card-viewer")) {
-        return;
-    }
+    viewer.append(
+        header,
+        presentation,
+        navigation,
+        cardEditCanvas
+    );
 
-    event.preventDefault();
-}
+    document.body.appendChild(viewer);
 
-document.addEventListener(
-    "wheel",
-    preventBrowserZoomWhileCardOpen,
-    { passive: false, capture: true }
-);
+    // CURRENT SLIDE
 
+    let currentSlide = 0;
 
-// Assemble the viewer.
-viewer.append(closeButton, zoomArea);
+    function stopMedia() {
 
-document.body.appendChild(viewer);
-
-// Automatically fit text to the available screen space.
-requestAnimationFrame(() => {
-
-    fitLessonViewerContent(viewer);
-
-    // Recalculate if the screen or viewer dimensions change.
-    if ("ResizeObserver" in window) {
-
-        lessonViewerResizeObserver = new ResizeObserver(() => {
-            fitLessonViewerContent(viewer);
+        slideBody.querySelectorAll("audio, video").forEach(media => {
+            media.pause();
         });
 
-        lessonViewerResizeObserver.observe(viewer);
     }
 
-});
+    // RENDER SLIDE
 
-// Recalculate when images finish loading.
-viewer.querySelectorAll("img").forEach(image => {
+    function renderSlide(index) {
 
-    image.addEventListener("load", () => {
-        fitLessonViewerContent(viewer);
+        stopMedia();
+
+        slideBody.replaceChildren();
+
+        if (slides.length === 0) {
+
+            slideTitle.textContent = "No content available";
+
+            const message = document.createElement("p");
+
+            message.textContent =
+                "No main content has been added to this card yet.";
+
+            slideBody.appendChild(message);
+
+            previousButton.disabled = true;
+            nextButton.disabled = true;
+
+            progressText.textContent = "0 / 0";
+            progressBar.style.width = "0%";
+
+            return;
+        }
+
+        const slide = slides[index];
+
+        slideTitle.textContent = slide.title;
+
+        // TEXT SLIDE
+
+        if (slide.type === "text") {
+
+            const text = document.createElement("div");
+
+            text.className = "lesson-presentation-text";
+            text.textContent = slide.content;
+
+            slideBody.appendChild(text);
+
+        }
+
+        // IMAGE SLIDE
+
+        else if (slide.type === "image") {
+
+            if (slide.url) {
+
+                const image = document.createElement("img");
+
+                image.src = slide.url;
+                image.alt = slide.title;
+                image.className = "lesson-presentation-media";
+
+                slideBody.appendChild(image);
+
+            } else {
+
+                appendUnavailableMessage(
+                    slideBody,
+                    "This image could not be loaded."
+                );
+            }
+
+        }
+
+        // AUDIO SLIDE
+
+        else if (slide.type === "audio") {
+
+            if (slide.url) {
+
+                const audio = document.createElement("audio");
+
+                audio.controls = true;
+                audio.preload = "metadata";
+                audio.src = slide.url;
+                audio.className = "lesson-presentation-media";
+
+                slideBody.appendChild(audio);
+
+            } else {
+
+                appendUnavailableMessage(
+                    slideBody,
+                    "This audio file could not be loaded."
+                );
+            }
+
+        }
+
+        // VIDEO SLIDE
+
+        else if (slide.type === "video") {
+
+            if (slide.url) {
+
+                const video = document.createElement("video");
+
+                video.controls = true;
+                video.playsInline = true;
+                video.preload = "metadata";
+                video.src = slide.url;
+                video.className = "lesson-presentation-media";
+
+                slideBody.appendChild(video);
+
+            } else {
+
+                appendUnavailableMessage(
+                    slideBody,
+                    "This video could not be loaded."
+                );
+            }
+
+        }
+
+        // INTERACTIVE ACTIVITY
+
+        else if (slide.type === "interactive") {
+
+            if (slide.url) {
+
+                const frame = document.createElement("iframe");
+
+                frame.src = slide.url;
+                frame.title = slide.title;
+                frame.className = "lesson-presentation-iframe";
+
+                frame.setAttribute("allowfullscreen", "");
+
+                slideBody.appendChild(frame);
+
+            } else {
+
+                appendUnavailableMessage(
+                    slideBody,
+                    "This interactive activity could not be loaded."
+                );
+            }
+
+        }
+
+        // FILE / GAME
+
+        else if (slide.type === "file") {
+
+            if (slide.url) {
+
+                const link = document.createElement("a");
+
+                link.href = slide.url;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.textContent = slide.filename;
+
+                slideBody.appendChild(link);
+
+            } else {
+
+                appendUnavailableMessage(
+                    slideBody,
+                    "This resource could not be opened."
+                );
+            }
+
+        }
+
+        // UPDATE PROGRESS
+
+        progressText.textContent =
+            `${index + 1} / ${slides.length}`;
+
+        progressBar.style.width =
+            `${((index + 1) / slides.length) * 100}%`;
+
+        previousButton.disabled = index === 0;
+
+        nextButton.disabled =
+            index === slides.length - 1;
+
+    }
+
+    // NEXT
+
+    nextButton.addEventListener("click", () => {
+
+        if (currentSlide < slides.length - 1) {
+
+            currentSlide++;
+
+            renderSlide(currentSlide);
+        }
+
     });
 
-});
+    // PREVIOUS
 
-} // END OF openLessonCard()
+    previousButton.addEventListener("click", () => {
+
+        if (currentSlide > 0) {
+
+            currentSlide--;
+
+            renderSlide(currentSlide);
+        }
+
+    });
+
+    // CLOSE
+
+    function closeViewer() {
+
+        stopMedia();
+
+        document.removeEventListener(
+            "keydown",
+            handlePresentationKeyboard
+        );
+
+        viewer.remove();
+
+    }
+
+    closeButton.addEventListener("click", closeViewer);
+
+    // KEYBOARD NAVIGATION
+
+    function handlePresentationKeyboard(event) {
+
+        if (!document.getElementById("lesson-card-viewer")) {
+            return;
+        }
+
+        if (event.key === "Escape") {
+            closeViewer();
+        }
+
+        if (
+            event.key === "ArrowRight" &&
+            currentSlide < slides.length - 1
+        ) {
+
+            currentSlide++;
+            renderSlide(currentSlide);
+
+        }
+
+        if (
+            event.key === "ArrowLeft" &&
+            currentSlide > 0
+        ) {
+
+            currentSlide--;
+            renderSlide(currentSlide);
+
+        }
+
+    }
+
+    document.addEventListener(
+        "keydown",
+        handlePresentationKeyboard
+    );
+
+    // INITIAL SLIDE
+
+    renderSlide(currentSlide);
+
+}
+
 
 // ============================================================
 // OPEN EXTRA CONTENT FOR A SPECIFIC CARD
@@ -951,11 +1282,8 @@ function openExtraContent(card) {
         existingModal.remove();
     }
 
-    // Retrieve EXTRA content belonging only to this card
-    const extraItems = activeLessonContent.filter(item =>
-        String(item.card_id) === String(card.id) &&
-        item.content_category === "extra"
-    );
+   const extraItems = getExtraContent(card.id);
+    
 
     if (extraItems.length === 0) {
         return;
