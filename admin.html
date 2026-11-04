@@ -339,7 +339,23 @@
       Choose a file from your device.
     </span>
   </label>
+<!-- INTERACTIVE ACTIVITY BUILDER -->
+<section id="interactive-builder" hidden>
 
+    <label for="interactive-type">
+        Exercise type
+        <select id="interactive-type">
+            <option value="matching">Matching</option>
+            <option value="cloze">Cloze</option>
+            <option value="picture-selection">Picture Selection</option>
+            <option value="multiple-choice">Multiple Choice</option>
+            <option value="ordering">Ordering</option>
+        </select>
+    </label>
+
+    <div id="interactive-fields"></div>
+
+</section>
   <button
     id="add-content-btn"
     type="button"
