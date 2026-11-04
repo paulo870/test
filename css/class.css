@@ -4443,3 +4443,33 @@ text-align: center;
         padding: 15px;
     }
 }
+/* =========================================
+   INTERACTIVE ACTIVITY IN LESSON CARD
+========================================= */
+
+.lesson-interactive-frame {
+    display: block;
+    width: 100%;
+    height: 760px;
+    min-height: 550px;
+    border: 0;
+    border-radius: 12px;
+    background: #f5f7fa;
+}
+
+.lesson-game-iframe {
+    display: block;
+    width: 100%;
+    height: 760px;
+    border: 0;
+    border-radius: 12px;
+    background: white;
+}
+
+@media (max-width: 700px) {
+    .lesson-interactive-frame,
+    .lesson-game-iframe {
+        height: 75vh;
+        min-height: 550px;
+    }
+}
