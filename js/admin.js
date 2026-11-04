@@ -362,6 +362,14 @@
             extraContentButton.getAttribute("aria-busy") === "true";
     }
 }
+    const extraButton = $("#add-extra-content-btn");
+
+if (extraButton) {
+    extraButton.disabled =
+        (!isAdmin() && !isTeacher()) ||
+        !state.currentLesson ||
+        !state.currentCard;
+}
 
     // =========================================================
     // NAVIGATION
@@ -1613,6 +1621,7 @@ async function deleteCard(cardId) {
 
            const contentData = {
   card_id: state.currentCard.id,
+ content_category: "main",              
   title: title || "",
   content_type: actualType,
   text_content: text || null,
@@ -1677,133 +1686,205 @@ async function deleteCard(cardId) {
             updateContentControls();
         }
     }
+async function addExtraContent() {
+    if (!isAdmin() && !isTeacher()) {
+        setNotice("You cannot add lesson content.", "error");
+        return;
+    }
 
-    // =========================================================
-    // LOAD AND DISPLAY CARD CONTENT
-    // =========================================================
+    if (!state.currentLesson || !state.currentCard) {
+        setNotice("Select a lesson and card first.", "error");
+        return;
+    }
 
-    async function loadCardContent() {
-        if (!state.currentCard) {
-            state.content = [];
-            renderContent();
-            updateContentControls();
-            return;
-        }
+    const title = $("#extra-content-title")?.value.trim() || "";
+    const requestedType = $("#extra-content-type")?.value || "text";
+    const text = $("#extra-text-content")?.value.trim() || "";
+    const fileInput = $("#extra-content-file");
+    const file = fileInput?.files?.[0] || null;
+    const button = $("#add-extra-content-btn");
 
-        const container = $("#content-list");
+    if (!title) {
+        setNotice("Enter a title for the extra content.", "error");
+        return;
+    }
 
-        try {
-            showLoading(
-                container,
-                "Loading card content..."
-            );
+    if (requestedType === "text" && !text) {
+        setNotice("Enter the text or instructions.", "error");
+        return;
+    }
 
-            const {
-                data,
-                error
-            } = await client
-                .from("lesson_content")
-                .select("*")
-                .eq("card_id", state.currentCard.id)
-                .order("created_at", { ascending: true });
+    if (requestedType !== "text" && !file) {
+        setNotice("Select a file for this resource.", "error");
+        return;
+    }
 
-            if (error) {
-                throw error;
+    let actualType = requestedType;
+
+    if (file) {
+        actualType = getActualFileType(file);
+
+        if (requestedType === "game") {
+            const extension = file.name.split(".").pop().toLowerCase();
+
+            if (!["html", "zip"].includes(extension)) {
+                setNotice("Game resources must be HTML or ZIP files.", "error");
+                return;
             }
 
-            state.content = await Promise.all(
-                (data || []).map(async item => {
-                    if (!item.storage_path) {
-                        return item;
-                    }
-
-                    try {
-                        const {
-                            data: signedData,
-                            error: signedError
-                        } = await client.storage
-                            .from(STORAGE_BUCKET)
-                            .createSignedUrl(
-                                item.storage_path,
-                                3600
-                            );
-
-                        if (signedError) {
-                            throw signedError;
-                        }
-
-                        return {
-                            ...item,
-                            signed_url: signedData?.signedUrl || null
-                        };
-
-                    } catch (signedError) {
-                        console.warn(
-                            "Could not create a temporary media link:",
-                            signedError
-                        );
-
-                        return {
-                            ...item,
-                            signed_url: null
-                        };
-                    }
-                })
-            );
-
-            renderContent();
-
-        } catch (error) {
-            console.error(
-                "Could not load card content:",
-                error
-            );
-
-            showEmpty(
-                container,
-                "Unable to load content for this card."
-            );
-
-            setNotice(
-                `Could not load card content: ${getErrorMessage(error)}`,
-                "error"
-            );
+            actualType = "game";
+        } else if (requestedType === "file") {
+            actualType = "file";
+        } else if (actualType !== requestedType) {
+            setNotice("The selected file does not match the chosen content type.", "error");
+            return;
         }
     }
 
-    function renderContent() {
-        const container = $("#content-list");
-        const countLabel = $("#content-count");
+    let uploadedFile = null;
 
-        if (countLabel) {
-            countLabel.textContent =
-                `${state.content.length} ` +
-                `${state.content.length === 1 ? "item" : "items"}`;
+    try {
+        setButtonBusy(button, true, "Uploading extra content...");
+
+        if (file) {
+            uploadedFile = await uploadContentFile(file);
         }
 
-        if (!container) {
-            return;
+        const contentData = {
+            card_id: state.currentCard.id,
+            content_category: "extra",
+            title,
+            content_type: actualType,
+            text_content: text || null,
+            storage_path: uploadedFile?.path || null,
+            original_filename:
+                uploadedFile?.original_filename ||
+                uploadedFile?.file_name ||
+                uploadedFile?.name ||
+                null,
+            file_size: uploadedFile?.file_size ?? null,
+            mime_type: uploadedFile?.mime_type || null,
+            created_by: state.user.id
+        };
+
+        const { error } = await client
+            .from("lesson_content")
+            .insert(contentData);
+
+        if (error) {
+            throw error;
         }
+
+        $("#extra-content-title").value = "";
+        $("#extra-text-content").value = "";
+
+        if (fileInput) {
+            fileInput.value = "";
+        }
+
+        setNotice("Extra content added successfully.", "success");
+
+        await loadCardContent();
+
+    } catch (error) {
+        console.error("Could not add extra content:", error);
+
+        setNotice(
+            `Could not add extra content: ${getErrorMessage(error)}`,
+            "error"
+        );
+    } finally {
+        setButtonBusy(button, false);
+    }
+}
+    // =========================================================
+    // LOAD AND DISPLAY CARD CONTENT
+    // =========================================================
+async function loadCardContent() {
+    if (!state.currentCard) {
+        state.content = [];
+        state.extraContent = [];
+        renderContent();
+        updateContentControls();
+        return;
+    }
+
+    try {
+        const { data, error } = await client
+            .from("lesson_content")
+            .select("*")
+            .eq("card_id", state.currentCard.id)
+            .order("created_at", { ascending: true });
+
+        if (error) throw error;
+
+        const resources = await Promise.all(
+            (data || []).map(async item => {
+                if (!item.storage_path) return item;
+
+                try {
+                    const { data: signedData, error: signedError } =
+                        await client.storage
+                            .from(STORAGE_BUCKET)
+                            .createSignedUrl(item.storage_path, 3600);
+
+                    if (signedError) throw signedError;
+
+                    return {
+                        ...item,
+                        signed_url: signedData?.signedUrl || null
+                    };
+                } catch (error) {
+                    console.warn("Could not create media link:", error);
+                    return { ...item, signed_url: null };
+                }
+            })
+        );
+
+        state.content = resources.filter(
+            item => (item.content_category || "main") === "main"
+        );
+
+        state.extraContent = resources.filter(
+            item => item.content_category === "extra"
+        );
+
+        renderContent();
+
+    } catch (error) {
+        console.error("Could not load card resources:", error);
+
+        setNotice(
+            `Could not load card resources: ${getErrorMessage(error)}`,
+            "error"
+        );
+    }
+}
+ 
+
+   function renderContent() {
+    const renderList = (items, containerId, countId) => {
+        const container = $(`#${containerId}`);
+        const count = $(`#${countId}`);
+
+        if (count) {
+            count.textContent =
+                `${items.length} ${items.length === 1 ? "item" : "items"}`;
+        }
+
+        if (!container) return;
 
         if (!state.currentCard) {
-            showEmpty(
-                container,
-                "Select a card to view its content."
-            );
-
+            showEmpty(container, "Select a card to view its resources.");
             return;
         }
 
-        if (!state.content.length) {
-            showEmpty(
-                container,
-                "This card does not contain any content yet."
-            );
-
+        if (!items.length) {
+            showEmpty(container, "No resources have been added yet.");
             return;
         }
 
-        const typeLabels = {
+        const labels = {
             text: "Text / Instructions",
             image: "Image",
             audio: "Audio",
@@ -1812,141 +1893,79 @@ async function deleteCard(cardId) {
             game: "Game / Interactive Resource"
         };
 
-        container.innerHTML = state.content.map(item => {
-            const type = String(
-                item.content_type || "text"
-            ).toLowerCase();
-
-            const signedUrl = item.signed_url
-                ? escapeHTML(item.signed_url)
-                : "";
-
-            const safeTitle = escapeHTML(
-                item.title || "Untitled content"
-            );
-
-            const safeFileName = escapeHTML(
-                item.file_name || "Lesson resource"
+        container.innerHTML = items.map(item => {
+            const type = String(item.content_type || "text").toLowerCase();
+            const url = item.signed_url ? escapeHTML(item.signed_url) : "";
+            const title = escapeHTML(item.title || "Untitled content");
+            const filename = escapeHTML(
+                item.original_filename || item.file_name || "Lesson resource"
             );
 
             let preview = "";
 
-            if (signedUrl && type === "image") {
-                preview = `
-                    <img
-                        class="content-preview content-preview-image"
-                        src="${signedUrl}"
-                        alt="${safeTitle}"
-                        loading="lazy"
-                    >
-                `;
-            } else if (signedUrl && type === "audio") {
-                preview = `
-                    <audio
-                        class="content-preview"
-                        controls
-                        preload="none"
-                        src="${signedUrl}"
-                    >
-                        Your browser does not support audio playback.
-                    </audio>
-                `;
-            } else if (signedUrl && type === "video") {
-                preview = `
-                    <video
-                        class="content-preview content-preview-video"
-                        controls
-                        preload="metadata"
-                        src="${signedUrl}"
-                    >
-                        Your browser does not support video playback.
-                    </video>
-                `;
+            if (url && type === "image") {
+                preview = `<img class="content-preview content-preview-image"
+                    src="${url}" alt="${title}" loading="lazy">`;
+            } else if (url && type === "audio") {
+                preview = `<audio class="content-preview" controls
+                    preload="none" src="${url}"></audio>`;
+            } else if (url && type === "video") {
+                preview = `<video class="content-preview content-preview-video"
+                    controls preload="metadata" src="${url}"></video>`;
             }
 
-            const openLink =
-                signedUrl &&
+            const openLink = url &&
                 !["image", "audio", "video"].includes(type)
-                    ? `
-                        <p>
-                            <a
-                                class="content-open-link"
-                                href="${signedUrl}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                Open / download resource
-                            </a>
-                        </p>
-                    `
-                    : "";
-
-            const linkWarning =
-                item.storage_path && !signedUrl
-                    ? `
-                        <p class="content-item-note">
-                            A temporary link could not be generated.
-                            Check Storage permissions for the private
-                            lesson-media bucket.
-                        </p>
-                    `
-                    : "";
+                ? `<p><a class="content-open-link" href="${url}"
+                    target="_blank" rel="noopener noreferrer">
+                    Open / download resource</a></p>`
+                : "";
 
             return `
                 <article class="content-item">
                     <div class="content-item-header">
                         <div>
-                            <h4>${safeTitle}</h4>
-
-                            <span class="content-type-badge content-type-${escapeHTML(type)}">
-                                ${escapeHTML(typeLabels[type] || type)}
+                            <h4>${title}</h4>
+                            <span class="content-type-badge">
+                                ${escapeHTML(labels[type] || type)}
                             </span>
                         </div>
                     </div>
 
-                    ${
-                        item.text_content
-                            ? `
-                                <p class="content-item-text">
-                                    ${escapeHTML(item.text_content)}
-                                </p>
-                            `
-                            : ""
-                    }
+                    ${item.text_content
+                        ? `<p class="content-item-text">
+                            ${escapeHTML(item.text_content)}</p>`
+                        : ""}
 
                     ${preview}
 
-                    ${
-                        item.file_name
-                            ? `
-                                <p class="content-file-name">
-                                    📎 ${safeFileName}
-                                </p>
-                            `
-                            : ""
-                    }
+                    ${item.storage_path
+                        ? `<p class="content-file-name">📎 ${filename}</p>`
+                        : ""}
 
                     ${openLink}
-                    ${linkWarning}
 
-                    ${
-                        item.file_size != null
-                            ? `
-                                <p class="content-file-size">
-                                    ${escapeHTML(formatBytes(item.file_size))}
-                                </p>
-                            `
-                            : ""
-                    }
+                    ${item.storage_path && !url
+                        ? `<p class="content-item-note">
+                            Temporary media link unavailable.</p>`
+                        : ""}
 
                     <p class="content-item-note">
-                        Content is retained. Deletion is not available
-                        from this dashboard.
+                        Resources are retained in this dashboard.
                     </p>
                 </article>
             `;
         }).join("");
-    }
+    };
+
+    renderList(state.content, "content-list", "content-count");
+
+    renderList(
+        state.extraContent || [],
+        "extra-content-list",
+        "extra-content-count"
+    );
+}
 
     // =========================================================
     // ACCOUNT MANAGEMENT — ADMIN ONLY
@@ -2230,6 +2249,10 @@ async function deleteCard(cardId) {
             "click",
             loadSelectedLesson
         );
+        $("#add-extra-content-btn")?.addEventListener(
+    "click",
+    addExtraContent
+);
 
         $("#add-card-btn")?.addEventListener(
             "click",
