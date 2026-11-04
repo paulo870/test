@@ -1670,8 +1670,13 @@ async function deleteCard(cardId) {
             "error"
         );
 
-    } finally {
+     } finally {
         setButtonBusy(button, false);
+
+        if (!state.editingContentId && button) {
+            button.textContent = "Add Content";
+        }
+
         updateContentControls();
     }
 }
@@ -1813,10 +1818,15 @@ async function addExtraContent() {
             "error"
         );
 
-    } finally {
+     } finally {
         setButtonBusy(button, false);
+
+        if (!state.editingContentId && button) {
+            button.textContent = "Add Extra Content";
+        }
+
+        updateContentControls();
     }
-}
     // =========================================================
     // LOAD AND DISPLAY CARD CONTENT
     // =========================================================
@@ -2084,7 +2094,16 @@ function editContent(contentId, category) {
                 </article>
             `;
         }).join("");
+        $$("[data-edit-content-id]", container).forEach(button => {
+    button.addEventListener("click", () => {
+        editContent(
+            button.dataset.editContentId,
+            button.dataset.contentCategory
+        );
+    });
+});
     };
+       
 
     renderList(state.content, "content-list", "content-count");
 
@@ -2322,14 +2341,7 @@ function editContent(contentId, category) {
         `).join("");
     }
     
-$$("[data-edit-content-id]", container).forEach(button => {
-    button.addEventListener("click", () => {
-        editContent(
-            button.dataset.editContentId,
-            button.dataset.contentCategory
-        );
-    });
-});
+
     // =========================================================
     // SIGN OUT
     // =========================================================
