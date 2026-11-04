@@ -3,41 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Activity</title>
+    <meta name="theme-color" content="#102d3a">
+    <title>Interactive Activity | Academia Poliglota</title>
     <link rel="stylesheet" href="css/interactive.css">
 </head>
 <body>
-
-    <main class="interactive-app">
-
+    <main class="activity-shell">
         <header class="activity-header">
-            <span class="activity-label">INTERACTIVE ACTIVITY</span>
-            <h1 id="activity-title">Activity</h1>
-            <p id="activity-instructions"></p>
+            <div>
+                <span class="activity-eyebrow">ACADEMIA POLIGLOTA</span>
+                <h1 id="activity-title">Interactive Activity</h1>
+                <p id="activity-instructions"></p>
+            </div>
+            <div class="activity-progress" id="activity-progress"></div>
         </header>
 
-        <section id="activity-area" aria-live="polite">
-            <p class="activity-loading">Loading activity...</p>
+        <section id="activity-container" aria-live="polite">
+            <div class="activity-loading">Loading activity...</div>
         </section>
 
-        <div class="activity-actions">
-            <button id="check-answers" type="button">
-                Check Answers
-            </button>
-
-            <button id="reset-activity" type="button">
-                Try Again
-            </button>
-        </div>
-
-        <section id="activity-results"
-                 class="activity-results"
-                 aria-live="polite">
-        </section>
-
+        <footer class="activity-footer">
+            <div id="activity-feedback" role="status"></div>
+            <div class="activity-actions">
+                <button id="check-answers" type="button">Check answers</button>
+                <button id="reset-activity" type="button" class="secondary">
+                    Try again
+                </button>
+            </div>
+        </footer>
     </main>
 
     <script src="js/interactive.js"></script>
-
 </body>
 </html>
