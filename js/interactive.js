@@ -1,19 +1,48 @@
-(function () {
+(() => {
     "use strict";
 
-    const titleElement = document.getElementById("activity-title");
-    const instructionsElement = document.getElementById("activity-instructions");
-    const area = document.getElementById("activity-area");
-    const checkButton = document.getElementById("check-answers");
-    const resetButton = document.getElementById("reset-activity");
-    const resultsElement = document.getElementById("activity-results");
+    const $ = selector => document.querySelector(selector);
+
+    const container = $("#activity-container");
+    const feedback = $("#activity-feedback");
 
     let activity = null;
-    let checked = false;
-    let selectedLeft = null;
-    let connections = new Map();
-    let selectedChoices = new Set();
-    let orderingItems = [];
+    let answers = {};
+    let matchingSelection = null;
+
+    function decodeActivity() {
+        try {
+            const encoded = window.location.hash.slice(1);
+
+            if (!encoded) {
+                throw new Error("No activity data was provided.");
+            }
+
+            const json = decodeURIComponent(
+                Array.from(
+                    atob(encoded.replace(/-/g, "+").replace(/_/g, "/"))
+                ).map(character =>
+                    "%" + character.charCodeAt(0).toString(16).padStart(2, "0")
+                ).join("")
+            );
+
+            return JSON.parse(json);
+
+        } catch (error) {
+            console.error(error);
+            throw new Error("The activity could not be loaded.");
+        }
+    }
+
+    function escapeHTML(value) {
+        return String(value ?? "").replace(/[&<>"']/g, character => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+        })[character]);
+    }
 
     function shuffle(items) {
         const result = [...items];
@@ -26,712 +55,518 @@
         return result;
     }
 
-    function element(tag, className, text) {
-        const node = document.createElement(tag);
+    function updateHeader() {
+        $("#activity-title").textContent =
+            activity.title || "Interactive Activity";
 
-        if (className) node.className = className;
-        if (text !== undefined) node.textContent = text;
+        $("#activity-instructions").textContent =
+            activity.instructions || "";
 
-        return node;
+        $("#activity-progress").textContent =
+            `${activity.questions.length} questions`;
     }
 
-    function clearResults() {
-        resultsElement.replaceChildren();
-        resultsElement.className = "activity-results";
-    }
+    function render() {
+        answers = {};
+        matchingSelection = null;
+        feedback.textContent = "";
+        feedback.className = "";
 
-    function loadActivity(data) {
-        if (!data || !data.type) {
-            showError("The activity data is missing or invalid.");
-            return;
-        }
+        updateHeader();
 
-        activity = data;
-        checked = false;
-        selectedLeft = null;
-        connections = new Map();
-        selectedChoices = new Set();
-        orderingItems = [];
-
-        clearResults();
-
-        titleElement.textContent = data.title || "Interactive Activity";
-        instructionsElement.textContent = data.instructions || "";
-
-        area.replaceChildren();
-
-        checkButton.disabled = false;
-        resetButton.disabled = false;
-
-        switch (data.type) {
+        switch (activity.type) {
             case "matching":
-                renderMatching(data);
+                renderMatching();
                 break;
 
             case "cloze":
-                renderCloze(data);
+                renderCloze();
                 break;
 
             case "picture-selection":
-                renderPictureSelection(data);
+                renderPictures();
                 break;
 
             case "multiple-choice":
-                renderMultipleChoice(data);
+                renderMultipleChoice();
                 break;
 
             case "ordering":
-                renderOrdering(data);
+                renderOrdering();
                 break;
 
             default:
-                showError("This exercise type is not supported.");
+                container.innerHTML =
+                    '<div class="activity-empty">Unknown activity type.</div>';
         }
     }
 
-    function showError(message) {
-        area.replaceChildren(element("p", "activity-error", message));
-        checkButton.disabled = true;
-    }
+    function renderMatching() {
+        const left = activity.questions.map((item, index) => ({
+            id: index,
+            text: item.left
+        }));
 
-    // =====================================================
-    // MATCHING
-    // =====================================================
-
-    function renderMatching(data) {
-        const board = element("div", "matching-board");
-
-        const leftColumn = element("div", "matching-column");
-        const rightColumn = element("div", "matching-column");
-
-        leftColumn.appendChild(
-            element("div", "column-heading", data.leftLabel || "Column 1")
+        const right = shuffle(
+            activity.questions.map((item, index) => ({
+                id: index,
+                text: item.right
+            }))
         );
 
-        rightColumn.appendChild(
-            element("div", "column-heading", data.rightLabel || "Column 2")
-        );
+        container.innerHTML = `
+            <div class="matching-grid">
+                <div class="matching-column">
+                    <h3>Column A</h3>
+                    ${left.map(item => `
+                        <button class="matching-item"
+                            type="button"
+                            data-side="left"
+                            data-id="${item.id}">
+                            <span class="matching-dot"></span>
+                            ${escapeHTML(item.text)}
+                        </button>
+                    `).join("")}
+                </div>
 
-        shuffle(data.pairs || []).forEach(pair => {
-            const row = element("div", "match-item left-item");
-            row.dataset.id = pair.id;
+                <div class="matching-column">
+                    <h3>Column B</h3>
+                    ${right.map(item => `
+                        <button class="matching-item"
+                            type="button"
+                            data-side="right"
+                            data-id="${item.id}">
+                            <span class="matching-dot"></span>
+                            ${escapeHTML(item.text)}
+                        </button>
+                    `).join("")}
+                </div>
+            </div>
+        `;
 
-            row.append(
-                element("span", "match-text", pair.left),
-                createMatchDot("left", pair.id)
-            );
-
-            leftColumn.appendChild(row);
-        });
-
-        shuffle(data.pairs || []).forEach(pair => {
-            const row = element("div", "match-item right-item");
-            row.dataset.id = pair.id;
-
-            row.append(
-                createMatchDot("right", pair.id),
-                element("span", "match-text", pair.right)
-            );
-
-            rightColumn.appendChild(row);
-        });
-
-        const svg = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "svg"
-        );
-
-        svg.classList.add("connection-lines");
-        svg.setAttribute("aria-hidden", "true");
-
-        board.append(leftColumn, rightColumn, svg);
-        area.appendChild(board);
-
-        requestAnimationFrame(drawLines);
-    }
-
-    function createMatchDot(side, id) {
-        const dot = element("button", "connection-dot");
-
-        dot.type = "button";
-        dot.dataset.side = side;
-        dot.dataset.id = id;
-
-        dot.setAttribute("aria-label", `Select ${side} item`);
-
-        dot.addEventListener("click", () => {
-            if (checked) return;
-
-            if (side === "left") {
-                selectedLeft = id;
-
-                document.querySelectorAll(".left-item").forEach(row => {
-                    row.classList.remove("selected");
-                });
-
-                area.querySelector(
-                    `.left-item[data-id="${CSS.escape(id)}"]`
-                )?.classList.add("selected");
-
-                return;
-            }
-
-            if (!selectedLeft) return;
-
-            connections.set(selectedLeft, id);
-            selectedLeft = null;
-
-            renderMatchingConnections();
-        });
-
-        return dot;
-    }
-
-    function renderMatchingConnections() {
-        area.querySelectorAll(".match-item").forEach(row => {
-            row.classList.remove("selected");
-
-            row.querySelector(".connection-dot")
-                ?.classList.remove("connected");
-
-            row.querySelector(".answer-feedback")?.remove();
-        });
-
-        connections.forEach((rightId, leftId) => {
-            area.querySelector(
-                `.left-item[data-id="${CSS.escape(leftId)}"] .connection-dot`
-            )?.classList.add("connected");
-
-            area.querySelector(
-                `.right-item[data-id="${CSS.escape(rightId)}"] .connection-dot`
-            )?.classList.add("connected");
-        });
-
-        drawLines();
-    }
-
-    function drawLines() {
-        const board = area.querySelector(".matching-board");
-        const svg = area.querySelector(".connection-lines");
-
-        if (!board || !svg) return;
-
-        const boardRect = board.getBoundingClientRect();
-
-        svg.innerHTML = "";
-        svg.setAttribute("viewBox", `0 0 ${boardRect.width} ${boardRect.height}`);
-
-        connections.forEach((rightId, leftId) => {
-            const left = area.querySelector(
-                `.left-item[data-id="${CSS.escape(leftId)}"] .connection-dot`
-            );
-
-            const right = area.querySelector(
-                `.right-item[data-id="${CSS.escape(rightId)}"] .connection-dot`
-            );
-
-            if (!left || !right) return;
-
-            const a = left.getBoundingClientRect();
-            const b = right.getBoundingClientRect();
-
-            const line = document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "line"
-            );
-
-            line.setAttribute("x1", a.left + a.width / 2 - boardRect.left);
-            line.setAttribute("y1", a.top + a.height / 2 - boardRect.top);
-            line.setAttribute("x2", b.left + b.width / 2 - boardRect.left);
-            line.setAttribute("y2", b.top + b.height / 2 - boardRect.top);
-
-            line.classList.add("connection-line");
-
-            if (checked) {
-                const correct = leftId === rightId;
-
-                line.classList.add(
-                    correct ? "correct-line" : "incorrect-line"
-                );
-            }
-
-            svg.appendChild(line);
-        });
-    }
-
-    // =====================================================
-    // CLOZE
-    // =====================================================
-
-    function renderCloze(data) {
-        const passage = element("div", "cloze-passage");
-
-        const parts = String(data.text || "").split(/(\{\{.*?\}\})/g);
-
-        parts.forEach(part => {
-            const match = part.match(/^\{\{(.*?)\}\}$/);
-
-            if (!match) {
-                passage.appendChild(document.createTextNode(part));
-                return;
-            }
-
-            const input = element("input", "cloze-input");
-
-            input.type = "text";
-            input.autocomplete = "off";
-            input.dataset.answers = match[1];
-
-            input.setAttribute("aria-label", "Missing word");
-
-            passage.appendChild(input);
-        });
-
-        area.appendChild(passage);
-    }
-
-    // =====================================================
-    // PICTURE SELECTION
-    // =====================================================
-
-    function renderPictureSelection(data) {
-        area.appendChild(
-            element("div", "picture-question", data.question || "")
-        );
-
-        const grid = element("div", "picture-grid");
-
-        (data.options || []).forEach(option => {
-            const button = element("button", "picture-option");
-
-            button.type = "button";
-            button.dataset.id = option.id;
-
-            const image = element("img");
-
-            image.src = option.image;
-            image.alt = option.label || "Answer option";
-            image.loading = "lazy";
-
-            button.appendChild(image);
-
-            if (option.label) {
-                button.appendChild(
-                    element("span", "", option.label)
-                );
-            }
-
+        container.querySelectorAll(".matching-item").forEach(button => {
             button.addEventListener("click", () => {
-                if (checked) return;
+                selectMatching(button);
+            });
+        });
+    }
 
-                const multiple = Boolean(data.multiple);
+    function selectMatching(button) {
+        const side = button.dataset.side;
+        const id = Number(button.dataset.id);
 
-                if (!multiple) {
-                    selectedChoices.clear();
+        if (!matchingSelection) {
+            matchingSelection = { side, id };
 
-                    grid.querySelectorAll(".picture-option").forEach(item => {
-                        item.classList.remove("selected");
-                    });
-                }
-
-                if (selectedChoices.has(option.id)) {
-                    selectedChoices.delete(option.id);
-                    button.classList.remove("selected");
-                } else {
-                    selectedChoices.add(option.id);
-                    button.classList.add("selected");
-                }
+            container.querySelectorAll(".matching-item").forEach(item => {
+                item.classList.remove("selected");
             });
 
-            grid.appendChild(button);
-        });
-
-        area.appendChild(grid);
-    }
-
-    // =====================================================
-    // MULTIPLE CHOICE
-    // =====================================================
-
-    function renderMultipleChoice(data) {
-        area.appendChild(
-            element("div", "choice-question", data.question || "")
-        );
-
-        const list = element("div", "choice-list");
-
-        (data.options || []).forEach(option => {
-            const label = element("label", "choice-option");
-
-            const input = element("input");
-
-            input.type = data.multiple ? "checkbox" : "radio";
-            input.name = "activity-choice";
-            input.value = option.id;
-
-            input.addEventListener("change", () => {
-                if (checked) return;
-
-                if (!data.multiple) {
-                    selectedChoices.clear();
-                }
-
-                if (input.checked) {
-                    selectedChoices.add(option.id);
-                } else {
-                    selectedChoices.delete(option.id);
-                }
-
-                list.querySelectorAll(".choice-option").forEach(row => {
-                    row.classList.remove("selected");
-                });
-
-                selectedChoices.forEach(id => {
-                    list.querySelector(
-                        `input[value="${CSS.escape(id)}"]`
-                    )?.closest(".choice-option")?.classList.add("selected");
-                });
-            });
-
-            label.append(input, element("span", "", option.text));
-
-            list.appendChild(label);
-        });
-
-        area.appendChild(list);
-    }
-
-    // =====================================================
-    // ORDERING
-    // =====================================================
-
-    function renderOrdering(data) {
-        orderingItems = shuffle(data.items || []);
-
-        const list = element("div", "ordering-list");
-
-        orderingItems.forEach((item, index) => {
-            list.appendChild(createOrderingRow(item, index));
-        });
-
-        area.appendChild(list);
-        updateOrderingNumbers();
-    }
-
-    function createOrderingRow(item, index) {
-        const row = element("div", "ordering-item");
-
-        row.dataset.id = item.id;
-
-        row.appendChild(element("span", "ordering-number", String(index + 1)));
-        row.appendChild(element("span", "ordering-text", item.text));
-
-        const controls = element("div", "ordering-controls");
-
-        const up = element("button", "", "↑");
-        up.type = "button";
-        up.setAttribute("aria-label", "Move up");
-
-        const down = element("button", "", "↓");
-        down.type = "button";
-        down.setAttribute("aria-label", "Move down");
-
-        up.addEventListener("click", () => moveOrderingItem(item.id, -1));
-        down.addEventListener("click", () => moveOrderingItem(item.id, 1));
-
-        controls.append(up, down);
-        row.appendChild(controls);
-
-        return row;
-    }
-
-    function moveOrderingItem(id, direction) {
-        if (checked) return;
-
-        const index = orderingItems.findIndex(item => item.id === id);
-        const newIndex = index + direction;
-
-        if (newIndex < 0 || newIndex >= orderingItems.length) return;
-
-        [orderingItems[index], orderingItems[newIndex]] =
-            [orderingItems[newIndex], orderingItems[index]];
-
-        const list = area.querySelector(".ordering-list");
-
-        list.replaceChildren();
-
-        orderingItems.forEach((item, i) => {
-            list.appendChild(createOrderingRow(item, i));
-        });
-
-        updateOrderingNumbers();
-    }
-
-    function updateOrderingNumbers() {
-        area.querySelectorAll(".ordering-item").forEach((row, index) => {
-            const number = row.querySelector(".ordering-number");
-
-            if (number) number.textContent = String(index + 1);
-        });
-    }
-
-    // =====================================================
-    // ANSWER CHECKING
-    // =====================================================
-
-    function checkActivity() {
-        if (!activity || checked) return;
-
-        let correct = 0;
-        let total = 0;
-
-        switch (activity.type) {
-            case "matching": {
-                total = activity.pairs.length;
-
-                activity.pairs.forEach(pair => {
-                    const isCorrect =
-                        connections.get(pair.id) === pair.id;
-
-                    if (isCorrect) correct++;
-
-                    const left = area.querySelector(
-                        `.left-item[data-id="${CSS.escape(pair.id)}"]`
-                    );
-
-                    const rightId = connections.get(pair.id);
-
-                    const right = rightId
-                        ? area.querySelector(
-                            `.right-item[data-id="${CSS.escape(rightId)}"]`
-                        )
-                        : null;
-
-                    if (left) {
-                        left.classList.add(isCorrect ? "correct" : "incorrect");
-                        addFeedback(left, isCorrect);
-                    }
-
-                    if (right) {
-                        right.classList.add(isCorrect ? "correct" : "incorrect");
-                        addFeedback(right, isCorrect);
-                    }
-                });
-
-                break;
-            }
-
-            case "cloze": {
-                const inputs = [...area.querySelectorAll(".cloze-input")];
-
-                total = inputs.length;
-
-                inputs.forEach(input => {
-                    const accepted = input.dataset.answers
-                        .split("|")
-                        .map(answer => answer.trim().toLowerCase());
-
-                    const answer = input.value.trim().toLowerCase();
-
-                    const isCorrect = accepted.includes(answer);
-
-                    if (isCorrect) correct++;
-
-                    input.classList.add(
-                        isCorrect ? "correct" : "incorrect"
-                    );
-                });
-
-                break;
-            }
-
-            case "picture-selection": {
-                const correctIds = new Set(
-                    activity.options
-                        .filter(option => option.correct)
-                        .map(option => option.id)
-                );
-
-                total = correctIds.size;
-
-                selectedChoices.forEach(id => {
-                    if (correctIds.has(id)) correct++;
-                });
-
-                activity.options.forEach(option => {
-                    const button = area.querySelector(
-                        `.picture-option[data-id="${CSS.escape(option.id)}"]`
-                    );
-
-                    if (!button) return;
-
-                    const isCorrect = correctIds.has(option.id);
-                    const selected = selectedChoices.has(option.id);
-
-                    if (isCorrect && selected) {
-                        button.classList.add("correct");
-                    } else if (selected) {
-                        button.classList.add("incorrect");
-                    }
-                });
-
-                break;
-            }
-
-            case "multiple-choice": {
-                const correctIds = new Set(
-                    activity.options
-                        .filter(option => option.correct)
-                        .map(option => option.id)
-                );
-
-                total = correctIds.size;
-
-                selectedChoices.forEach(id => {
-                    if (correctIds.has(id)) correct++;
-                });
-
-                activity.options.forEach(option => {
-                    const input = area.querySelector(
-                        `input[value="${CSS.escape(option.id)}"]`
-                    );
-
-                    const row = input?.closest(".choice-option");
-
-                    if (!row) return;
-
-                    if (option.correct && selectedChoices.has(option.id)) {
-                        row.classList.add("correct");
-                    } else if (selectedChoices.has(option.id)) {
-                        row.classList.add("incorrect");
-                    }
-                });
-
-                break;
-            }
-
-            case "ordering": {
-                total = orderingItems.length;
-
-                orderingItems.forEach((item, index) => {
-                    const isCorrect = item.position === index + 1;
-
-                    if (isCorrect) correct++;
-
-                    const row = area.querySelector(
-                        `.ordering-item[data-id="${CSS.escape(item.id)}"]`
-                    );
-
-                    row?.classList.add(
-                        isCorrect ? "correct" : "incorrect"
-                    );
-
-                    if (row) addFeedback(row, isCorrect);
-                });
-
-                break;
-            }
+            button.classList.add("selected");
+            return;
         }
 
-        checked = true;
+        if (matchingSelection.side === side) {
+            matchingSelection = { side, id };
+
+            container.querySelectorAll(".matching-item").forEach(item => {
+                item.classList.remove("selected");
+            });
+
+            button.classList.add("selected");
+            return;
+        }
+
+        const leftId = side === "left" ? id : matchingSelection.id;
+        const rightId = side === "right" ? id : matchingSelection.id;
+
+        answers[leftId] = rightId;
+
+        matchingSelection = null;
+
+        container.querySelectorAll(".matching-item").forEach(item => {
+            item.classList.remove("selected");
+        });
+
+        container.querySelectorAll('[data-side="left"]').forEach(item => {
+            const leftKey = Number(item.dataset.id);
+            item.classList.toggle(
+                "matched",
+                Object.prototype.hasOwnProperty.call(answers, leftKey)
+            );
+        });
+
+        container.querySelectorAll('[data-side="right"]').forEach(item => {
+            const rightKey = Number(item.dataset.id);
+
+            item.classList.toggle(
+                "matched",
+                Object.values(answers).includes(rightKey)
+            );
+        });
+    }
+
+    function renderCloze() {
+        container.innerHTML = activity.questions.map((question, index) => {
+            const parts = String(question.sentence || "").split("___");
+
+            let sentence = "";
+
+            parts.forEach((part, partIndex) => {
+                sentence += escapeHTML(part);
+
+                if (partIndex < parts.length - 1) {
+                    sentence += `
+                        <input
+                            class="cloze-input"
+                            type="text"
+                            data-question="${index}"
+                            aria-label="Answer ${index + 1}"
+                            autocomplete="off"
+                        >
+                    `;
+                }
+            });
+
+            return `
+                <div class="question-block">
+                    <p class="cloze-sentence">${sentence}</p>
+                </div>
+            `;
+        }).join("");
+    }
+
+    function renderPictures() {
+        container.innerHTML = activity.questions.map((question, index) => `
+            <div class="question-block">
+                <h3 class="question-title">
+                    ${escapeHTML(question.prompt)}
+                </h3>
+
+                <div class="picture-grid">
+                    ${question.options.map((option, optionIndex) => `
+                        <button
+                            type="button"
+                            class="picture-option"
+                            data-question="${index}"
+                            data-option="${optionIndex}"
+                        >
+                            <img src="${escapeHTML(option.image)}"
+                                alt="${escapeHTML(option.label)}">
+                            <span>${escapeHTML(option.label)}</span>
+                        </button>
+                    `).join("")}
+                </div>
+            </div>
+        `).join("");
+
+        container.querySelectorAll(".picture-option").forEach(button => {
+            button.addEventListener("click", () => {
+                const questionIndex = Number(button.dataset.question);
+                const optionIndex = Number(button.dataset.option);
+
+                const question = activity.questions[questionIndex];
+
+                if (question.multiple) {
+                    answers[questionIndex] ||= [];
+
+                    const selected = answers[questionIndex];
+                    const position = selected.indexOf(optionIndex);
+
+                    if (position >= 0) {
+                        selected.splice(position, 1);
+                    } else {
+                        selected.push(optionIndex);
+                    }
+                } else {
+                    answers[questionIndex] = [optionIndex];
+                }
+
+                updatePictureSelection(questionIndex);
+            });
+        });
+    }
+
+    function updatePictureSelection(questionIndex) {
+        const selected = answers[questionIndex] || [];
+
+        container.querySelectorAll(
+            `[data-question="${questionIndex}"]`
+        ).forEach(button => {
+            button.classList.toggle(
+                "selected",
+                selected.includes(Number(button.dataset.option))
+            );
+        });
+    }
+
+    function renderMultipleChoice() {
+        container.innerHTML = activity.questions.map((question, index) => `
+            <div class="question-block">
+                <h3 class="question-title">
+                    ${escapeHTML(question.prompt)}
+                </h3>
+
+                <div class="option-list">
+                    ${question.options.map((option, optionIndex) => `
+                        <button
+                            type="button"
+                            class="option-button"
+                            data-question="${index}"
+                            data-option="${optionIndex}"
+                        >
+                            ${escapeHTML(option)}
+                        </button>
+                    `).join("")}
+                </div>
+            </div>
+        `).join("");
+
+        container.querySelectorAll(".option-button").forEach(button => {
+            button.addEventListener("click", () => {
+                const questionIndex = Number(button.dataset.question);
+                const optionIndex = Number(button.dataset.option);
+                const question = activity.questions[questionIndex];
+
+                if (question.multiple) {
+                    answers[questionIndex] ||= [];
+
+                    const selected = answers[questionIndex];
+                    const position = selected.indexOf(optionIndex);
+
+                    if (position >= 0) {
+                        selected.splice(position, 1);
+                    } else {
+                        selected.push(optionIndex);
+                    }
+                } else {
+                    answers[questionIndex] = [optionIndex];
+                }
+
+                updateMultipleSelection(questionIndex);
+            });
+        });
+    }
+
+    function updateMultipleSelection(questionIndex) {
+        const selected = answers[questionIndex] || [];
+
+        container.querySelectorAll(
+            `[data-question="${questionIndex}"]`
+        ).forEach(button => {
+            button.classList.toggle(
+                "selected",
+                selected.includes(Number(button.dataset.option))
+            );
+        });
+    }
+
+    function renderOrdering() {
+        activity.questions.forEach((question, index) => {
+            question.currentItems = shuffle(question.items);
+        });
+
+        container.innerHTML = activity.questions.map((question, index) => `
+            <div class="question-block">
+                <h3 class="question-title">
+                    ${escapeHTML(question.prompt)}
+                </h3>
+
+                <div class="order-list" data-question="${index}">
+                    ${question.currentItems.map((item, itemIndex) => `
+                        <div class="order-item"
+                            draggable="true"
+                            data-index="${itemIndex}">
+                            <span class="order-text">${escapeHTML(item)}</span>
+
+                            <span class="order-controls">
+                                <button type="button"
+                                    data-move="-1"
+                                    aria-label="Move up">↑</button>
+
+                                <button type="button"
+                                    data-move="1"
+                                    aria-label="Move down">↓</button>
+                            </span>
+                        </div>
+                    `).join("")}
+                </div>
+            </div>
+        `).join("");
+
+        container.querySelectorAll(".order-list").forEach(list => {
+            initializeOrdering(list);
+        });
+    }
+
+    function initializeOrdering(list) {
+        let dragged = null;
+
+        list.querySelectorAll(".order-item").forEach(item => {
+            item.addEventListener("dragstart", () => {
+                dragged = item;
+                item.classList.add("dragging");
+            });
+
+            item.addEventListener("dragend", () => {
+                item.classList.remove("dragging");
+                dragged = null;
+            });
+
+            item.addEventListener("dragover", event => {
+                event.preventDefault();
+                item.classList.add("drag-over");
+            });
+
+            item.addEventListener("dragleave", () => {
+                item.classList.remove("drag-over");
+            });
+
+            item.addEventListener("drop", event => {
+                event.preventDefault();
+                item.classList.remove("drag-over");
+
+                if (dragged && dragged !== item) {
+                    list.insertBefore(dragged, item);
+                }
+            });
+
+            item.querySelectorAll("[data-move]").forEach(button => {
+                button.addEventListener("click", () => {
+                    const direction = Number(button.dataset.move);
+
+                    if (direction < 0 && item.previousElementSibling) {
+                        list.insertBefore(item, item.previousElementSibling);
+                    }
+
+                    if (direction > 0 && item.nextElementSibling) {
+                        list.insertBefore(item.nextElementSibling, item);
+                    }
+                });
+            });
+        });
+    }
+
+    function normalizeAnswer(value) {
+        return String(value ?? "")
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, " ");
+    }
+
+    function arraysEqual(first, second) {
+        if (first.length !== second.length) return false;
+
+        const a = [...first].sort((x, y) => x - y);
+        const b = [...second].sort((x, y) => x - y);
+
+        return a.every((value, index) => value === b[index]);
+    }
+
+    function checkAnswers() {
+        let correct = 0;
+        let total = activity.questions.length;
 
         if (activity.type === "matching") {
-            drawLines();
+            activity.questions.forEach((question, index) => {
+                if (Number(answers[index]) === index) {
+                    correct++;
+                }
+            });
         }
 
-        const incorrect = total - correct;
+        if (activity.type === "cloze") {
+            activity.questions.forEach((question, index) => {
+                const input = container.querySelector(
+                    `[data-question="${index}"]`
+                );
 
-        resultsElement.className =
-            `activity-results visible ${
-                correct === total ? "success" : "partial"
-            }`;
+                const accepted = [
+                    question.answer,
+                    ...(question.acceptedAnswers || [])
+                ].filter(Boolean).map(normalizeAnswer);
 
-        const heading = element(
-            "h2",
-            "",
-            correct === total ? "Excellent work!" : "Activity completed"
-        );
-
-        const summary = element(
-            "p",
-            "",
-            `Correct: ${correct} | Incorrect: ${incorrect} | Total: ${total}`
-        );
-
-        resultsElement.replaceChildren(heading, summary);
-
-        checkButton.disabled = true;
-
-        area.querySelectorAll("input, .connection-dot, .picture-option")
-            .forEach(control => {
-                control.disabled = true;
+                if (accepted.includes(normalizeAnswer(input?.value))) {
+                    correct++;
+                    input.style.borderColor = "var(--success)";
+                } else {
+                    input.style.borderColor = "var(--error)";
+                }
             });
-
-        area.querySelectorAll(".ordering-controls button")
-            .forEach(button => {
-                button.disabled = true;
-            });
-    }
-
-    function addFeedback(container, correct) {
-        const feedback = element(
-            "span",
-            `answer-feedback ${correct ? "correct" : "incorrect"}`,
-            correct ? "✓" : "✕"
-        );
-
-        container.appendChild(feedback);
-    }
-
-    function resetActivity() {
-        if (!activity) return;
-        loadActivity(activity);
-    }
-
-    function showResultsToParent(correct, total) {
-        if (window.parent === window) return;
-
-        window.parent.postMessage({
-            type: "POLIGLOTA_ACTIVITY_RESULT",
-            correct,
-            total
-        }, window.location.origin);
-    }
-
-    checkButton.addEventListener("click", checkActivity);
-    resetButton.addEventListener("click", resetActivity);
-
-    window.addEventListener("resize", () => {
-        requestAnimationFrame(drawLines);
-    });
-
-    window.addEventListener("message", event => {
-        if (event.origin !== window.location.origin) return;
-
-        if (event.data?.type === "POLIGLOTA_LOAD_ACTIVITY") {
-            loadActivity(event.data.activity);
         }
-    });
 
-    window.InteractiveActivity = {
-        load: loadActivity,
-        reset: resetActivity
-    };
+        if (
+            activity.type === "multiple-choice" ||
+            activity.type === "picture-selection"
+        ) {
+            activity.questions.forEach((question, index) => {
+                const selected = answers[index] || [];
+                const expected = question.correct || [];
 
-    const params = new URLSearchParams(window.location.search);
+                if (arraysEqual(selected, expected)) {
+                    correct++;
+                }
+            });
+        }
 
-    if (params.has("demo")) {
-        loadActivity({
-            type: "matching",
-            title: "Countries and Nationalities",
-            instructions: "Match each country with its nationality.",
-            leftLabel: "Countries",
-            rightLabel: "Nationalities",
-            pairs: [
-                { id: "1", left: "Angola", right: "Angolan" },
-                { id: "2", left: "Brazil", right: "Brazilian" },
-                { id: "3", left: "Portugal", right: "Portuguese" }
-            ]
-        });
+        if (activity.type === "ordering") {
+            activity.questions.forEach((question, index) => {
+                const list = container.querySelector(
+                    `.order-list[data-question="${index}"]`
+                );
+
+                const current = Array.from(
+                    list.querySelectorAll(".order-text")
+                ).map(item => item.textContent);
+
+                if (current.every((item, itemIndex) =>
+                    item === question.items[itemIndex]
+                )) {
+                    correct++;
+                }
+            });
+        }
+
+        feedback.textContent =
+            `You got ${correct} out of ${total} correct.`;
+
+        feedback.className = correct === total
+            ? "feedback-success"
+            : "feedback-error";
+
+        if (correct === total) {
+            feedback.textContent += " Excellent work!";
+        }
     }
+
+    function initialize() {
+        try {
+            activity = decodeActivity();
+
+            if (
+                !activity ||
+                !Array.isArray(activity.questions) ||
+                !activity.questions.length
+            ) {
+                throw new Error("The activity has no questions.");
+            }
+
+            render();
+
+            $("#check-answers").addEventListener("click", checkAnswers);
+            $("#reset-activity").addEventListener("click", render);
+
+        } catch (error) {
+            container.innerHTML = `
+                <div class="activity-empty">
+                    ${escapeHTML(error.message)}
+                </div>
+            `;
+
+            $("#check-answers").disabled = true;
+            $("#reset-activity").disabled = true;
+        }
+    }
+
+    initialize();
 })();
