@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Interactive Activity</title>
+
+    <link rel="stylesheet" href="interactive.css">
+</head>
+
+<body>
+
+    <main class="interactive-container">
+
+        <header class="activity-header">
+            <h1 id="activity-title">Interactive Activity</h1>
+            <p id="activity-instructions"></p>
+        </header>
+
+        <section id="activity-area"></section>
+
+        <div class="activity-actions">
+            <button id="check-answers" type="button">
+                Check Answers
+            </button>
+
+            <button id="reset-activity" type="button">
+                Try Again
+            </button>
+        </div>
+
+        <section
+            id="activity-results"
+            class="activity-results"
+            aria-live="polite"
+        ></section>
+
+    </main>
+
+    <script src="interactive.js"></script>
+
+</body>
+</html>
