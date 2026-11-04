@@ -274,122 +274,159 @@
             </button>
           </section>
 
-          <!-- CONTENT EDITOR -->
-          <section class="card content-editor-card">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">CARD RESOURCES</p>
+       <!-- CARD RESOURCES -->
+<section class="card content-editor-card">
 
-                <h2>Add content</h2>
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">CARD RESOURCES</p>
+      <h2>Card Resources</h2>
+      <p class="muted">
+        Add main and additional learning resources to the selected card.
+      </p>
+    </div>
+  </div>
 
-                <p class="muted">
-                  Attach instructions, images, audio, video,
-                  games or files to the selected card.
-                </p>
-              </div>
-            </div>
+  <p id="selected-card-label" class="selected-card">
+    No card selected
+  </p>
 
-            <p id="selected-card-label" class="selected-card">
-              No card selected
-            </p>
+  <!-- MAIN CONTENT -->
+  <div class="divider"></div>
 
-            <label for="content-title">
-              Content title
+  <h3>Main Content</h3>
 
-              <input
-                id="content-title"
-                type="text"
-                maxlength="160"
-                placeholder="e.g. Listen and repeat"
-              >
-            </label>
+  <label for="content-title">
+    Content title
+    <input
+      id="content-title"
+      type="text"
+      maxlength="160"
+      placeholder="e.g. Listening activity"
+    >
+  </label>
 
-            <label for="content-type">
-              Content type
+  <label for="content-type">Content type</label>
 
-              <select id="content-type">
-                <option value="text">Text / instructions</option>
-                <option value="image">Image</option>
-                <option value="audio">Audio</option>
-                <option value="video">Video</option>
-                <option value="game">
-                  Game / interactive resource (HTML or ZIP)
-                </option>
-                <option value="file">
-                  Other file / PDF / document
-                </option>
-              </select>
-            </label>
+  <select id="content-type">
+    <option value="text">Text / instructions</option>
+    <option value="image">Image</option>
+    <option value="audio">Audio</option>
+    <option value="video">Video</option>
+    <option value="game">Game / interactive resource</option>
+    <option value="file">Other file / PDF / document</option>
+  </select>
 
-            <label for="text-content">
-              Text or instructions
-              <span class="optional">Optional for files</span>
+  <label for="text-content">
+    Text or instructions
+    <span class="optional">Optional for files</span>
+    <textarea
+      id="text-content"
+      rows="4"
+      maxlength="10000"
+      placeholder="Write the learning content or instructions."
+    ></textarea>
+  </label>
 
-              <textarea
-                id="text-content"
-                rows="4"
-                maxlength="10000"
-                placeholder="Write the learning content or add instructions for this resource."
-              ></textarea>
-            </label>
+  <label id="file-label" for="content-file">
+    Attach file
+    <input
+      id="content-file"
+      type="file"
+      accept="image/*,audio/*,video/*,.pdf,.html,.zip"
+    >
+    <span class="file-picker-note">
+      Choose a file from your device.
+    </span>
+  </label>
 
-            <label id="file-label" for="content-file">
-              Attach file
+  <button
+    id="add-content-btn"
+    type="button"
+    class="button button-primary button-full"
+    disabled
+  >
+    Add Main Content
+  </button>
 
-              <input
-                id="content-file"
-                type="file"
-                accept="image/*,audio/*,video/*,.pdf,.html,.zip"
-              >
+  <div class="section-heading section-heading-inline">
+    <h3>Main Resources</h3>
+    <span id="content-count" class="count-badge">0 items</span>
+  </div>
 
-              <span class="file-picker-note">
-                Choose a file from your device.
-                The file is uploaded to private storage.
-              </span>
-            </label>
+  <div id="content-list" class="content-list">
+    <p class="empty-state">Select a card to view its content.</p>
+  </div>
 
-            <p class="hint">
-              Files are stored in the private
-              <code>lesson-media</code> bucket. Temporary signed links
-              are generated for authorised dashboard users.
-              Configure Storage policies and database RLS in Supabase
-              as well; hiding controls is not a security boundary.
-            </p>
+  <!-- EXTRA CONTENT -->
+  <div class="divider"></div>
 
-            <button
-              id="add-content-btn"
-              type="button"
-              class="button button-primary button-full"
-              disabled
-            >
-              Add content to selected card
-            </button>
+  <h3>Extra Content</h3>
 
-            <div class="divider"></div>
+  <p class="muted">
+    Add supplementary exercises, explanations and learning materials
+    associated with this same card.
+  </p>
 
-            <div class="section-heading section-heading-inline">
-              <div>
-                <h3>Selected card content</h3>
+  <label for="extra-content-title">
+    Content title
+    <input
+      id="extra-content-title"
+      type="text"
+      maxlength="160"
+      placeholder="e.g. Additional speaking practice"
+    >
+  </label>
 
-                <p class="muted">
-                  Existing resources are retained; this dashboard
-                  does not offer delete or replace actions.
-                </p>
-              </div>
+  <label for="extra-content-type">Content type</label>
 
-              <span id="content-count" class="count-badge">
-                0 items
-              </span>
-            </div>
+  <select id="extra-content-type">
+    <option value="text">Text / instructions</option>
+    <option value="image">Image</option>
+    <option value="audio">Audio</option>
+    <option value="video">Video</option>
+    <option value="game">Game / interactive resource</option>
+    <option value="file">Other file / PDF / document</option>
+  </select>
 
-            <div id="content-list" class="content-list">
-              <p class="empty-state">
-                Select a card to view its content.
-              </p>
-            </div>
-          </section>
-        </div>
-      </section>
+  <label for="extra-text-content">
+    Text or instructions
+    <textarea
+      id="extra-text-content"
+      rows="4"
+      maxlength="10000"
+      placeholder="Write additional instructions or learning material."
+    ></textarea>
+  </label>
+
+  <label id="extra-file-label" for="extra-content-file">
+    Attach file
+    <input
+      id="extra-content-file"
+      type="file"
+      accept="image/*,audio/*,video/*,.pdf,.html,.zip"
+    >
+  </label>
+
+  <button
+    id="add-extra-content-btn"
+    type="button"
+    class="button button-primary button-full"
+    disabled
+  >
+    Add Extra Content
+  </button>
+
+  <div class="section-heading section-heading-inline">
+    <h3>Additional Resources</h3>
+    <span id="extra-content-count" class="count-badge">0 items</span>
+  </div>
+
+  <div id="extra-content-list" class="content-list">
+    <p class="empty-state">Select a card to view its extra content.</p>
+  </div>
+
+</section>
 
       <!-- ACCOUNT MANAGEMENT -->
       <section id="panel-users" class="panel" hidden>
