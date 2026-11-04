@@ -1412,16 +1412,6 @@ async function deleteCard(cardId) {
         );
 
         updateContentTypeFields();
-        const extraTypeSelect = $("#extra-content-type");
-
-if (extraTypeSelect) {
-    extraTypeSelect.addEventListener(
-        "change",
-        updateExtraContentTypeFields
-    );
-
-    updateExtraContentTypeFields();
-}
     }
 
     function updateContentTypeFields() {
@@ -1456,32 +1446,7 @@ if (extraTypeSelect) {
                 "image/*,audio/*,video/*,.pdf,.html,.zip";
         }
     }
-function updateExtraContentTypeFields() {
-    const type = $("#extra-content-type")?.value || "text";
 
-    const fileInput = $("#extra-content-file");
-    const fileLabel = $("#extra-file-label");
-
-    if (fileLabel) {
-        fileLabel.hidden = type === "text";
-    }
-
-    if (fileInput) {
-        fileInput.value = "";
-
-        const acceptByType = {
-            image: "image/*",
-            audio: "audio/*",
-            video: "video/*",
-            file: ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.html",
-            game: ".html,.zip"
-        };
-
-        fileInput.accept =
-            acceptByType[type] ||
-            "image/*,audio/*,video/*,.pdf,.html,.zip";
-    }
-}
     // =========================================================
     // ADD CONTENT TO A CARD
     // =========================================================
