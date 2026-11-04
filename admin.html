@@ -308,14 +308,15 @@
 
   <label for="content-type">Content type</label>
 
-  <select id="content-type">
+ <select id="content-type">
     <option value="text">Text / instructions</option>
     <option value="image">Image</option>
     <option value="audio">Audio</option>
     <option value="video">Video</option>
-    <option value="game">Game / interactive resource</option>
+    <option value="game">Game (HTML or ZIP)</option>
+    <option value="interactive">Interactive Activity</option>
     <option value="file">Other file / PDF / document</option>
-  </select>
+</select>
 
   <label for="text-content">
     Text or instructions
@@ -339,22 +340,38 @@
       Choose a file from your device.
     </span>
   </label>
-<!-- INTERACTIVE ACTIVITY BUILDER -->
-<section id="interactive-builder" hidden>
+<div id="interactive-editor" hidden>
+    <div class="divider"></div>
 
-    <label for="interactive-type">
-        Exercise type
+    <h3>Interactive activity builder</h3>
+
+    <label for="interactive-type">Exercise format
         <select id="interactive-type">
             <option value="matching">Matching</option>
-            <option value="cloze">Cloze</option>
+            <option value="cloze">Cloze / Fill in the blanks</option>
             <option value="picture-selection">Picture Selection</option>
             <option value="multiple-choice">Multiple Choice</option>
             <option value="ordering">Ordering</option>
         </select>
     </label>
 
-    <div id="interactive-fields"></div>
+    <label for="interactive-instructions">Student instructions
+        <textarea id="interactive-instructions" rows="2"
+            placeholder="Read the questions and complete the activity."></textarea>
+    </label>
 
+    <div id="interactive-questions"></div>
+
+    <button id="add-interactive-question" type="button"
+        class="button button-secondary">
+        Add question
+    </button>
+
+    <p class="hint">
+        Add all questions and answers before saving the activity.
+        Students will see the activity in their lesson card.
+    </p>
+</div>
 </section>
   <button
     id="add-content-btn"
