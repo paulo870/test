@@ -3,32 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lesson Game | Academia Poliglota</title>
-    <link rel="stylesheet" href="css/games.css">
+    <title>Categories | Academia Poliglota</title>
+    <link rel="stylesheet" href="games.css">
 </head>
 <body>
 
-    <header class="game-toolbar">
-        <div class="game-heading">
-            <span class="game-brand">ACADEMIA POLIGLOTA</span>
-            <h1 id="game-title">Lesson Game</h1>
-        </div>
-
-        <button id="close-game" type="button" aria-label="Close game">
-            &times;
-        </button>
-    </header>
-
     <main class="game-container">
-        <div id="game-loading">Loading game...</div>
-        <div id="game-error" hidden></div>
-        <iframe
-            id="game-frame"
-            title="Interactive lesson game"
-            allow="autoplay; fullscreen"
-        ></iframe>
+
+        <header class="game-header">
+            <div class="brand">
+                <span class="brand-mark">AP</span>
+                <span>ACADEMIA POLIGLOTA</span>
+            </div>
+            <span class="game-label">CLASSROOM GAMES</span>
+        </header>
+
+        <section id="setup-screen" class="screen">
+
+            <div class="intro">
+                <span class="eyebrow">WORD CHALLENGE</span>
+                <h1>Categories</h1>
+                <p>
+                    Choose a letter and write a word beginning with that
+                    letter for each category before time runs out.
+                </p>
+            </div>
+
+            <div class="setup-card">
+
+                <h2>Number of players</h2>
+
+                <div class="stepper">
+                    <button id="players-minus" type="button">−</button>
+                    <span id="player-count">1</span>
+                    <button id="players-plus" type="button">+</button>
+                </div>
+
+                <div id="player-names"></div>
+
+                <h2>Choose your letter</h2>
+
+                <div class="wheel-container">
+                    <div class="wheel-pointer"></div>
+                    <div id="letter-wheel" class="letter-wheel"></div>
+                    <div class="wheel-center" id="wheel-center">?</div>
+                </div>
+
+                <button id="spin-button" class="primary-button">
+                    SPIN THE WHEEL
+                </button>
+
+                <p class="or-text">OR SELECT A LETTER</p>
+
+                <div id="letter-options" class="letter-options"></div>
+
+                <div id="selected-letter" class="selected-letter">
+                    No letter selected
+                </div>
+
+                <button id="start-button" class="primary-button" disabled>
+                    START GAME
+                </button>
+
+            </div>
+        </section>
+
+        <section id="game-screen" class="screen hidden">
+
+            <div class="game-topbar">
+                <button id="exit-game" class="secondary-button">← Exit</button>
+                <div>
+                    <span class="eyebrow">YOUR LETTER</span>
+                    <strong id="game-letter">A</strong>
+                </div>
+                <div class="timer-display" id="timer-display">45</div>
+            </div>
+
+            <div class="timer-track">
+                <div id="timer-progress"></div>
+            </div>
+
+            <div id="player-panels" class="player-panels"></div>
+
+            <p class="game-instruction">
+                Write one answer for each category. You have 45 seconds!
+            </p>
+
+        </section>
+
+        <section id="validation-screen" class="screen hidden">
+
+            <div class="intro">
+                <span class="eyebrow">TEACHER'S AREA</span>
+                <h1>Validate Answers</h1>
+                <p>Review each player's answers and award points.</p>
+            </div>
+
+            <div id="validation-content"></div>
+
+            <button id="finish-game" class="primary-button">
+                FINISH ROUND
+            </button>
+
+        </section>
+
+        <section id="results-screen" class="screen hidden">
+
+            <div class="intro">
+                <span class="eyebrow">ROUND COMPLETED</span>
+                <h1>Results</h1>
+                <p>Here are the results of this round.</p>
+            </div>
+
+            <div id="results-content"></div>
+
+            <button id="play-again" class="primary-button">
+                PLAY AGAIN
+            </button>
+
+        </section>
+
     </main>
 
-    <script src="js/games.js"></script>
+    <script src="games.js"></script>
 </body>
 </html>
