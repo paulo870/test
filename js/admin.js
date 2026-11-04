@@ -364,14 +364,7 @@ users: []
             extraContentButton.getAttribute("aria-busy") === "true";
     }
 }
-    const extraButton = $("#add-extra-content-btn");
-
-if (extraButton) {
-    extraButton.disabled =
-        (!isAdmin() && !isTeacher()) ||
-        !state.currentLesson ||
-        !state.currentCard;
-}
+  
 
     // =========================================================
     // NAVIGATION
@@ -1818,7 +1811,7 @@ async function addExtraContent() {
             "error"
         );
 
-     } finally {
+       } finally {
         setButtonBusy(button, false);
 
         if (!state.editingContentId && button) {
@@ -1827,6 +1820,7 @@ async function addExtraContent() {
 
         updateContentControls();
     }
+}
     // =========================================================
     // LOAD AND DISPLAY CARD CONTENT
     // =========================================================
@@ -2094,14 +2088,7 @@ function editContent(contentId, category) {
                 </article>
             `;
         }).join("");
-        $$("[data-edit-content-id]", container).forEach(button => {
-    button.addEventListener("click", () => {
-        editContent(
-            button.dataset.editContentId,
-            button.dataset.contentCategory
-        );
-    });
-});
+      
     };
        
 
