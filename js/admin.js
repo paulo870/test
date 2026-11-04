@@ -1960,17 +1960,17 @@ if (requestedType === "interactive") {
     }
 
     if (
-        requestedType !== "text" &&
-        !file &&
-        !(
-            editing &&
-            existingItem.storage_path &&
-            requestedType === existingItem.content_type
-        )
-    ) {
-        setNotice("Choose a file for the selected content type.", "error");
-        return;
-    }
+    !["text", "interactive"].includes(requestedType) &&
+    !file &&
+    !(
+        editing &&
+        existingItem.storage_path &&
+        requestedType === existingItem.content_type
+    )
+) {
+    setNotice("Choose a file for the selected content type.", "error");
+    return;
+}
 
     let uploadedFile = null;
 
@@ -1981,10 +1981,16 @@ if (requestedType === "interactive") {
             editing ? "Updating resource..." : "Uploading resource..."
         );
 
-        let actualType = requestedType;
+      let actualType = requestedType;
 
-        // Validate and upload a replacement file if one was selected.
-        if (file) {
+// Interactive activities are stored as JSON in text_content.
+// They do not require a file upload.
+if (requestedType === "interactive") {
+    actualType = "interactive";
+}
+
+// Validate and upload a replacement file if one was selected.
+if (file) {
             const detectedType = getActualFileType(file);
             const name = String(file.name || "").toLowerCase();
 
@@ -2013,7 +2019,9 @@ if (requestedType === "interactive") {
             const updateData = {
                 title,
                 content_type: actualType,
-                text_content: text || null,
+                text_content: requestedType === "interactive"
+    ? JSON.stringify(interactiveData)
+    : text || null,
 
                 storage_path: uploadedFile
                     ? uploadedFile.path
@@ -2084,7 +2092,9 @@ if (requestedType === "interactive") {
             content_category: "main",
             title,
             content_type: actualType,
-            text_content: text || null,
+            text_content: requestedType === "interactive"
+    ? JSON.stringify(interactiveData)
+    : text || null,
             storage_path: uploadedFile?.path || null,
             original_filename: uploadedFile?.file_name || null,
             file_size: uploadedFile?.file_size ?? null,
@@ -2508,13 +2518,14 @@ function resetContentEditor(category) {
         }
 
         const labels = {
-            text: "Text / Instructions",
-            image: "Image",
-            audio: "Audio",
-            video: "Video",
-            file: "File",
-            game: "Game / Interactive Resource"
-        };
+    text: "Text / Instructions",
+    image: "Image",
+    audio: "Audio",
+    video: "Video",
+    file: "File",
+    game: "Game / Interactive Resource",
+    interactive: "Interactive Activity"
+};
 
         container.innerHTML = items.map(item => {
             const type = String(item.content_type || "text").toLowerCase();
@@ -2980,7 +2991,8 @@ function resetContentEditor(category) {
             }
         );
 
-        initializeContentTypeControls();
+       initializeContentTypeControls();
+initializeInteractiveBuilder();
     }
 
     // =========================================================
