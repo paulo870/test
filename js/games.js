@@ -1,3 +1,5 @@
+const LETTERS = ["B", "C", "F", "M", "P", "S", "T", "R", "L", "D"];
+
 const CATEGORIES = [
     "Animal",
     "Food",
@@ -6,31 +8,30 @@ const CATEGORIES = [
     "Object"
 ];
 
-const LETTERS = ["B", "C", "F", "M", "P", "S", "T", "R", "L", "D"];
+const DURATION = 45;
 
-const GAME_DURATION = 45;
-
-let playerCount = 1;
-let playerNames = ["Player 1", "Player 2", "Player 3"];
-
-let selectedLetter = null;
-let usedLetters = [];
-
-let timerInterval = null;
-let timeRemaining = GAME_DURATION;
-
-let playerAnswers = [];
-let playerScores = [];
-let currentRound = 0;
+const state = {
+    players: 2,
+    rounds: 1,
+    names: ["Player 1", "Player 2", "Player 3"],
+    letter: null,
+    used: [],
+    round: 0,
+    scores: [0, 0, 0],
+    answers: [],
+    approvals: []
+};
 
 const $ = id => document.getElementById(id);
 
-function showScreen(id) {
-    document.querySelectorAll(".screen").forEach(screen => {
-        screen.classList.add("hidden");
-    });
+let timerInterval = null;
+let remaining = DURATION;
+let wheelAngle = 0;
+let spinning = false;
 
-    $(id).classList.remove("hidden");
+function showScreen(id) {
+    ["setup-screen", "game-screen", "validation-screen", "results-screen"]
+        .forEach(screen => $(screen).hidden = screen !== id);
 }
 
 function shuffle(array) {
@@ -44,209 +45,444 @@ function shuffle(array) {
     return result;
 }
 
-function initialisePlayers() {
-    $("player-count").textContent = playerCount;
+/* ---------------- PLAYER SETUP ---------------- */
 
-    $("player-names").innerHTML = "";
+function renderPlayers() {
+    $("player-number").textContent = state.players;
 
-    for (let i = 0; i < playerCount; i++) {
+    $("minus").disabled = state.players <= 1;
+    $("plus").disabled = state.players >= 3;
+
+    $("name-fields").innerHTML = "";
+
+    for (let i = 0; i < state.players; i++) {
         const input = document.createElement("input");
 
-        input.className = "player-name-input";
-        input.placeholder = `Player ${i + 1} name`;
-        input.value = playerNames[i] || `Player ${i + 1}`;
+        input.className = "name-input";
+        input.placeholder = `Player ${i + 1}`;
+        input.value = state.names[i] || `Player ${i + 1}`;
 
         input.addEventListener("input", () => {
-            playerNames[i] = input.value;
+            state.names[i] = input.value;
         });
 
-        $("player-names").appendChild(input);
+        $("name-fields").appendChild(input);
     }
-
-    $("players-minus").disabled = playerCount <= 1;
-    $("players-plus").disabled = playerCount >= 2;
 }
 
-$("players-minus").addEventListener("click", () => {
-    if (playerCount > 1) {
-        playerCount--;
-        initialisePlayers();
+$("minus").onclick = () => {
+    if (state.players > 1) {
+        state.players--;
+        renderPlayers();
     }
-});
+};
 
-$("players-plus").addEventListener("click", () => {
-    if (playerCount < 2) {
-        playerCount++;
-        initialisePlayers();
+$("plus").onclick = () => {
+    if (state.players < 3) {
+        state.players++;
+        renderPlayers();
     }
-});
+};
 
-function renderLetterOptions() {
-    $("letter-options").innerHTML = "";
+$("round-minus").onclick = () => {
+    if (state.rounds > 1) state.rounds--;
+    updateRounds();
+};
+
+$("round-plus").onclick = () => {
+    if (state.rounds < Math.min(3, LETTERS.length)) state.rounds++;
+    updateRounds();
+};
+
+function updateRounds() {
+    $("round-number").textContent = state.rounds;
+    $("round-minus").disabled = state.rounds <= 1;
+    $("round-plus").disabled = state.rounds >= 3;
+}
+
+/* ---------------- LETTER WHEEL ---------------- */
+
+function drawWheel() {
+    const svg = $("wheel");
+    const n = LETTERS.length;
+    const segment = 360 / n;
+
+    let markup = "";
+
+    LETTERS.forEach((letter, i) => {
+        const a0 = (i * segment - 90) * Math.PI / 180;
+        const a1 = ((i + 1) * segment - 90) * Math.PI / 180;
+
+        const x0 = 100 + 100 * Math.cos(a0);
+        const y0 = 100 + 100 * Math.sin(a0);
+
+        const x1 = 100 + 100 * Math.cos(a1);
+        const y1 = 100 + 100 * Math.sin(a1);
+
+        const used = state.used.includes(letter);
+
+        const fill = used
+            ? "#cfe0df"
+            : i % 2
+                ? "#017A79"
+                : "#03AAA2";
+
+        markup += `
+            <path
+                d="M100,100 L${x0},${y0}
+                A100,100 0 0 1 ${x1},${y1} Z"
+                fill="${fill}"
+                stroke="#fff"
+                stroke-width="1.2"
+            />
+        `;
+
+        const angle = ((i + .5) * segment - 90) * Math.PI / 180;
+        const x = 100 + 66 * Math.cos(angle);
+        const y = 100 + 66 * Math.sin(angle);
+
+        markup += `
+            <text
+                x="${x}"
+                y="${y}"
+                fill="${used ? "#9fb6b5" : "#fff"}"
+                font-family="Montserrat"
+                font-weight="800"
+                font-size="14"
+                text-anchor="middle"
+                dominant-baseline="central"
+                transform="rotate(${(i + .5) * segment} ${x} ${y})"
+            >${letter}</text>
+        `;
+    });
+
+    svg.innerHTML = markup;
+}
+
+function renderChips() {
+    $("letter-chips").innerHTML = "";
 
     LETTERS.forEach(letter => {
         const button = document.createElement("button");
 
-        button.className = "letter-option";
+        button.className = "letter-chip";
         button.textContent = letter;
 
-        if (letter === selectedLetter) {
+        if (letter === state.letter) {
             button.classList.add("selected");
         }
 
-        if (usedLetters.includes(letter)) {
+        if (state.used.includes(letter)) {
+            button.classList.add("used");
             button.disabled = true;
         }
 
-        button.addEventListener("click", () => {
-            selectLetter(letter);
-        });
+        button.onclick = () => selectLetter(letter);
 
-        $("letter-options").appendChild(button);
+        $("letter-chips").appendChild(button);
     });
 }
 
 function selectLetter(letter) {
-    selectedLetter = letter;
+    if (state.used.includes(letter)) return;
 
-    $("wheel-center").textContent = letter;
-    $("selected-letter").textContent = `Selected letter: ${letter}`;
+    state.letter = letter;
 
-    $("start-button").disabled = false;
+    $("wheel-hub").textContent = letter;
+    $("ready").hidden = false;
+    $("ready").textContent = `Letter ready: ${letter}`;
 
-    renderLetterOptions();
+    $("start-round").disabled = false;
+
+    renderChips();
 }
 
-let wheelAngle = 0;
-
 function spinWheel() {
-    const available = LETTERS.filter(letter =>
-        !usedLetters.includes(letter)
+    if (spinning) return;
+
+    const available = LETTERS.filter(
+        letter => !state.used.includes(letter)
     );
 
-    if (!available.length) {
-        alert("All letters have been used. Start a new game to continue.");
-        return;
-    }
+    if (!available.length) return;
 
-    $("spin-button").disabled = true;
+    spinning = true;
+    $("spin").disabled = true;
 
-    const letter = available[Math.floor(Math.random() * available.length)];
+    const letter = available[
+        Math.floor(Math.random() * available.length)
+    ];
 
     const index = LETTERS.indexOf(letter);
     const segment = 360 / LETTERS.length;
-    const center = (index + 0.5) * segment;
+    const center = (index + .5) * segment;
 
     const spins = 4 + Math.floor(Math.random() * 3);
 
-    wheelAngle =
+    const target =
         wheelAngle - (wheelAngle % 360) - 360 * spins - center;
 
-    $("letter-wheel").style.transform = `rotate(${wheelAngle}deg)`;
+    wheelAngle = target;
+
+    $("wheel").style.transition =
+        "transform 3.8s cubic-bezier(.16,.84,.27,1)";
+
+    $("wheel").style.transform = `rotate(${target}deg)`;
 
     setTimeout(() => {
+        spinning = false;
+        $("spin").disabled = false;
         selectLetter(letter);
-        $("spin-button").disabled = false;
     }, 3900);
 }
 
-$("spin-button").addEventListener("click", spinWheel);
+$("spin").onclick = spinWheel;
 
-function createPlayerPanel(index) {
-    const panel = document.createElement("div");
+/* ---------------- HANDWRITING ---------------- */
 
-    panel.className = "player-panel";
+function createPad(canvas, disabled = false) {
+    const ctx = canvas.getContext("2d");
 
-    const title = document.createElement("h3");
-    title.textContent = playerNames[index] || `Player ${index + 1}`;
+    let drawing = false;
+    let hasInk = false;
 
-    panel.appendChild(title);
+    function paper() {
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    CATEGORIES.forEach((category, categoryIndex) => {
-        const row = document.createElement("div");
-        row.className = "category-row";
+        ctx.strokeStyle = "#dbeceb";
+        ctx.lineWidth = 1.5;
 
-        const label = document.createElement("label");
-        label.textContent = category;
+        ctx.beginPath();
+        ctx.moveTo(12, canvas.height - 24);
+        ctx.lineTo(canvas.width - 12, canvas.height - 24);
+        ctx.stroke();
 
-        row.appendChild(label);
+        ctx.strokeStyle = "#0e2a2b";
+        ctx.lineWidth = 5.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+    }
 
-        const input = document.createElement("input");
+    paper();
 
-        input.className = "answer-input";
-        input.placeholder = `Starts with ${selectedLetter}`;
-        input.dataset.player = index;
-        input.dataset.category = categoryIndex;
+    function position(event) {
+        const rect = canvas.getBoundingClientRect();
 
-        input.autocomplete = "off";
+        return {
+            x: (event.clientX - rect.left) * canvas.width / rect.width,
+            y: (event.clientY - rect.top) * canvas.height / rect.height
+        };
+    }
 
-        row.appendChild(input);
-        panel.appendChild(row);
-    });
+    function down(event) {
+        if (disabled || drawing) return;
 
-    return panel;
+        event.preventDefault();
+
+        drawing = true;
+        hasInk = true;
+
+        const p = position(event);
+
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + .01, p.y + .01);
+        ctx.stroke();
+    }
+
+    function move(event) {
+        if (!drawing) return;
+
+        event.preventDefault();
+
+        const p = position(event);
+
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    }
+
+    function up() {
+        drawing = false;
+    }
+
+    canvas.addEventListener("pointerdown", down);
+    canvas.addEventListener("pointermove", move);
+    canvas.addEventListener("pointerup", up);
+    canvas.addEventListener("pointercancel", up);
+
+    return {
+        canvas,
+
+        clear() {
+            if (disabled) return;
+            hasInk = false;
+            paper();
+        },
+
+        hasInk() {
+            return hasInk;
+        },
+
+        image() {
+            return hasInk ? canvas.toDataURL("image/png") : "";
+        }
+    };
 }
 
-function startGame() {
-    if (!selectedLetter) return;
+/* ---------------- GAME ROUND ---------------- */
 
-    usedLetters.push(selectedLetter);
+function startRound() {
+    if (!state.letter) return;
 
-    playerNames = Array.from(
-        document.querySelectorAll(".player-name-input")
-    ).map((input, index) =>
-        input.value.trim() || `Player ${index + 1}`
-    );
+    state.used.push(state.letter);
 
-    playerAnswers = Array.from(
-        { length: playerCount },
-        () => Array(CATEGORIES.length).fill("")
-    );
+    state.names = Array.from(
+        document.querySelectorAll(".name-input")
+    ).map((input, i) => input.value.trim() || `Player ${i + 1}`);
 
-    $("game-letter").textContent = selectedLetter;
+    $("round-progress").textContent =
+        `${state.round + 1} / ${state.rounds}`;
 
-    $("player-panels").innerHTML = "";
+    $("active-letter").textContent = state.letter;
 
-    for (let i = 0; i < playerCount; i++) {
-        $("player-panels").appendChild(createPlayerPanel(i));
+    const players = $("players");
+
+    players.innerHTML = "";
+    players.className = `players p${state.players}`;
+
+    state.answers = [];
+    state.approvals = [];
+
+    for (let i = 0; i < state.players; i++) {
+        state.answers.push([]);
+
+        const panel = document.createElement("div");
+        panel.className = "panel";
+
+        const title = document.createElement("div");
+        title.className = "player-title";
+        title.textContent = state.names[i];
+
+        panel.appendChild(title);
+
+        const categories = shuffle(CATEGORIES);
+
+        categories.forEach(category => {
+            const row = document.createElement("div");
+            row.className = "stoprow";
+
+            const label = document.createElement("span");
+            label.className = "inklbl";
+            label.textContent = category;
+
+            const wrap = document.createElement("div");
+            wrap.className = "padwrap";
+
+            const canvas = document.createElement("canvas");
+            canvas.className = "inkpad";
+            canvas.width = 560;
+            canvas.height = 150;
+
+            const clear = document.createElement("button");
+            clear.className = "padclr";
+            clear.textContent = "↺";
+            clear.type = "button";
+
+            const pad = createPad(canvas);
+
+            clear.onclick = pad.clear;
+
+            wrap.appendChild(canvas);
+            wrap.appendChild(clear);
+
+            row.appendChild(label);
+            row.appendChild(wrap);
+
+            panel.appendChild(row);
+
+            state.answers[i].push({
+                category,
+                pad
+            });
+        });
+
+        const done = document.createElement("button");
+        done.className = "gbtn";
+        done.textContent = "DONE";
+
+        done.onclick = () => finishPlayer(i);
+
+        panel.appendChild(done);
+        players.appendChild(panel);
     }
+
+    state.finished = new Array(state.players).fill(false);
 
     showScreen("game-screen");
 
     startTimer();
 }
 
-$("start-button").addEventListener("click", startGame);
+$("start-round").onclick = startRound;
+
+function finishPlayer(index) {
+    if (state.finished[index]) return;
+
+    state.finished[index] = true;
+
+    const panel = $("players").children[index];
+
+    panel.querySelectorAll("canvas").forEach(canvas => {
+        canvas.style.pointerEvents = "none";
+    });
+
+    panel.querySelectorAll("button").forEach(button => {
+        button.disabled = true;
+    });
+
+    if (state.finished.every(Boolean)) {
+        stopTimer();
+        showValidation();
+    }
+}
+
+/* ---------------- TIMER ---------------- */
 
 function startTimer() {
     clearInterval(timerInterval);
 
-    timeRemaining = GAME_DURATION;
+    remaining = DURATION;
 
-    updateTimerDisplay();
+    updateTimer();
 
     timerInterval = setInterval(() => {
-        timeRemaining--;
+        remaining--;
 
-        updateTimerDisplay();
+        updateTimer();
 
-        if (timeRemaining <= 10) {
-            $("timer-progress").classList.add("warning");
-        }
-
-        if (timeRemaining <= 0) {
+        if (remaining <= 0) {
             stopTimer();
-            finishRound();
-        }
 
+            state.finished.forEach((finished, i) => {
+                if (!finished) finishPlayer(i);
+            });
+
+            showValidation();
+        }
     }, 1000);
 }
 
-function updateTimerDisplay() {
-    $("timer-display").textContent = timeRemaining;
+function updateTimer() {
+    $("timer").textContent = remaining;
 
-    $("timer-progress").style.width =
-        `${(timeRemaining / GAME_DURATION) * 100}%`;
+    $("timer-bar").style.width =
+        `${remaining / DURATION * 100}%`;
+
+    $("timer-bar").classList.toggle(
+        "warning",
+        remaining <= 10
+    );
 }
 
 function stopTimer() {
@@ -254,159 +490,188 @@ function stopTimer() {
     timerInterval = null;
 }
 
-function finishRound() {
+/* ---------------- TEACHER VALIDATION ---------------- */
+
+function showValidation() {
     stopTimer();
 
-    document.querySelectorAll(".answer-input").forEach(input => {
-        const player = Number(input.dataset.player);
-        const category = Number(input.dataset.category);
+    $("validation").innerHTML = "";
 
-        playerAnswers[player][category] = input.value.trim();
+    state.approvals = state.answers.map(player =>
+        player.map(() => null)
+    );
 
-        input.disabled = true;
-    });
-
-    renderValidation();
-
-    showScreen("validation-screen");
-}
-
-function renderValidation() {
-    $("validation-content").innerHTML = "";
-
-    playerScores = Array(playerCount).fill(0);
-
-    for (let p = 0; p < playerCount; p++) {
+    state.answers.forEach((answers, playerIndex) => {
         const card = document.createElement("div");
+        card.className = "review-card";
 
-        card.className = "validation-card";
+        const title = document.createElement("h3");
+        title.textContent = state.names[playerIndex];
 
-        const heading = document.createElement("h3");
-        heading.textContent = playerNames[p];
+        card.appendChild(title);
 
-        card.appendChild(heading);
-
-        CATEGORIES.forEach((category, c) => {
-            const answer = playerAnswers[p][c];
-
+        answers.forEach((answer, answerIndex) => {
             const row = document.createElement("div");
-            row.className = "validation-answer";
+            row.className = "review-row";
 
-            const answerText = document.createElement("span");
+            const label = document.createElement("strong");
+            label.textContent = answer.category;
 
-            answerText.textContent =
-                `${category}: ${answer || "No answer"}`;
+            const preview = document.createElement("canvas");
+            preview.width = 560;
+            preview.height = 150;
 
-            row.appendChild(answerText);
+            if (answer.pad.hasInk()) {
+                const img = new Image();
+
+                img.onload = () => {
+                    preview.getContext("2d").drawImage(
+                        img, 0, 0, preview.width, preview.height
+                    );
+                };
+
+                img.src = answer.pad.image();
+            }
 
             const actions = document.createElement("div");
+            actions.className = "review-actions";
 
             const approve = document.createElement("button");
             approve.textContent = "✓";
-            approve.title = "Approve answer";
 
             const reject = document.createElement("button");
             reject.textContent = "✗";
-            reject.title = "Reject answer";
+            reject.className = "reject";
 
-            approve.addEventListener("click", () => {
-                approve.classList.add("approved");
-                reject.classList.remove("rejected");
-                approve.dataset.approved = "true";
-            });
+            approve.onclick = () => {
+                state.approvals[playerIndex][answerIndex] = true;
 
-            reject.addEventListener("click", () => {
-                reject.classList.add("rejected");
-                approve.classList.remove("approved");
-                approve.dataset.approved = "false";
-            });
+                approve.classList.add("active");
+                reject.classList.remove("active");
+            };
+
+            reject.onclick = () => {
+                state.approvals[playerIndex][answerIndex] = false;
+
+                reject.classList.add("active");
+                approve.classList.remove("active");
+            };
 
             actions.appendChild(approve);
             actions.appendChild(reject);
 
+            row.appendChild(label);
+            row.appendChild(preview);
             row.appendChild(actions);
 
             card.appendChild(row);
         });
 
-        $("validation-content").appendChild(card);
-    }
-}
-
-$("finish-game").addEventListener("click", () => {
-    const cards = document.querySelectorAll(".validation-card");
-
-    cards.forEach((card, p) => {
-        const approved = card.querySelectorAll(
-            'button[data-approved="true"]'
-        );
-
-        playerScores[p] = approved.length * 100;
+        $("validation").appendChild(card);
     });
 
-    renderResults();
+    showScreen("validation-screen");
+}
 
-    showScreen("results-screen");
-});
+$("confirm-results").onclick = () => {
+    state.approvals.forEach((answers, playerIndex) => {
+        const points = answers.filter(answer => answer === true).length;
 
-function renderResults() {
-    $("results-content").innerHTML = "";
+        state.scores[playerIndex] += points * 100;
+    });
 
-    const ranking = playerNames.map((name, index) => ({
-        name,
-        score: playerScores[index]
-    })).sort((a, b) => b.score - a.score);
+    showResults();
+};
+
+/* ---------------- RESULTS ---------------- */
+
+function showResults() {
+    $("results").innerHTML = "";
+
+    const ranking = state.names
+        .slice(0, state.players)
+        .map((name, index) => ({
+            name,
+            score: state.scores[index]
+        }))
+        .sort((a, b) => b.score - a.score);
 
     ranking.forEach((player, index) => {
         const card = document.createElement("div");
-
         card.className = "result-card";
 
-        const heading = document.createElement("h3");
+        card.innerHTML = `
+            <h3>${index + 1}. ${escapeHTML(player.name)}</h3>
+            <strong>${player.score} points</strong>
+        `;
 
-        heading.textContent =
-            `${index + 1}. ${player.name}`;
-
-        const score = document.createElement("div");
-
-        score.className = "score";
-        score.textContent = `${player.score} points`;
-
-        card.appendChild(heading);
-        card.appendChild(score);
-
-        $("results-content").appendChild(card);
+        $("results").appendChild(card);
     });
+
+    $("next-round").textContent =
+        state.round + 1 < state.rounds
+            ? "NEXT ROUND"
+            : "PLAY AGAIN";
+
+    showScreen("results-screen");
 }
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
+$("next-round").onclick = () => {
+    if (state.round + 1 < state.rounds) {
+        state.round++;
+
+        state.letter = null;
+
+        $("wheel-hub").textContent = "?";
+        $("ready").hidden = true;
+        $("start-round").disabled = true;
+
+        drawWheel();
+        renderChips();
+
+        showScreen("setup-screen");
+    } else {
+        resetGame();
+    }
+};
 
 function resetGame() {
     stopTimer();
 
-    selectedLetter = null;
-    timeRemaining = GAME_DURATION;
+    state.round = 0;
+    state.used = [];
+    state.letter = null;
+    state.scores = [0, 0, 0];
 
-    $("wheel-center").textContent = "?";
-    $("selected-letter").textContent = "No letter selected";
+    $("wheel-hub").textContent = "?";
+    $("ready").hidden = true;
+    $("start-round").disabled = true;
 
-    $("start-button").disabled = true;
-
-    $("timer-progress").classList.remove("warning");
-    $("timer-progress").style.width = "100%";
-
-    $("spin-button").disabled = false;
-
-    renderLetterOptions();
+    drawWheel();
+    renderChips();
 
     showScreen("setup-screen");
 }
 
-$("play-again").addEventListener("click", resetGame);
+$("back").onclick = () => {
+    if (confirm("Leave this game?")) resetGame();
+};
 
-$("exit-game").addEventListener("click", () => {
-    if (confirm("Are you sure you want to leave this round?")) {
-        resetGame();
-    }
-});
+/* ---------------- INITIALISE ---------------- */
 
-initialisePlayers();
-renderLetterOptions();
+renderPlayers();
+updateRounds();
+drawWheel();
+renderChips();
+
+showScreen("setup-screen");
