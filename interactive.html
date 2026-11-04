@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Interactive Activity</title>
-
-    <link rel="stylesheet" href="interactive.css">
+    <link rel="stylesheet" href="css/interactive.css">
 </head>
-
 <body>
 
-    <main class="interactive-container">
+    <main class="interactive-app">
 
         <header class="activity-header">
-            <h1 id="activity-title">Interactive Activity</h1>
+            <span class="activity-label">INTERACTIVE ACTIVITY</span>
+            <h1 id="activity-title">Activity</h1>
             <p id="activity-instructions"></p>
         </header>
 
-        <section id="activity-area"></section>
+        <section id="activity-area" aria-live="polite">
+            <p class="activity-loading">Loading activity...</p>
+        </section>
 
         <div class="activity-actions">
             <button id="check-answers" type="button">
@@ -30,15 +30,14 @@
             </button>
         </div>
 
-        <section
-            id="activity-results"
-            class="activity-results"
-            aria-live="polite"
-        ></section>
+        <section id="activity-results"
+                 class="activity-results"
+                 aria-live="polite">
+        </section>
 
     </main>
 
-    <script src="interactive.js"></script>
+    <script src="js/interactive.js"></script>
 
 </body>
 </html>
