@@ -2,129 +2,159 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Categories | Academia Poliglota</title>
     <link rel="stylesheet" href="games.css">
 </head>
 <body>
 
-    <main class="game-container">
+<div class="game-shell">
 
-        <header class="game-header">
-            <div class="brand">
-                <span class="brand-mark">AP</span>
-                <span>ACADEMIA POLIGLOTA</span>
-            </div>
-            <span class="game-label">CLASSROOM GAMES</span>
-        </header>
+    <header class="header">
+        <div class="brand">
+            <span class="brand-icon">AP</span>
+            <span>ACADEMIA POLIGLOTA</span>
+        </div>
+        <span class="header-label">CLASSROOM GAMES</span>
+    </header>
 
-        <section id="setup-screen" class="screen">
+    <main id="app">
+
+        <section id="setup-screen">
 
             <div class="intro">
                 <span class="eyebrow">WORD CHALLENGE</span>
                 <h1>Categories</h1>
                 <p>
-                    Choose a letter and write a word beginning with that
-                    letter for each category before time runs out.
+                    Everyone gets the same letter. Write a word starting
+                    with that letter for each of the five categories.
+                    The teacher checks the answers.
                 </p>
             </div>
 
-            <div class="setup-card">
+            <div class="setup">
 
-                <h2>Number of players</h2>
+                <div class="setup-card">
+                    <h3>HOW MANY PLAYERS?</h3>
 
-                <div class="stepper">
-                    <button id="players-minus" type="button">−</button>
-                    <span id="player-count">1</span>
-                    <button id="players-plus" type="button">+</button>
+                    <div class="stepper">
+                        <button id="minus">−</button>
+                        <span id="player-number">2</span>
+                        <button id="plus">+</button>
+                    </div>
+
+                    <div id="name-fields"></div>
                 </div>
 
-                <div id="player-names"></div>
+                <div class="setup-card">
+                    <h3>HOW MANY ROUNDS?</h3>
 
-                <h2>Choose your letter</h2>
+                    <div class="stepper">
+                        <button id="round-minus">−</button>
+                        <span id="round-number">1</span>
+                        <button id="round-plus">+</button>
+                    </div>
 
-                <div class="wheel-container">
+                    <p class="note">
+                        Each round uses a new letter.
+                    </p>
+                </div>
+
+                <div class="setup-card">
+                    <h3>CHOOSE YOUR LETTER</h3>
+
                     <div class="wheel-pointer"></div>
-                    <div id="letter-wheel" class="letter-wheel"></div>
-                    <div class="wheel-center" id="wheel-center">?</div>
+
+                    <div class="wheel-box">
+                        <svg id="wheel" viewBox="0 0 200 200"></svg>
+                        <div class="wheel-hub" id="wheel-hub">?</div>
+                    </div>
+
+                    <button id="spin" class="primary">
+                        SPIN THE WHEEL
+                    </button>
+
+                    <p class="note">OR CHOOSE A LETTER</p>
+
+                    <div id="letter-chips" class="letter-chips"></div>
+
+                    <div id="ready" class="ready" hidden></div>
+
+                    <button id="start-round" class="primary" disabled>
+                        START ROUND
+                    </button>
                 </div>
-
-                <button id="spin-button" class="primary-button">
-                    SPIN THE WHEEL
-                </button>
-
-                <p class="or-text">OR SELECT A LETTER</p>
-
-                <div id="letter-options" class="letter-options"></div>
-
-                <div id="selected-letter" class="selected-letter">
-                    No letter selected
-                </div>
-
-                <button id="start-button" class="primary-button" disabled>
-                    START GAME
-                </button>
 
             </div>
         </section>
 
-        <section id="game-screen" class="screen hidden">
+        <section id="game-screen" hidden>
 
-            <div class="game-topbar">
-                <button id="exit-game" class="secondary-button">← Exit</button>
-                <div>
-                    <span class="eyebrow">YOUR LETTER</span>
-                    <strong id="game-letter">A</strong>
+            <div class="round-header">
+                <button id="back" class="back-button">← Exit</button>
+
+                <div class="round-info">
+                    <span>ROUND</span>
+                    <strong id="round-progress">1 / 1</strong>
                 </div>
-                <div class="timer-display" id="timer-display">45</div>
+
+                <div class="letter-display" id="active-letter">A</div>
+
+                <div class="timer" id="timer">45</div>
             </div>
 
             <div class="timer-track">
-                <div id="timer-progress"></div>
+                <div id="timer-bar"></div>
             </div>
 
-            <div id="player-panels" class="player-panels"></div>
+            <div id="players" class="players"></div>
 
-            <p class="game-instruction">
-                Write one answer for each category. You have 45 seconds!
+            <p class="instruction">
+                Write your answers using your finger, stylus or mouse.
+                Press DONE when you finish.
             </p>
 
         </section>
 
-        <section id="validation-screen" class="screen hidden">
+        <section id="validation-screen" hidden>
 
             <div class="intro">
                 <span class="eyebrow">TEACHER'S AREA</span>
                 <h1>Validate Answers</h1>
-                <p>Review each player's answers and award points.</p>
+                <p>
+                    Review the answers submitted by each player.
+                    Mark correct answers with ✓.
+                </p>
             </div>
 
-            <div id="validation-content"></div>
+            <div id="validation"></div>
 
-            <button id="finish-game" class="primary-button">
-                FINISH ROUND
+            <button id="confirm-results" class="primary">
+                CONFIRM RESULTS
             </button>
 
         </section>
 
-        <section id="results-screen" class="screen hidden">
+        <section id="results-screen" hidden>
 
             <div class="intro">
                 <span class="eyebrow">ROUND COMPLETED</span>
                 <h1>Results</h1>
-                <p>Here are the results of this round.</p>
             </div>
 
-            <div id="results-content"></div>
+            <div id="results"></div>
 
-            <button id="play-again" class="primary-button">
-                PLAY AGAIN
+            <button id="next-round" class="primary">
+                NEXT ROUND
             </button>
 
         </section>
 
     </main>
 
-    <script src="games.js"></script>
+</div>
+
+<script src="games.js"></script>
+
 </body>
 </html>
