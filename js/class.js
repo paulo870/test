@@ -702,20 +702,60 @@ function openLessonCard(card) {
             });
         }
 
-        // INTERACTIVE HTML
+    // INTERACTIVE ACTIVITIES
 
-        else if (
-            type === "html" ||
-            type === "interactive"
-        ) {
+else if (type === "interactive") {
+
+    // New JSON-based activities
+    if (item.text_content && !item.storage_path) {
+
+        try {
+            const activityData = JSON.parse(item.text_content);
 
             slides.push({
-                type: "interactive",
-                title: item.title || "Interactive activity",
-                url: mediaUrl,
-                storagePath: item.storage_path
+                type: "interactive-activity",
+                title: item.title || "Interactive Activity",
+                activityData,
+                itemId: item.id
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Could not read interactive activity:",
+                error
+            );
+
+            slides.push({
+                type: "error",
+                title: item.title || "Interactive Activity",
+                message: "This activity contains invalid data."
             });
         }
+
+    } else {
+
+        // Preserve previously uploaded HTML activities
+        slides.push({
+            type: "interactive",
+            title: item.title || "Interactive activity",
+            url: mediaUrl,
+            storagePath: item.storage_path
+        });
+    }
+}
+
+// EXISTING HTML RESOURCES
+
+else if (type === "html") {
+
+    slides.push({
+        type: "interactive",
+        title: item.title || "Interactive resource",
+        url: mediaUrl,
+        storagePath: item.storage_path
+    });
+}
 
         // FILES AND GAMES
 
