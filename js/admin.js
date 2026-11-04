@@ -1404,11 +1404,11 @@ async function deleteCard(cardId) {
     // CONTENT TYPE CONTROLS
     // =========================================================
 
-    function initializeContentTypeControls() {
-        const typeSelect = $("#content-type");
+   function initializeContentTypeControls() {
+    const typeSelect = $("#content-type");
+    const extraTypeSelect = $("#extra-content-type");
 
-        if (!typeSelect) return;
-
+    if (typeSelect) {
         typeSelect.addEventListener(
             "change",
             updateContentTypeFields
@@ -1417,6 +1417,15 @@ async function deleteCard(cardId) {
         updateContentTypeFields();
     }
 
+    if (extraTypeSelect) {
+        extraTypeSelect.addEventListener(
+            "change",
+            updateExtraContentTypeFields
+        );
+
+        updateExtraContentTypeFields();
+    }
+}
     function updateContentTypeFields() {
         const type = $("#content-type")?.value || "text";
         const fileInput = $("#content-file");
@@ -1449,7 +1458,36 @@ async function deleteCard(cardId) {
                 "image/*,audio/*,video/*,.pdf,.html,.zip";
         }
     }
+function updateExtraContentTypeFields() {
+    const type = $("#extra-content-type")?.value || "text";
+    const fileInput = $("#extra-content-file");
+    const textInput = $("#extra-text-content");
+    const fileLabel = $("#extra-file-label");
 
+    const textLabel = textInput?.closest("label");
+
+    if (fileLabel) {
+        fileLabel.hidden = type === "text";
+    }
+
+    if (textLabel) {
+        textLabel.hidden = false;
+    }
+
+    if (fileInput) {
+        const acceptByType = {
+            image: "image/*",
+            audio: "audio/*",
+            video: "video/*",
+            file: ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.html",
+            game: ".html,.zip"
+        };
+
+        fileInput.accept =
+            acceptByType[type] ||
+            "image/*,audio/*,video/*,.pdf,.html,.zip";
+    }
+}
     // =========================================================
     // ADD CONTENT TO A CARD
     // =========================================================
@@ -1527,9 +1565,9 @@ async function deleteCard(cardId) {
         };
     }
 
- async function addContent() {
+async function addContent() {
     if (!canManageContent()) {
-        setNotice("You do not have permission to add content.", "error");
+        setNotice("You do not have permission to manage content.", "error");
         return;
     }
 
@@ -1544,8 +1582,10 @@ async function deleteCard(cardId) {
     const file = $("#content-file")?.files?.[0] || null;
     const button = $("#add-content-btn");
 
-    const editing = state.editingContentId &&
-        state.editingContentCategory === "main";
+    const editing = Boolean(
+        state.editingContentId &&
+        state.editingContentCategory === "main"
+    );
 
     if (editing && !isAdmin()) {
         setNotice("Only administrators can edit content.", "error");
@@ -1562,13 +1602,27 @@ async function deleteCard(cardId) {
         return;
     }
 
-    if (requestedType !== "text" && !file && !editing) {
-        setNotice("Choose a file to upload.", "error");
+    const existingItem = editing
+        ? state.content.find(item =>
+            String(item.id) === String(state.editingContentId)
+        )
+        : null;
+
+    if (editing && !existingItem) {
+        setNotice("The resource being edited could not be found.", "error");
         return;
     }
 
-    if (editing && requestedType !== "text") {
-        setNotice("This editor currently supports text resources only.", "error");
+    if (
+        requestedType !== "text" &&
+        !file &&
+        !(
+            editing &&
+            existingItem.storage_path &&
+            requestedType === existingItem.content_type
+        )
+    ) {
+        setNotice("Choose a file for the selected content type.", "error");
         return;
     }
 
@@ -1578,35 +1632,12 @@ async function deleteCard(cardId) {
         setButtonBusy(
             button,
             true,
-            editing ? "Updating content..." : "Saving content..."
+            editing ? "Updating resource..." : "Uploading resource..."
         );
 
-        // UPDATE EXISTING TEXT RESOURCE
-        if (editing) {
-            const { error } = await client
-                .from("lesson_content")
-                .update({
-                    title,
-                    text_content: text
-                })
-                .eq("id", state.editingContentId)
-                .eq("card_id", state.currentCard.id)
-                .eq("content_category", "main");
-
-            if (error) throw error;
-
-            resetContentEditor("main");
-
-            await loadCardContent();
-
-            setNotice("Content updated successfully.", "success");
-
-            return;
-        }
-
-        // ADD NEW RESOURCE
         let actualType = requestedType;
 
+        // Validate and upload a replacement file if one was selected.
         if (file) {
             const detectedType = getActualFileType(file);
             const name = String(file.name || "").toLowerCase();
@@ -1623,13 +1654,85 @@ async function deleteCard(cardId) {
 
             } else if (detectedType !== requestedType) {
                 throw new Error(
-                    `The selected file does not appear to be ${requestedType}.`
+                    `The selected file does not match ${requestedType}.`
                 );
             }
 
             uploadedFile = await uploadContentFile(file);
         }
 
+        if (editing) {
+            const oldStoragePath = existingItem.storage_path || null;
+
+            const updateData = {
+                title,
+                content_type: actualType,
+                text_content: text || null,
+
+                storage_path: uploadedFile
+                    ? uploadedFile.path
+                    : requestedType === "text"
+                        ? null
+                        : oldStoragePath,
+
+                original_filename: uploadedFile
+                    ? uploadedFile.file_name
+                    : requestedType === "text"
+                        ? null
+                        : existingItem.original_filename,
+
+                file_size: uploadedFile
+                    ? uploadedFile.file_size
+                    : requestedType === "text"
+                        ? null
+                        : existingItem.file_size,
+
+                mime_type: uploadedFile
+                    ? uploadedFile.mime_type
+                    : requestedType === "text"
+                        ? null
+                        : existingItem.mime_type
+            };
+
+            const { error } = await client
+                .from("lesson_content")
+                .update(updateData)
+                .eq("id", state.editingContentId)
+                .eq("card_id", state.currentCard.id)
+                .eq("content_category", "main");
+
+            if (error) throw error;
+
+            // Remove the old file only after the database update succeeds.
+            const newStoragePath = uploadedFile?.path ||
+                (requestedType === "text" ? null : oldStoragePath);
+
+            if (
+                oldStoragePath &&
+                oldStoragePath !== newStoragePath
+            ) {
+                const { error: removeError } = await client.storage
+                    .from(STORAGE_BUCKET)
+                    .remove([oldStoragePath]);
+
+                if (removeError) {
+                    console.warn(
+                        "Resource updated, but the old file could not be removed:",
+                        removeError
+                    );
+                }
+            }
+
+            resetContentEditor("main");
+
+            await loadCardContent();
+
+            setNotice("Main resource updated successfully.", "success");
+
+            return;
+        }
+
+        // Create a new resource.
         const contentData = {
             card_id: state.currentCard.id,
             content_category: "main",
@@ -1653,46 +1756,42 @@ async function deleteCard(cardId) {
 
         await loadCardContent();
 
-        setNotice("Content added successfully.", "success");
+        setNotice("Main resource added successfully.", "success");
 
     } catch (error) {
-        console.error("Could not save content:", error);
+        console.error("Could not save main content:", error);
 
         setNotice(
             `Could not save content: ${getErrorMessage(error)}`,
             "error"
         );
 
-     } finally {
+    } finally {
         setButtonBusy(button, false);
-
-        if (!state.editingContentId && button) {
-            button.textContent = "Add Content";
-        }
-
         updateContentControls();
     }
 }
 async function addExtraContent() {
     if (!canManageContent()) {
-        setNotice("You cannot add lesson content.", "error");
+        setNotice("You do not have permission to manage content.", "error");
         return;
     }
 
     if (!state.currentLesson || !state.currentCard) {
-        setNotice("Select a lesson and card first.", "error");
+        setNotice("Select a lesson and a card first.", "error");
         return;
     }
 
     const title = $("#extra-content-title")?.value.trim() || "";
     const requestedType = $("#extra-content-type")?.value || "text";
     const text = $("#extra-text-content")?.value.trim() || "";
-    const fileInput = $("#extra-content-file");
-    const file = fileInput?.files?.[0] || null;
+    const file = $("#extra-content-file")?.files?.[0] || null;
     const button = $("#add-extra-content-btn");
 
-    const editing = state.editingContentId &&
-        state.editingContentCategory === "extra";
+    const editing = Boolean(
+        state.editingContentId &&
+        state.editingContentCategory === "extra"
+    );
 
     if (editing && !isAdmin()) {
         setNotice("Only administrators can edit content.", "error");
@@ -1709,13 +1808,27 @@ async function addExtraContent() {
         return;
     }
 
-    if (editing && requestedType !== "text") {
-        setNotice("This editor currently supports text resources only.", "error");
+    const existingItem = editing
+        ? state.extraContent.find(item =>
+            String(item.id) === String(state.editingContentId)
+        )
+        : null;
+
+    if (editing && !existingItem) {
+        setNotice("The resource being edited could not be found.", "error");
         return;
     }
 
-    if (requestedType !== "text" && !file && !editing) {
-        setNotice("Select a file for this resource.", "error");
+    if (
+        requestedType !== "text" &&
+        !file &&
+        !(
+            editing &&
+            existingItem.storage_path &&
+            requestedType === existingItem.content_type
+        )
+    ) {
+        setNotice("Choose a file for the selected content type.", "error");
         return;
     }
 
@@ -1725,42 +1838,17 @@ async function addExtraContent() {
         setButtonBusy(
             button,
             true,
-            editing ? "Updating content..." : "Uploading extra content..."
+            editing ? "Updating resource..." : "Uploading extra resource..."
         );
 
-        // UPDATE EXISTING EXTRA TEXT RESOURCE
-        if (editing) {
-            const { error } = await client
-                .from("lesson_content")
-                .update({
-                    title,
-                    text_content: text
-                })
-                .eq("id", state.editingContentId)
-                .eq("card_id", state.currentCard.id)
-                .eq("content_category", "extra");
-
-            if (error) throw error;
-
-            resetContentEditor("extra");
-
-            await loadCardContent();
-
-            setNotice("Extra content updated successfully.", "success");
-
-            return;
-        }
-
-        // ADD NEW EXTRA RESOURCE
         let actualType = requestedType;
 
         if (file) {
-            actualType = getActualFileType(file);
+            const detectedType = getActualFileType(file);
+            const name = String(file.name || "").toLowerCase();
 
             if (requestedType === "game") {
-                const extension = file.name.split(".").pop().toLowerCase();
-
-                if (!["html", "zip"].includes(extension)) {
+                if (!name.endsWith(".html") && !name.endsWith(".zip")) {
                     throw new Error("Game resources must be HTML or ZIP files.");
                 }
 
@@ -1769,13 +1857,83 @@ async function addExtraContent() {
             } else if (requestedType === "file") {
                 actualType = "file";
 
-            } else if (actualType !== requestedType) {
+            } else if (detectedType !== requestedType) {
                 throw new Error(
                     "The selected file does not match the chosen content type."
                 );
             }
 
             uploadedFile = await uploadContentFile(file);
+        }
+
+        if (editing) {
+            const oldStoragePath = existingItem.storage_path || null;
+
+            const updateData = {
+                title,
+                content_type: actualType,
+                text_content: text || null,
+
+                storage_path: uploadedFile
+                    ? uploadedFile.path
+                    : requestedType === "text"
+                        ? null
+                        : oldStoragePath,
+
+                original_filename: uploadedFile
+                    ? uploadedFile.file_name
+                    : requestedType === "text"
+                        ? null
+                        : existingItem.original_filename,
+
+                file_size: uploadedFile
+                    ? uploadedFile.file_size
+                    : requestedType === "text"
+                        ? null
+                        : existingItem.file_size,
+
+                mime_type: uploadedFile
+                    ? uploadedFile.mime_type
+                    : requestedType === "text"
+                        ? null
+                        : existingItem.mime_type
+            };
+
+            const { error } = await client
+                .from("lesson_content")
+                .update(updateData)
+                .eq("id", state.editingContentId)
+                .eq("card_id", state.currentCard.id)
+                .eq("content_category", "extra");
+
+            if (error) throw error;
+
+            const newStoragePath = uploadedFile?.path ||
+                (requestedType === "text" ? null : oldStoragePath);
+
+            if (
+                oldStoragePath &&
+                oldStoragePath !== newStoragePath
+            ) {
+                const { error: removeError } = await client.storage
+                    .from(STORAGE_BUCKET)
+                    .remove([oldStoragePath]);
+
+                if (removeError) {
+                    console.warn(
+                        "Extra resource updated, but the old file could not be removed:",
+                        removeError
+                    );
+                }
+            }
+
+            resetContentEditor("extra");
+
+            await loadCardContent();
+
+            setNotice("Extra resource updated successfully.", "success");
+
+            return;
         }
 
         const contentData = {
@@ -1801,7 +1959,7 @@ async function addExtraContent() {
 
         await loadCardContent();
 
-        setNotice("Extra content added successfully.", "success");
+        setNotice("Extra resource added successfully.", "success");
 
     } catch (error) {
         console.error("Could not save extra content:", error);
@@ -1811,13 +1969,8 @@ async function addExtraContent() {
             "error"
         );
 
-       } finally {
+    } finally {
         setButtonBusy(button, false);
-
-        if (!state.editingContentId && button) {
-            button.textContent = "Add Extra Content";
-        }
-
         updateContentControls();
     }
 }
@@ -1928,14 +2081,15 @@ function editContent(contentId, category) {
     typeInput.value = item.content_type || "text";
     textInput.value = item.text_content || "";
 
-    // A browser cannot prepopulate a file input.
-    // The existing file remains attached unless a replacement is selected.
+    // Browsers do not allow existing files to be placed
+    // inside a file input. The existing file is retained
+    // unless a replacement is uploaded.
     fileInput.value = "";
 
-    if (category === "main") {
-        updateContentTypeFields();
-    } else {
+    if (category === "extra") {
         updateExtraContentTypeFields();
+    } else {
+        updateContentTypeFields();
     }
 
     button.textContent = "Save Changes";
@@ -1948,12 +2102,13 @@ function editContent(contentId, category) {
     titleInput.focus();
 
     setNotice(
-        "Edit the resource. Select a replacement file if you want to change the existing media, then click Save Changes.",
+        "You are editing this resource. Change its title, type, text or upload a replacement file, then click Save Changes.",
         "info"
     );
 }
 
-    function resetContentEditor(category) {
+
+function resetContentEditor(category) {
     if (category === "extra") {
         $("#extra-content-title").value = "";
         $("#extra-text-content").value = "";
@@ -1976,13 +2131,14 @@ function editContent(contentId, category) {
         }
 
         if ($("#add-content-btn")) {
-            $("#add-content-btn").textContent = "Add Content";
+            $("#add-content-btn").textContent = "Add Main Content";
         }
     }
 
     state.editingContentId = null;
     state.editingContentCategory = null;
 }
+
    function renderContent() {
     const renderList = (items, containerId, countId) => {
         const container = $(`#${containerId}`);
@@ -2087,7 +2243,15 @@ function editContent(contentId, category) {
                 </article>
             `;
         }).join("");
-      
+              // Connect Edit buttons to the correct resource editor.
+        $$("[data-edit-content-id]", container).forEach(button => {
+            button.addEventListener("click", () => {
+                editContent(
+                    button.dataset.editContentId,
+                    button.dataset.contentCategory
+                );
+            });
+        });
     };
        
 
