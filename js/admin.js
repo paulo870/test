@@ -1904,6 +1904,12 @@ function editContent(contentId, category) {
     );
 
     if (!item) {
+        console.error("Content not found:", {
+            contentId,
+            category,
+            resources
+        });
+
         setNotice("Content could not be found.", "error");
         return;
     }
@@ -1920,39 +1926,64 @@ function editContent(contentId, category) {
     state.editingContentCategory = category;
 
     if (category === "extra") {
-        $("#extra-content-title").value = item.title || "";
-        $("#extra-content-type").value = "text";
-        $("#extra-text-content").value = item.text_content || "";
-
+        const titleInput = $("#extra-content-title");
+        const textInput = $("#extra-text-content");
+        const typeInput = $("#extra-content-type");
         const button = $("#add-extra-content-btn");
 
-        if (button) {
-            button.textContent = "Save Changes";
+        if (!titleInput || !textInput || !typeInput || !button) {
+            console.error("Extra content editor elements are missing.");
+            setNotice("The extra content editor could not be found.", "error");
+            return;
         }
 
-        $("#extra-content-title")?.focus();
+        titleInput.value = item.title || "";
+        textInput.value = item.text_content || "";
+        typeInput.value = "text";
+
+        button.textContent = "Save Changes";
+
+        titleInput.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+        titleInput.focus();
 
     } else {
-        $("#content-title").value = item.title || "";
-        $("#content-type").value = "text";
-        $("#text-content").value = item.text_content || "";
-
+        const titleInput = $("#content-title");
+        const textInput = $("#text-content");
+        const typeInput = $("#content-type");
         const button = $("#add-content-btn");
 
-        if (button) {
-            button.textContent = "Save Changes";
+        if (!titleInput || !textInput || !typeInput || !button) {
+            console.error("Main content editor elements are missing.");
+            setNotice("The content editor could not be found.", "error");
+            return;
         }
 
-        $("#content-title")?.focus();
+        titleInput.value = item.title || "";
+        textInput.value = item.text_content || "";
+        typeInput.value = "text";
+
+        button.textContent = "Save Changes";
 
         updateContentTypeFields();
+
+        titleInput.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+        titleInput.focus();
     }
 
     setNotice(
-        "Edit the title or text, then click Save Changes.",
+        "Editing content. Make your changes and click Save Changes.",
         "info"
     );
 }
+
 
     function resetContentEditor(category) {
     if (category === "extra") {
