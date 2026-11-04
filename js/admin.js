@@ -1400,6 +1400,7 @@ async function deleteCard(cardId) {
         }
     }
 }
+    
     // =========================================================
     // CONTENT TYPE CONTROLS
     // =========================================================
@@ -1458,6 +1459,346 @@ async function deleteCard(cardId) {
                 "image/*,audio/*,video/*,.pdf,.html,.zip";
         }
     }
+    updateInteractiveEditorVisibility();
+    // =========================================================
+// INTERACTIVE ACTIVITY BUILDER
+// =========================================================
+
+const interactiveQuestions = $("#interactive-questions");
+
+function initializeInteractiveBuilder() {
+    const typeSelect = $("#interactive-type");
+    const addButton = $("#add-interactive-question");
+
+    if (!typeSelect || !addButton || !interactiveQuestions) return;
+
+    typeSelect.addEventListener("change", () => {
+        interactiveQuestions.innerHTML = "";
+        addInteractiveQuestion();
+    });
+
+    addButton.addEventListener("click", addInteractiveQuestion);
+
+    updateInteractiveEditorVisibility();
+}
+
+function updateInteractiveEditorVisibility() {
+    const editor = $("#interactive-editor");
+    const type = $("#content-type")?.value;
+
+    if (editor) {
+        editor.hidden = type !== "interactive";
+    }
+
+    const fileLabel = $("#file-label");
+    const textLabel = $("#text-content")?.closest("label");
+
+    if (fileLabel) {
+        fileLabel.hidden = type === "text" || type === "interactive";
+    }
+
+    if (textLabel) {
+        textLabel.hidden = type === "interactive";
+    }
+}
+
+function addInteractiveQuestion() {
+    const type = $("#interactive-type")?.value || "multiple-choice";
+
+    if (!interactiveQuestions) return;
+
+    const block = document.createElement("div");
+    block.className = "question-block";
+    block.style.cssText =
+        "padding:16px;margin:14px 0;border:1px solid #dce5e9;border-radius:10px;";
+
+    const number = interactiveQuestions.children.length + 1;
+
+    let fields = "";
+
+    if (type === "matching") {
+        fields = `
+            <label>Left item
+                <input type="text" data-field="left"
+                    placeholder="e.g. Apple" required>
+            </label>
+            <label>Matching right item
+                <input type="text" data-field="right"
+                    placeholder="e.g. Fruit" required>
+            </label>
+        `;
+    }
+
+    if (type === "cloze") {
+        fields = `
+            <label>Sentence (use ___ for the blank)
+                <textarea data-field="sentence"
+                    placeholder="I ___ to school every day."></textarea>
+            </label>
+            <label>Correct answer
+                <input type="text" data-field="answer"
+                    placeholder="go">
+            </label>
+            <label>Other accepted answers
+                <input type="text" data-field="accepted"
+                    placeholder="Separate alternatives with commas">
+            </label>
+        `;
+    }
+
+    if (type === "multiple-choice") {
+        fields = `
+            <label>Question
+                <textarea data-field="prompt"
+                    placeholder="Choose the correct answer."></textarea>
+            </label>
+            <div data-options>
+                ${[1, 2, 3, 4].map(number => `
+                    <label>Option ${number}
+                        <input type="text" data-option="${number - 1}">
+                    </label>
+                `).join("")}
+            </div>
+            <label>Correct option number(s)
+                <input type="text" data-field="correct"
+                    placeholder="e.g. 2 or 1,3">
+            </label>
+            <label>
+                <input type="checkbox" data-field="multiple">
+                Allow multiple correct answers
+            </label>
+        `;
+    }
+
+    if (type === "picture-selection") {
+        fields = `
+            <label>Question
+                <textarea data-field="prompt"
+                    placeholder="Select the correct picture."></textarea>
+            </label>
+            <div data-options>
+                ${[1, 2, 3, 4].map(number => `
+                    <label>Picture ${number}
+                        <input type="text" data-image="${number - 1}"
+                            placeholder="Image URL">
+                        <input type="text" data-label="${number - 1}"
+                            placeholder="Image description">
+                    </label>
+                `).join("")}
+            </div>
+            <label>Correct picture number(s)
+                <input type="text" data-field="correct"
+                    placeholder="e.g. 2 or 1,3">
+            </label>
+            <label>
+                <input type="checkbox" data-field="multiple">
+                Allow multiple correct pictures
+            </label>
+        `;
+    }
+
+    if (type === "ordering") {
+        fields = `
+            <label>Question / instruction
+                <textarea data-field="prompt"
+                    placeholder="Put these events in the correct order."></textarea>
+            </label>
+            <label>Items in their correct order
+                <textarea data-field="items"
+                    placeholder="First item&#10;Second item&#10;Third item"></textarea>
+            </label>
+        `;
+    }
+
+    block.innerHTML = `
+        <div style="display:flex;justify-content:space-between;gap:10px;">
+            <strong>Question ${number}</strong>
+            <button type="button" data-remove-question
+                class="button button-quiet">Remove</button>
+        </div>
+        ${fields}
+    `;
+
+    block.querySelector("[data-remove-question]").addEventListener(
+        "click",
+        () => {
+            block.remove();
+            renumberInteractiveQuestions();
+        }
+    );
+
+    interactiveQuestions.appendChild(block);
+}
+
+function renumberInteractiveQuestions() {
+    [...interactiveQuestions.children].forEach((block, index) => {
+        const heading = block.querySelector("strong");
+
+        if (heading) {
+            heading.textContent = `Question ${index + 1}`;
+        }
+    });
+}
+
+function readInteractiveActivity() {
+    const type = $("#interactive-type")?.value;
+    const instructions =
+        $("#interactive-instructions")?.value.trim() || "";
+
+    const blocks = [...interactiveQuestions.children];
+
+    if (!blocks.length) {
+        throw new Error("Add at least one question.");
+    }
+
+    const questions = blocks.map((block, index) => {
+        const get = name =>
+            block.querySelector(`[data-field="${name}"]`);
+
+        if (type === "matching") {
+            const left = get("left")?.value.trim();
+            const right = get("right")?.value.trim();
+
+            if (!left || !right) {
+                throw new Error(
+                    `Complete both matching items in question ${index + 1}.`
+                );
+            }
+
+            return { left, right };
+        }
+
+        if (type === "cloze") {
+            const sentence = get("sentence")?.value.trim();
+            const answer = get("answer")?.value.trim();
+
+            if (!sentence || !sentence.includes("___") || !answer) {
+                throw new Error(
+                    `Question ${index + 1} needs a sentence with ___ and a correct answer.`
+                );
+            }
+
+            return {
+                sentence,
+                answer,
+                acceptedAnswers: (get("accepted")?.value || "")
+                    .split(",")
+                    .map(value => value.trim())
+                    .filter(Boolean)
+            };
+        }
+
+        if (type === "multiple-choice") {
+            const prompt = get("prompt")?.value.trim();
+
+            const options = [...block.querySelectorAll("[data-option]")]
+                .map(input => input.value.trim());
+
+            const correct = (get("correct")?.value || "")
+                .split(",")
+                .map(value => Number(value.trim()) - 1);
+
+            const multiple = Boolean(get("multiple")?.checked);
+
+            if (!prompt || options.some(option => !option)) {
+                throw new Error(
+                    `Complete the question and all four options in question ${index + 1}.`
+                );
+            }
+
+            if (
+                !correct.length ||
+                correct.some(value =>
+                    !Number.isInteger(value) || value < 0 || value >= options.length
+                )
+            ) {
+                throw new Error(
+                    `Enter valid correct option numbers in question ${index + 1}.`
+                );
+            }
+
+            if (!multiple && correct.length !== 1) {
+                throw new Error(
+                    `Question ${index + 1} must have exactly one correct answer.`
+                );
+            }
+
+            return { prompt, options, correct, multiple };
+        }
+
+        if (type === "picture-selection") {
+            const prompt = get("prompt")?.value.trim();
+
+            const images = [...block.querySelectorAll("[data-image]")];
+            const labels = [...block.querySelectorAll("[data-label]")];
+
+            const options = images.map((input, optionIndex) => ({
+                image: input.value.trim(),
+                label: labels[optionIndex].value.trim()
+            }));
+
+            const correct = (get("correct")?.value || "")
+                .split(",")
+                .map(value => Number(value.trim()) - 1);
+
+            const multiple = Boolean(get("multiple")?.checked);
+
+            if (
+                !prompt ||
+                options.some(option => !option.image || !option.label)
+            ) {
+                throw new Error(
+                    `Complete the prompt and all four picture options in question ${index + 1}.`
+                );
+            }
+
+            if (
+                !correct.length ||
+                correct.some(value =>
+                    !Number.isInteger(value) || value < 0 || value >= options.length
+                )
+            ) {
+                throw new Error(
+                    `Enter valid correct picture numbers in question ${index + 1}.`
+                );
+            }
+
+            if (!multiple && correct.length !== 1) {
+                throw new Error(
+                    `Question ${index + 1} must have exactly one correct picture.`
+                );
+            }
+
+            return { prompt, options, correct, multiple };
+        }
+
+        if (type === "ordering") {
+            const prompt = get("prompt")?.value.trim();
+
+            const items = (get("items")?.value || "")
+                .split("\n")
+                .map(value => value.trim())
+                .filter(Boolean);
+
+            if (!prompt || items.length < 2) {
+                throw new Error(
+                    `Question ${index + 1} needs an instruction and at least two items.`
+                );
+            }
+
+            return { prompt, items };
+        }
+
+        throw new Error("Unknown interactive activity type.");
+    });
+
+    return {
+        type,
+        title: $("#content-title")?.value.trim() || "Interactive Activity",
+        instructions,
+        questions
+    };
+}
 function updateExtraContentTypeFields() {
     const type = $("#extra-content-type")?.value || "text";
     const fileInput = $("#extra-content-file");
@@ -1580,6 +1921,11 @@ async function addContent() {
     const requestedType = $("#content-type")?.value || "text";
     const text = $("#text-content")?.value.trim() || "";
     const file = $("#content-file")?.files?.[0] || null;
+    let interactiveData = null;
+
+if (requestedType === "interactive") {
+    interactiveData = readInteractiveActivity();
+}
     const button = $("#add-content-btn");
 
     const editing = Boolean(
