@@ -1904,86 +1904,54 @@ function editContent(contentId, category) {
     );
 
     if (!item) {
-        console.error("Content not found:", {
-            contentId,
-            category,
-            resources
-        });
-
         setNotice("Content could not be found.", "error");
-        return;
-    }
-
-    if (item.content_type !== "text") {
-        setNotice(
-            "Editing is currently available for text resources only.",
-            "error"
-        );
         return;
     }
 
     state.editingContentId = item.id;
     state.editingContentCategory = category;
 
-    if (category === "extra") {
-        const titleInput = $("#extra-content-title");
-        const textInput = $("#extra-text-content");
-        const typeInput = $("#extra-content-type");
-        const button = $("#add-extra-content-btn");
+    const prefix = category === "extra" ? "extra-" : "";
 
-        if (!titleInput || !textInput || !typeInput || !button) {
-            console.error("Extra content editor elements are missing.");
-            setNotice("The extra content editor could not be found.", "error");
-            return;
-        }
+    const titleInput = $(`#${prefix}content-title`);
+    const typeInput = $(`#${prefix}content-type`);
+    const textInput = $(`#${prefix}text-content`);
+    const fileInput = $(`#${prefix}content-file`);
+    const button = $(`#add-${prefix}content-btn`);
 
-        titleInput.value = item.title || "";
-        textInput.value = item.text_content || "";
-        typeInput.value = "text";
-
-        button.textContent = "Save Changes";
-
-        titleInput.scrollIntoView({
-            behavior: "smooth",
-            block: "center"
-        });
-
-        titleInput.focus();
-
-    } else {
-        const titleInput = $("#content-title");
-        const textInput = $("#text-content");
-        const typeInput = $("#content-type");
-        const button = $("#add-content-btn");
-
-        if (!titleInput || !textInput || !typeInput || !button) {
-            console.error("Main content editor elements are missing.");
-            setNotice("The content editor could not be found.", "error");
-            return;
-        }
-
-        titleInput.value = item.title || "";
-        textInput.value = item.text_content || "";
-        typeInput.value = "text";
-
-        button.textContent = "Save Changes";
-
-        updateContentTypeFields();
-
-        titleInput.scrollIntoView({
-            behavior: "smooth",
-            block: "center"
-        });
-
-        titleInput.focus();
+    if (!titleInput || !typeInput || !textInput || !fileInput || !button) {
+        setNotice("The content editor could not be found.", "error");
+        return;
     }
 
+    titleInput.value = item.title || "";
+    typeInput.value = item.content_type || "text";
+    textInput.value = item.text_content || "";
+
+    // A browser cannot prepopulate a file input.
+    // The existing file remains attached unless a replacement is selected.
+    fileInput.value = "";
+
+    if (category === "main") {
+        updateContentTypeFields();
+    } else {
+        updateExtraContentTypeFields();
+    }
+
+    button.textContent = "Save Changes";
+
+    titleInput.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+
+    titleInput.focus();
+
     setNotice(
-        "Editing content. Make your changes and click Save Changes.",
+        "Edit the resource. Select a replacement file if you want to change the existing media, then click Save Changes.",
         "info"
     );
 }
-
 
     function resetContentEditor(category) {
     if (category === "extra") {
@@ -2084,7 +2052,7 @@ function editContent(contentId, category) {
         </span>
     </div>
 
-    ${isAdmin() && type === "text" ? `
+    ${isAdmin() ? `
         <button
             type="button"
             class="button button-secondary"
