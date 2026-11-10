@@ -1473,9 +1473,9 @@ async function deleteCard(cardId) {
                 acceptByType[type] ||
                 "image/*,audio/*,video/*,.pdf,.html,.zip";
         }
-    }
+    
     updateInteractiveEditorVisibility();
-        }
+            }
     // =========================================================
 // INTERACTIVE ACTIVITY BUILDER
 // =========================================================
