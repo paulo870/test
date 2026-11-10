@@ -1475,6 +1475,7 @@ async function deleteCard(cardId) {
         }
     }
     updateInteractiveEditorVisibility();
+        }
     // =========================================================
 // INTERACTIVE ACTIVITY BUILDER
 // =========================================================
