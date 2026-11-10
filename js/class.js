@@ -1848,14 +1848,12 @@ else if (slide.type === "error") {
 
 }
 
-
 // ============================================================
 // OPEN EXTRA CONTENT FOR A SPECIFIC CARD
 // ============================================================
 
 function openExtraContent(card) {
 
-    // Remove an existing Extra Content window
     const existingModal = document.getElementById(
         "lesson-extra-modal"
     );
@@ -1864,25 +1862,27 @@ function openExtraContent(card) {
         existingModal.remove();
     }
 
-   const extraItems = getExtraContent(card.id);
-    
+    const extraItems = getExtraContent(card.id);
 
     if (extraItems.length === 0) {
         return;
     }
 
-    // Main modal
+    // MAIN MODAL
+
     const modal = document.createElement("div");
 
     modal.id = "lesson-extra-modal";
     modal.className = "lesson-extra-modal";
 
-    // Modal content box
+    // DIALOG
+
     const dialog = document.createElement("div");
 
     dialog.className = "lesson-extra-dialog";
 
-    // Header
+    // HEADER
+
     const header = document.createElement("div");
 
     header.className = "lesson-extra-header";
@@ -1892,7 +1892,6 @@ function openExtraContent(card) {
     heading.textContent =
         `${card.title || `Card ${card.card_number}`} — Extra Content`;
 
-    // Close button
     const closeButton = document.createElement("button");
 
     closeButton.type = "button";
@@ -1906,12 +1905,14 @@ function openExtraContent(card) {
 
     header.append(heading, closeButton);
 
-    // Content area
+    // CONTENT AREA
+
     const contentArea = document.createElement("div");
 
     contentArea.className = "lesson-extra-content";
 
-    // Display each extra activity
+    // DISPLAY EACH EXTRA ACTIVITY
+
     extraItems.forEach(item => {
 
         const itemContainer = document.createElement("section");
@@ -1930,47 +1931,65 @@ function openExtraContent(card) {
         ).toLowerCase();
 
         const mediaUrl = item.signed_url || "";
-        // GAME CONTENT
-        if (type === "game") {
-            const validGames = ["stop", "round", "grad", "box"];
+
+        // TEXT
+
+        if (type === "text") {
+
+            if (item.text_content) {
+
+                const text = document.createElement("div");
+
+                text.className = "lesson-extra-text";
+                text.textContent = item.text_content;
+
+                itemContainer.appendChild(text);
+
+            }
+
+        }
+
+        // GAME
+
+        else if (type === "game") {
+
+            const validGames = [
+                "stop",
+                "round",
+                "grad",
+                "box"
+            ];
 
             if (validGames.includes(item.text_content)) {
+
                 const gameFrame = document.createElement("iframe");
 
                 gameFrame.className = "lesson-game-iframe";
+
                 gameFrame.src =
                     `games.html?game=${encodeURIComponent(item.text_content)}`;
 
-                gameFrame.title = item.title || "Interactive lesson game";
+                gameFrame.title =
+                    item.title || "Interactive lesson game";
+
                 gameFrame.allow = "autoplay; fullscreen";
 
                 itemContainer.appendChild(gameFrame);
+
             } else {
+
                 appendUnavailableMessage(
                     itemContainer,
                     "This game selection is invalid."
                 );
+
             }
+
         }
 
-     // TEXT CONTENT ONLY
-
-if (
-    type === "text" &&
-    item.text_content
-) {
-
-    const text = document.createElement("div");
-
-    text.className = "lesson-extra-text";
-    text.textContent = item.text_content;
-
-    itemContainer.appendChild(text);
-
-}
-
         // IMAGE
-        if (type === "image") {
+
+        else if (type === "image") {
 
             if (mediaUrl) {
 
@@ -1982,16 +2001,19 @@ if (
 
                 itemContainer.appendChild(image);
 
-            } else if (item.storage_path) {
+            } else {
 
                 appendUnavailableMessage(
                     itemContainer,
                     "This image could not be loaded."
                 );
+
             }
+
         }
 
         // AUDIO
+
         else if (type === "audio") {
 
             if (mediaUrl) {
@@ -2005,16 +2027,19 @@ if (
 
                 itemContainer.appendChild(audio);
 
-            } else if (item.storage_path) {
+            } else {
 
                 appendUnavailableMessage(
                     itemContainer,
                     "This audio could not be loaded."
                 );
+
             }
+
         }
 
         // VIDEO
+
         else if (type === "video") {
 
             if (mediaUrl) {
@@ -2029,97 +2054,49 @@ if (
 
                 itemContainer.appendChild(video);
 
-            } else if (item.storage_path) {
+            } else {
 
                 appendUnavailableMessage(
                     itemContainer,
                     "This video could not be loaded."
                 );
+
             }
-        }
-
-      // INTERACTIVE ACTIVITIES
-
-else if (type === "interactive") {
-
-    if (item.text_content && !item.storage_path) {
-
-        try {
-
-            const activityData = JSON.parse(
-                item.text_content
-            );
-
-            renderInteractiveActivity(
-                itemContainer,
-                activityData
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Could not load extra interactive activity:",
-                error
-            );
-
-            appendUnavailableMessage(
-                itemContainer,
-                "This interactive activity contains invalid data."
-            );
 
         }
 
-    } else if (mediaUrl) {
+        // INTERACTIVE ACTIVITIES
 
-        const frame = document.createElement("iframe");
+        else if (type === "interactive") {
 
-        frame.src = mediaUrl;
-        frame.className = "lesson-extra-iframe";
-        frame.title = item.title || "Interactive activity";
+            if (item.text_content && !item.storage_path) {
 
-        frame.setAttribute("allowfullscreen", "");
+                try {
 
-        itemContainer.appendChild(frame);
+                    const activityData = JSON.parse(
+                        item.text_content
+                    );
 
-    } else if (item.storage_path) {
+                    renderInteractiveActivity(
+                        itemContainer,
+                        activityData
+                    );
 
-        appendUnavailableMessage(
-            itemContainer,
-            "This interactive activity could not be loaded."
-        );
+                } catch (error) {
 
-    }
+                    console.error(
+                        "Could not load extra interactive activity:",
+                        error
+                    );
 
-}
+                    appendUnavailableMessage(
+                        itemContainer,
+                        "This interactive activity contains invalid data."
+                    );
 
-// EXISTING HTML ACTIVITIES
+                }
 
-else if (type === "html") {
-
-    if (mediaUrl) {
-
-        const frame = document.createElement("iframe");
-
-        frame.src = mediaUrl;
-        frame.className = "lesson-extra-iframe";
-        frame.title = item.title || "Interactive activity";
-
-        frame.setAttribute("allowfullscreen", "");
-
-        itemContainer.appendChild(frame);
-
-    } else {
-
-        appendUnavailableMessage(
-            itemContainer,
-            "This HTML resource could not be loaded."
-        );
-
-    }
-
-}
-
-            if (mediaUrl) {
+            } else if (mediaUrl) {
 
                 const frame = document.createElement("iframe");
 
@@ -2127,23 +2104,50 @@ else if (type === "html") {
                 frame.className = "lesson-extra-iframe";
                 frame.title = item.title || "Interactive activity";
 
-                frame.setAttribute(
-                    "allowfullscreen",
-                    ""
-                );
+                frame.setAttribute("allowfullscreen", "");
 
                 itemContainer.appendChild(frame);
 
-            } else if (item.storage_path) {
+            } else {
 
                 appendUnavailableMessage(
                     itemContainer,
                     "This interactive activity could not be loaded."
                 );
+
             }
+
         }
 
-            // FILES AND OTHER RESOURCE TYPES
+        // HTML RESOURCES
+
+        else if (type === "html") {
+
+            if (mediaUrl) {
+
+                const frame = document.createElement("iframe");
+
+                frame.src = mediaUrl;
+                frame.className = "lesson-extra-iframe";
+                frame.title = item.title || "HTML resource";
+
+                frame.setAttribute("allowfullscreen", "");
+
+                itemContainer.appendChild(frame);
+
+            } else {
+
+                appendUnavailableMessage(
+                    itemContainer,
+                    "This HTML resource could not be loaded."
+                );
+
+            }
+
+        }
+
+        // FILES
+
         else if (type === "file") {
 
             if (mediaUrl) {
@@ -2161,27 +2165,31 @@ else if (type === "html") {
 
                 itemContainer.appendChild(link);
 
-            } else if (item.storage_path) {
+            } else {
 
                 appendUnavailableMessage(
                     itemContainer,
                     "This resource could not be opened."
                 );
+
             }
+
         }
 
         contentArea.appendChild(itemContainer);
 
     });
 
-    // Assemble modal
+    // ASSEMBLE MODAL
+
     dialog.append(header, contentArea);
 
     modal.appendChild(dialog);
 
     document.body.appendChild(modal);
 
-    // Close and stop any playing media
+    // CLOSE MODAL
+
     function closeExtraContent() {
 
         modal.querySelectorAll("audio, video").forEach(media => {
@@ -2189,6 +2197,12 @@ else if (type === "html") {
         });
 
         modal.remove();
+
+        document.removeEventListener(
+            "keydown",
+            handleEscape
+        );
+
     }
 
     closeButton.addEventListener(
@@ -2196,7 +2210,8 @@ else if (type === "html") {
         closeExtraContent
     );
 
-    // Clicking outside the dialog closes the modal
+    // CLICK OUTSIDE TO CLOSE
+
     modal.addEventListener("click", event => {
 
         if (event.target === modal) {
@@ -2205,25 +2220,24 @@ else if (type === "html") {
 
     });
 
-    // Escape key closes the modal
+    // ESCAPE TO CLOSE
+
     function handleEscape(event) {
 
         if (event.key === "Escape") {
-
             closeExtraContent();
-
-            document.removeEventListener(
-                "keydown",
-                handleEscape
-            );
         }
+
     }
 
     document.addEventListener(
         "keydown",
         handleEscape
     );
+
 }
+
+
 // ============================================================
 // DISPLAY AN UNAVAILABLE-FILE MESSAGE
 // ============================================================
