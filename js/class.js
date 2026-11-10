@@ -610,7 +610,578 @@ function fitLessonViewerContent(viewer) {
     }
 
 }
+// ============================================================
+// STUDENT INTERACTIVE ACTIVITY RENDERER
+// ============================================================
 
+function renderInteractiveActivity(container, activityData) {
+
+    if (
+        !activityData ||
+        !Array.isArray(activityData.questions)
+    ) {
+
+        appendUnavailableMessage(
+            container,
+            "This activity could not be displayed."
+        );
+
+        return;
+
+    }
+
+    const activity = document.createElement("div");
+
+    activity.className = "student-interactive-activity";
+
+    const instructions = document.createElement("p");
+
+    instructions.className = "student-activity-instructions";
+
+    instructions.textContent =
+        activityData.instructions || "Complete the activity.";
+
+    activity.appendChild(instructions);
+
+    const questionsContainer = document.createElement("div");
+
+    questionsContainer.className = "student-activity-questions";
+
+    const feedback = document.createElement("div");
+
+    feedback.className = "student-activity-feedback";
+
+    feedback.setAttribute("aria-live", "polite");
+
+    const actions = document.createElement("div");
+
+    actions.className = "student-activity-actions";
+
+    const checkButton = document.createElement("button");
+
+    checkButton.type = "button";
+    checkButton.textContent = "Check Answers";
+
+    const retryButton = document.createElement("button");
+
+    retryButton.type = "button";
+    retryButton.textContent = "Try Again";
+    retryButton.hidden = true;
+
+    actions.append(checkButton, retryButton);
+
+    activity.append(
+        questionsContainer,
+        feedback,
+        actions
+    );
+
+    container.appendChild(activity);
+
+    const answers = [];
+
+    function normalise(value) {
+
+        return String(value ?? "")
+            .trim()
+            .toLowerCase();
+
+    }
+
+    function shuffle(items) {
+
+        const result = [...items];
+
+        for (let i = result.length - 1; i > 0; i--) {
+
+            const j = Math.floor(Math.random() * (i + 1));
+
+            [result[i], result[j]] =
+                [result[j], result[i]];
+
+        }
+
+        return result;
+    }
+
+    function createQuestionHeading(number, prompt) {
+
+        const heading = document.createElement("h3");
+
+        heading.className = "student-activity-question-title";
+
+        heading.textContent =
+            `${number}. ${prompt || "Complete the question."}`;
+
+        return heading;
+    }
+
+    function createSelect(options, placeholder) {
+
+        const select = document.createElement("select");
+
+        select.className = "student-activity-select";
+
+        const firstOption = document.createElement("option");
+
+        firstOption.value = "";
+        firstOption.textContent = placeholder;
+
+        select.appendChild(firstOption);
+
+        options.forEach(option => {
+
+            const element = document.createElement("option");
+
+            element.value = String(option.value);
+            element.textContent = option.label;
+
+            select.appendChild(element);
+
+        });
+
+        return select;
+    }
+
+    function renderQuestion(question, index) {
+
+        const type = String(
+            activityData.type || ""
+        ).toLowerCase();
+
+        const section = document.createElement("section");
+
+        section.className = "student-activity-question";
+
+        section.appendChild(
+            createQuestionHeading(
+                index + 1,
+                question.prompt
+            )
+        );
+
+        const questionType = type.replace(/_/g, "-");
+
+        // MATCHING
+
+        if (questionType === "matching") {
+
+            const left = question.left || [];
+            const right = shuffle(question.right || []);
+
+            const rows = [];
+
+            left.forEach((item, itemIndex) => {
+
+                const row = document.createElement("div");
+
+                row.className = "student-matching-row";
+
+                const label = document.createElement("span");
+
+                label.textContent = item;
+
+                const select = createSelect(
+                    right.map(value => ({
+                        value,
+                        label: value
+                    })),
+                    "Choose a match"
+                );
+
+                row.append(label, select);
+
+                section.appendChild(row);
+
+                rows.push(select);
+
+            });
+
+            answers[index] = {
+                type: "matching",
+                controls: rows,
+                correct: left.map((_, i) => question.right[i])
+            };
+
+        }
+
+        // CLOZE / FILL IN THE BLANKS
+
+        else if (questionType === "cloze") {
+
+            const sentence = document.createElement("p");
+
+            sentence.className = "student-cloze-sentence";
+
+            const parts = String(
+                question.sentence || ""
+            ).split("___");
+
+            const inputs = [];
+
+            parts.forEach((part, partIndex) => {
+
+                sentence.appendChild(
+                    document.createTextNode(part)
+                );
+
+                if (partIndex < parts.length - 1) {
+
+                    const input = document.createElement("input");
+
+                    input.type = "text";
+                    input.className = "student-cloze-input";
+
+                    input.autocomplete = "off";
+
+                    sentence.appendChild(input);
+
+                    inputs.push(input);
+
+                }
+
+            });
+
+            section.appendChild(sentence);
+
+            answers[index] = {
+                type: "cloze",
+                controls: inputs,
+                correct: [
+                    question.answer,
+                    ...(question.acceptedAnswers || [])
+                ]
+            };
+
+        }
+
+        // MULTIPLE CHOICE
+
+        else if (questionType === "multiple-choice") {
+
+            const correct = question.correct || [];
+
+            const options = question.options || [];
+
+            const controls = [];
+
+            options.forEach((option, optionIndex) => {
+
+                const label = document.createElement("label");
+
+                label.className = "student-choice-option";
+
+                const input = document.createElement("input");
+
+                input.type = question.multiple
+                    ? "checkbox"
+                    : "radio";
+
+                input.name = `activity-question-${index}`;
+
+                input.value = String(option);
+
+                label.append(input);
+
+                const text = document.createElement("span");
+
+                text.textContent = option;
+
+                label.appendChild(text);
+
+                section.appendChild(label);
+
+                controls.push(input);
+
+            });
+
+            answers[index] = {
+                type: "choice",
+                controls,
+                correct
+            };
+
+        }
+
+        // PICTURE SELECTION
+
+        else if (questionType === "picture-selection") {
+
+            const options = question.options || [];
+
+            const controls = [];
+
+            options.forEach((option, optionIndex) => {
+
+                const label = document.createElement("label");
+
+                label.className = "student-picture-option";
+
+                const input = document.createElement("input");
+
+                input.type = question.multiple
+                    ? "checkbox"
+                    : "radio";
+
+                input.name = `picture-question-${index}`;
+
+                input.value = String(optionIndex);
+
+                label.appendChild(input);
+
+                if (option.image) {
+
+                    const image = document.createElement("img");
+
+                    image.src = option.image;
+
+                    image.alt = option.label || "Answer option";
+
+                    label.appendChild(image);
+
+                }
+
+                const caption = document.createElement("span");
+
+                caption.textContent =
+                    option.label || `Option ${optionIndex + 1}`;
+
+                label.appendChild(caption);
+
+                section.appendChild(label);
+
+                controls.push(input);
+
+            });
+
+            answers[index] = {
+                type: "choice",
+                controls,
+                correct: question.correct || []
+            };
+
+        }
+
+        // ORDERING
+
+        else if (questionType === "ordering") {
+
+            const items = question.items || [];
+
+            const shuffledItems = shuffle(items);
+
+            const controls = [];
+
+            shuffledItems.forEach(item => {
+
+                const row = document.createElement("div");
+
+                row.className = "student-ordering-row";
+
+                const label = document.createElement("span");
+
+                label.textContent = item;
+
+                const select = createSelect(
+                    items.map((_, i) => ({
+                        value: i + 1,
+                        label: `Position ${i + 1}`
+                    })),
+                    "Choose position"
+                );
+
+                row.append(label, select);
+
+                section.appendChild(row);
+
+                controls.push({
+                    item,
+                    select
+                });
+
+            });
+
+            answers[index] = {
+                type: "ordering",
+                controls,
+                correct: items
+            };
+
+        }
+
+        else {
+
+            appendUnavailableMessage(
+                section,
+                "This activity type is not supported."
+            );
+
+        }
+
+        questionsContainer.appendChild(section);
+
+    }
+
+    activityData.questions.forEach(renderQuestion);
+
+    function checkAnswers() {
+
+        let score = 0;
+
+        const total = answers.length;
+
+        answers.forEach((answer, index) => {
+
+            let correct = false;
+
+            if (answer.type === "matching") {
+
+                correct = answer.controls.every(
+                    (control, i) =>
+                        normalise(control.value) ===
+                        normalise(answer.correct[i])
+                );
+
+            }
+
+            else if (answer.type === "cloze") {
+
+                correct = answer.controls.every(
+                    (control, i) =>
+                        (answer.correct || []).some(
+                            value =>
+                                normalise(value) ===
+                                normalise(control.value)
+                        )
+                );
+
+            }
+
+            else if (answer.type === "choice") {
+
+                const selected = answer.controls
+                    .filter(control => control.checked)
+                    .map(control => control.value);
+
+                const correctValues = answer.correct.map(value => {
+
+                    if (
+                        typeof value === "number" ||
+                        /^\d+$/.test(String(value))
+                    ) {
+
+                        return answer.controls[
+                            Number(value)
+                        ]?.value ?? String(value);
+
+                    }
+
+                    return String(value);
+
+                });
+
+                correct =
+                    selected.length === correctValues.length &&
+                    selected.every(value =>
+                        correctValues.some(
+                            expected =>
+                                normalise(value) === normalise(expected)
+                        )
+                    );
+
+            }
+
+            else if (answer.type === "ordering") {
+
+                const positions = answer.controls.map(
+                    control => Number(control.select.value)
+                );
+
+                correct = positions.every(
+                    (position, i) =>
+                        position === i + 1
+                );
+
+            }
+
+            const questionElement =
+                questionsContainer.children[index];
+
+            questionElement.classList.remove(
+                "activity-correct",
+                "activity-incorrect"
+            );
+
+            questionElement.classList.add(
+                correct
+                    ? "activity-correct"
+                    : "activity-incorrect"
+            );
+
+            const existingFeedback =
+                questionElement.querySelector(
+                    ".student-question-feedback"
+                );
+
+            if (existingFeedback) {
+                existingFeedback.remove();
+            }
+
+            const result = document.createElement("p");
+
+            result.className = "student-question-feedback";
+
+            result.textContent = correct
+                ? "✓ Correct"
+                : "✗ Not quite. Try again.";
+
+            questionElement.appendChild(result);
+
+            if (correct) score++;
+
+        });
+
+        feedback.textContent =
+            `Your score: ${score} / ${total}`;
+
+        feedback.classList.add("visible");
+
+        checkButton.disabled = true;
+
+        retryButton.hidden = false;
+
+        answers.forEach(answer => {
+
+            answer.controls.forEach(control => {
+
+                const element =
+                    control.select || control;
+
+                element.disabled = true;
+
+            });
+
+        });
+
+    }
+
+    checkButton.addEventListener(
+        "click",
+        checkAnswers
+    );
+
+    retryButton.addEventListener("click", () => {
+
+        activity.remove();
+
+        renderInteractiveActivity(
+            container,
+            activityData
+        );
+
+    });
+
+}
 // ============================================================
 // POWERPOINT-STYLE LESSON PRESENTATION
 // ============================================================
@@ -633,151 +1204,155 @@ function openLessonCard(card) {
 
     // CREATE PRESENTATION SLIDES
 
-    const slides = [];
+const slides = [];
 
-    cardContent.forEach(item => {
+cardContent.forEach(item => {
 
-        const type = String(
-            item.content_type || "text"
-        ).toLowerCase();
+    const type = String(
+        item.content_type || "text"
+    ).toLowerCase();
 
-        const mediaUrl = item.signed_url || "";
+    const mediaUrl = item.signed_url || "";
 
-        // Split text into individual sentences
+    // TEXT — KEEP COMPLETE CONTENT AND PARAGRAPHS
+
+    if (type === "text") {
 
         if (item.text_content && item.text_content.trim()) {
 
-            const sentences = item.text_content
-                .replace(/\r/g, "")
-                .split(/(?<=[.!?])\s+|\n+/)
-                .map(sentence => sentence.trim())
-                .filter(Boolean);
-
-            sentences.forEach((sentence, index) => {
-
-                slides.push({
-                    type: "text",
-                    title: item.title || "Lesson",
-                    content: sentence,
-                    sentenceNumber: index + 1,
-                    itemId: item.id
-                });
-
-            });
-        }
-
-        // IMAGE
-
-        if (type === "image") {
-
             slides.push({
-                type: "image",
-                title: item.title || "Lesson image",
-                url: mediaUrl,
-                storagePath: item.storage_path
-            });
-        }
-
-        // AUDIO
-
-        else if (type === "audio") {
-
-            slides.push({
-                type: "audio",
-                title: item.title || "Listening activity",
-                url: mediaUrl,
-                storagePath: item.storage_path
-            });
-        }
-
-        // VIDEO
-
-        else if (type === "video") {
-
-            slides.push({
-                type: "video",
-                title: item.title || "Lesson video",
-                url: mediaUrl,
-                storagePath: item.storage_path
-            });
-        }
-
-    // INTERACTIVE ACTIVITIES
-
-else if (type === "interactive") {
-
-    // New JSON-based activities
-    if (item.text_content && !item.storage_path) {
-
-        try {
-            const activityData = JSON.parse(item.text_content);
-
-            slides.push({
-                type: "interactive-activity",
-                title: item.title || "Interactive Activity",
-                activityData,
+                type: "text",
+                title: item.title || "Lesson",
+                content: item.text_content,
                 itemId: item.id
             });
 
-        } catch (error) {
-
-            console.error(
-                "Could not read interactive activity:",
-                error
-            );
-
-            slides.push({
-                type: "error",
-                title: item.title || "Interactive Activity",
-                message: "This activity contains invalid data."
-            });
         }
 
-    } else {
+    }
 
-        // Preserve previously uploaded HTML activities
+    // IMAGE
+
+    else if (type === "image") {
+
         slides.push({
-            type: "interactive",
-            title: item.title || "Interactive activity",
+            type: "image",
+            title: item.title || "Lesson image",
             url: mediaUrl,
             storagePath: item.storage_path
         });
+
     }
-}
 
-// EXISTING HTML RESOURCES
+    // AUDIO
 
-else if (type === "html") {
+    else if (type === "audio") {
 
-    slides.push({
-        type: "interactive",
-        title: item.title || "Interactive resource",
-        url: mediaUrl,
-        storagePath: item.storage_path
-    });
-}
+        slides.push({
+            type: "audio",
+            title: item.title || "Listening activity",
+            url: mediaUrl,
+            storagePath: item.storage_path
+        });
 
-        // FILES AND GAMES
+    }
 
-        else if (
-            type === "file" ||
-            type === "game"
-        ) {
+    // VIDEO
+
+    else if (type === "video") {
+
+        slides.push({
+            type: "video",
+            title: item.title || "Lesson video",
+            url: mediaUrl,
+            storagePath: item.storage_path
+        });
+
+    }
+
+    // INTERACTIVE ACTIVITIES
+
+    else if (type === "interactive") {
+
+        if (item.text_content && !item.storage_path) {
+
+            try {
+
+                const activityData = JSON.parse(
+                    item.text_content
+                );
+
+                slides.push({
+                    type: "interactive-activity",
+                    title: item.title || "Interactive Activity",
+                    activityData,
+                    itemId: item.id
+                });
+
+            } catch (error) {
+
+                console.error(
+                    "Invalid interactive activity:",
+                    error
+                );
+
+                slides.push({
+                    type: "error",
+                    title: item.title || "Interactive Activity",
+                    message: "This activity contains invalid data."
+                });
+
+            }
+
+        } else {
+
+            // PRESERVE EXISTING UPLOADED HTML ACTIVITIES
 
             slides.push({
-                type: "file",
-                title: item.title || "Lesson resource",
+                type: "interactive",
+                title: item.title || "Interactive activity",
                 url: mediaUrl,
-                filename:
-                    item.original_filename ||
-                    item.file_name ||
-                    "Open resource",
                 storagePath: item.storage_path
             });
+
         }
 
-    });
+    }
 
+    // HTML RESOURCES
+
+    else if (type === "html") {
+
+        slides.push({
+            type: "interactive",
+            title: item.title || "Interactive resource",
+            url: mediaUrl,
+            storagePath: item.storage_path
+        });
+
+    }
+
+    // FILES AND GAMES
+
+    else if (
+        type === "file" ||
+        type === "game"
+    ) {
+
+        slides.push({
+            type: "file",
+            title: item.title || "Lesson resource",
+            url: mediaUrl,
+            filename:
+                item.original_filename ||
+                item.file_name ||
+                "Open resource",
+            storagePath: item.storage_path
+        });
+
+    }
+
+});
     // VIEWER
 
     const viewer = document.createElement("div");
@@ -1085,7 +1660,27 @@ requestAnimationFrame(() => {
             }
 
         }
+// JSON-BASED INTERACTIVE ACTIVITIES
 
+else if (slide.type === "interactive-activity") {
+
+    renderInteractiveActivity(
+        slideBody,
+        slide.activityData
+    );
+
+}
+
+// INVALID ACTIVITY
+
+else if (slide.type === "error") {
+
+    appendUnavailableMessage(
+        slideBody,
+        slide.message
+    );
+
+}
         // INTERACTIVE ACTIVITY
 
         else if (slide.type === "interactive") {
@@ -1358,16 +1953,21 @@ function openExtraContent(card) {
             }
         }
 
-        // TEXT
-        if (item.text_content) {
+     // TEXT CONTENT ONLY
 
-            const text = document.createElement("div");
+if (
+    type === "text" &&
+    item.text_content
+) {
 
-            text.className = "lesson-extra-text";
-            text.textContent = item.text_content;
+    const text = document.createElement("div");
 
-            itemContainer.appendChild(text);
-        }
+    text.className = "lesson-extra-text";
+    text.textContent = item.text_content;
+
+    itemContainer.appendChild(text);
+
+}
 
         // IMAGE
         if (type === "image") {
@@ -1438,11 +2038,86 @@ function openExtraContent(card) {
             }
         }
 
-        // INTERACTIVE HTML ACTIVITIES
-        else if (
-            type === "html" ||
-            type === "interactive"
-        ) {
+      // INTERACTIVE ACTIVITIES
+
+else if (type === "interactive") {
+
+    if (item.text_content && !item.storage_path) {
+
+        try {
+
+            const activityData = JSON.parse(
+                item.text_content
+            );
+
+            renderInteractiveActivity(
+                itemContainer,
+                activityData
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Could not load extra interactive activity:",
+                error
+            );
+
+            appendUnavailableMessage(
+                itemContainer,
+                "This interactive activity contains invalid data."
+            );
+
+        }
+
+    } else if (mediaUrl) {
+
+        const frame = document.createElement("iframe");
+
+        frame.src = mediaUrl;
+        frame.className = "lesson-extra-iframe";
+        frame.title = item.title || "Interactive activity";
+
+        frame.setAttribute("allowfullscreen", "");
+
+        itemContainer.appendChild(frame);
+
+    } else if (item.storage_path) {
+
+        appendUnavailableMessage(
+            itemContainer,
+            "This interactive activity could not be loaded."
+        );
+
+    }
+
+}
+
+// EXISTING HTML ACTIVITIES
+
+else if (type === "html") {
+
+    if (mediaUrl) {
+
+        const frame = document.createElement("iframe");
+
+        frame.src = mediaUrl;
+        frame.className = "lesson-extra-iframe";
+        frame.title = item.title || "Interactive activity";
+
+        frame.setAttribute("allowfullscreen", "");
+
+        itemContainer.appendChild(frame);
+
+    } else {
+
+        appendUnavailableMessage(
+            itemContainer,
+            "This HTML resource could not be loaded."
+        );
+
+    }
+
+}
 
             if (mediaUrl) {
 
