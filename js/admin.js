@@ -1259,7 +1259,22 @@ $$("[data-delete-card-id]", container).forEach(button => {
         }
 
         state.currentCard = card;
-        state.content = [];
+state.content = [];
+state.extraContent = [];
+
+// Clear any previous resource editing state
+state.editingContentId = null;
+state.editingContentCategory = null;
+
+// Restore the main content button
+if ($("#add-content-btn")) {
+    $("#add-content-btn").textContent = "Add Main Content";
+}
+
+// Restore the extra content button
+if ($("#add-extra-content-btn")) {
+    $("#add-extra-content-btn").textContent = "Add Extra Content";
+}
 
         const selectedLabel = $("#selected-card-label");
 
